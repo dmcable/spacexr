@@ -1,1 +1,5 @@
 exportPattern("^[[:alpha:]]+")
+importClassesFrom("Matrix")
+import("Matrix")
+import("doParallel")
+import("foreach")

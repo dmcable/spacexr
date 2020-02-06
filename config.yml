@@ -1,0 +1,11 @@
+default:
+  #cutoff value for the genes used for the Platform Effect Estimation
+  gene_cutoff: .0005 #.00005
+  slideseqfolder: "NewCerPuck_190926_08"
+  reffolder: "NewCerRef"
+  puckfile: "puck500Cropped.csv"
+  reffile: "CerebellumRef.RDS"
+  #cutoff value for the genes used in RCTD
+  gene_cutoff_reg: .001 #.0001
+  #min UMI to analyze on the bead
+  UMI_min: 1000 #100

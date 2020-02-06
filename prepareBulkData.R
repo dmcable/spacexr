@@ -1,9 +1,7 @@
 #this script takes the single cell reference and puck and prepares the bulk data files so that you can run fitBulkWeights.py
 #working directory must be the Cell Demixing folder.
-library(config)
-source("slideseq.R")
-source("utils.R")
-source("processRef.R")
+library(RCTD)
+library(Matrix)
 config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results
@@ -24,3 +22,4 @@ X = cell_type_means[gene_list,] * nUMI
 b = bulk_vec[gene_list]
 write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
 write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
+

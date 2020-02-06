@@ -1,10 +1,8 @@
-library(readr) #
-library(tibble) #
 
 #Slideseq data object to contain the counts and coords information.
-setClass("Slideseq", 
+setClass("Slideseq",
    slots = c(
-     coords = "data.frame", 
+     coords = "data.frame",
      counts = "dgCMatrix",
      n_cell_type = "integer",
      cell_type_names = "character",
@@ -12,7 +10,7 @@ setClass("Slideseq",
      radius = "numeric",
      nUMI = "numeric",
      cell_labels = "factor"
-   ), 
+   ),
    prototype = list(
      cell_type_names = NA_character_,
      n_cell_type = NA_integer_,
@@ -25,20 +23,18 @@ setClass("Slideseq",
    )
 )
 
-center_dist <- function(center, a, b) pointDistance(center,c(a,b),lonlat=FALSE)
-
 #reads counts and coords from a data director and returns a slideseq object
 read.slideseq <- function(datadir, count_file = NULL) {
-  coords <- read_csv(file = paste(datadir,"BeadLocationsForR.csv",sep="/"))
+  coords <- readr::read_csv(file = paste(datadir,"BeadLocationsForR.csv",sep="/"))
   if(is.null(count_file))
-    counts <- read_csv(file = paste(datadir,"MappedDGEForR.csv",sep="/"))
+    counts <- readr::read_csv(file = paste(datadir,"MappedDGEForR.csv",sep="/"))
   else
-    counts <- read_csv(file = paste(datadir,count_file,sep="/"))
+    counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
   colnames(coords)[2] = 'x' #renaming xcoord -> x
   colnames(coords)[3] = 'y' #renaming ycoord -> y
-  counts = column_to_rownames(counts, var = colnames(counts)[1])
+  counts = tibble::column_to_rownames(counts, var = colnames(counts)[1])
   #rownames(counts) = counts[,1]
-  coords = column_to_rownames(coords, var = "barcodes")
+  coords = tibble::column_to_rownames(coords, var = "barcodes")
   #rownames(coords) <- coords$barcodes
   coords$barcodes <- NULL
   counts = counts[,2:dim(counts)[2]]
@@ -49,7 +45,7 @@ read.slideseq <- function(datadir, count_file = NULL) {
 Slideseq <- function(coords, counts) {
   nUMI = colSums(counts)
   center = c(mean(coords$x), mean(coords$y))
-  radius = .98 * max(apply(coords[,c('x','y')], 1, function(z) center_dist(center, z['x'],z['y']))) #arbitrary shrinking factor
+  radius = 1000 #not currently implemented
   new("Slideseq", coords = coords, counts = counts, center = center, radius = radius, nUMI = nUMI)
 }
 

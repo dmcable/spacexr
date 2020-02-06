@@ -1,4 +1,3 @@
-library(quadprog)
 
 #return cell number, not proportion
 #do not print output
@@ -12,7 +11,7 @@ solveOLS<-function(S,B){
   norm_factor <- norm(D,"2")
   D <- D / norm_factor
   d <- d / norm_factor
-  solution<-solve.QP(D,d,Ap,bp,meq=1)$solution
+  solution<-quadprog::solve.QP(D,d,Ap,bp,meq=1)$solution
   names(solution)<-colnames(S)
   return(solution)
 }
@@ -64,29 +63,29 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
     throw("Not currently supporting non bead_mode")
     #v[which(v < threshold)] = threshold[which(v < threshold)]
   }
-  #robust regression 
+  #robust regression
   scaled_residual = abs(S%*%solution - B)/sqrt(prediction)
   exceed_sr = scaled_residual[scaled_residual > 1]
   prediction[scaled_residual > 1] = prediction[scaled_residual > 1] * (exceed_sr^2/(2*exceed_sr - 1))
   #end robust region of code
   W<-diag(as.vector(1/prediction))
   D_mat<-t(S)%*%W%*%S
-  d_vec<- t(S)%*%W%*%B 
+  d_vec<- t(S)%*%W%*%B
   norm_factor = sum(abs(B))
   if(! bead_mode) {
     norm_factor = norm_factor / sum(abs(my_args$alpha))
-  } 
+  }
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
   if('lambda' %in% names(my_args) && my_args$lambda > 0) {
-    if(! 'alpha' %in% names(my_args) && max(my_args$alpha) > 0) 
+    if(! 'alpha' %in% names(my_args) && max(my_args$alpha) > 0)
       throw("Used regularization option lambda without specifying alpha")
     sum_solution <- sum(solution)
     D_mat <- D_mat + diag(dim(S)[2]) * my_args$lambda  / (sum_solution ^ 2)
     d_vec <- d_vec + (my_args$lambda / sum_solution) * my_args$alpha
   }
   if(FALSE) { #'delta' %in% names(my_args) && my_args$delta > 0
-    if(! ('q' %in% names(my_args) || 'epsilon' %in% names(my_args))) 
+    if(! ('q' %in% names(my_args) || 'epsilon' %in% names(my_args)))
       throw("Used sparsity option delta without specifying both epsilon and q")
     D_mat <- D_mat + diag(my_args$q*my_args$delta/((sol**2 + my_args$epsilon**2)**(1-my_args$q/2)))
   }
@@ -98,9 +97,9 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   if('constrain' %in% names(my_args) && my_args$constrain) {
     A_const = t(rbind(1,A))
     b_const <-c(1,rep(0,dim(S)[2]))
-    solution <- solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
+    solution <- quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
   } else {
-    solution <- solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
+    solution <- quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
   }
   names(solution)<-colnames(S)
   return(solution)

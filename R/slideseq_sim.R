@@ -1,6 +1,3 @@
-library(doParallel)
-library(foreach)
-
 #given a cell and number of UMI_sample, samples without replacement from the cell
 sub_sample_cell <- function(gene_list, raw.data, cell_index, UMI_sample) {
   sub_sample = sample(rep(rownames(raw.data),raw.data[,cell_index]),UMI_sample,replace=FALSE)
@@ -62,17 +59,17 @@ decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, 
 
 #in parallel, does the (all cell type) decomposition of a batch of beads
 decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T) {
-  if(detectCores() < 8)
+  if(parallel::detectCores() < 8)
     stop('Please run on a machine with at least 8 cores')
   numCores <- 8
-  cl <- makeCluster(numCores,outfile="") #makeForkCluster
-  registerDoParallel(cl)
+  cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
+  doParallel::registerDoParallel(cl)
   environ = c('decompose','solveIRWLS.weights',
               'solveOLS','solveWLS')
-  weights <- foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+  weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     decompose(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain)
   }
-  stopCluster(cl)
+  parallel::stopCluster(cl)
   return(weights)
 }
 
@@ -122,11 +119,11 @@ weight_recovery_test <- function(test_ref, gene_list, cell_type_means, type1, ty
   proportion = UMI1_vec / UMI_tot
   const_stderr = 1.96
   plot_df <- data.frame(proportion,type1_avg,const_stderr*st_dev)
-  p<- ggplot(plot_df, aes(x=proportion, y=type1_avg, colour = "type1_avg")) + 
-    geom_line() +
-    geom_point()+
-    geom_line(aes(y=proportion,colour = "proportion")) +
-    geom_errorbar(aes(ymin=type1_avg-st_dev, ymax=type1_avg+st_dev), width=.05,
+  p<- ggplot2::ggplot(plot_df, aes(x=proportion, y=type1_avg, colour = "type1_avg")) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point()+
+    ggplot2::geom_line(aes(y=proportion,colour = "proportion")) +
+    ggplot2::geom_errorbar(aes(ymin=type1_avg-st_dev, ymax=type1_avg+st_dev), width=.05,
                   position=position_dodge(0.05))
   print(p)
   if(save.file) {
@@ -158,7 +155,7 @@ doublet_accuracy_test <- function(test_ref, gene_list, cell_type_info, type1, ty
     }
   }
   plot(UMI1_vec/UMI_tot,success/trials)
-  if(save.file) { 
+  if(save.file) {
     out_dir = paste(mydir,"Output/CompositionRecovery",sep="/")
     saveRDS(success,file = paste(out_dir,"success.RDS",sep="/"))
     saveRDS(first_failed_vec,file = paste(out_dir,"first_failed.RDS",sep="/"))
@@ -179,7 +176,7 @@ create_marker_plot <- function(test_ref,type1,type2, cell_type_means, marker_dat
 }
 
 #gets the score of what percent marker character is the bead of type1 vs type2 marker genes
-get_marker_score <- function(marker_data, cell_type_means, bead, type1, type2, UMI_tot) { 
+get_marker_score <- function(marker_data, cell_type_means, bead, type1, type2, UMI_tot) {
   type1_score = get_marker_score_type(marker_data, bead, UMI_tot, type1, score_threshold = 10)
   type2_score = get_marker_score_type(marker_data, bead, UMI_tot, type2, score_threshold = 10)
   norm_score = type1_score / (type1_score + type2_score)
@@ -188,7 +185,7 @@ get_marker_score <- function(marker_data, cell_type_means, bead, type1, type2, U
 
 #returns the marker score for cell_type
 #gene_means is the mean of the gene in the test dataset or the reference dataset
-get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_means,score_threshold = 10) { 
+get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_means,score_threshold = 10) {
   gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
   cell_score = mean(unlist(lapply(bead[gene_list]/(gene_means[gene_list]*UMI_tot), function(x) min(x,score_threshold))))
 }
@@ -196,7 +193,7 @@ get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_me
 #TODO: remember to take into account the mean of the new dataset
 #simple classifier based on the marker_genes
 #cell_type_means is from the reference
-classify_cell_marker <- function(marker_data, bead, UMI_tot, cell_type_means, score_threshold = 10) { 
+classify_cell_marker <- function(marker_data, bead, UMI_tot, cell_type_means, score_threshold = 10) {
   max_score = 0
   max_type = NULL
   gene_means = rowMeans(cell_type_means[rownames(marker_data),])

@@ -1,12 +1,5 @@
-#script to call the beads on a puck as single cell types
-library(config) #
-library(Seurat) #
-library(purrr) #
-source("slideseq.R")
-source("utils.R")
-source("processRef.R")
-source("slideseq_sim.R")
-source("topicmodel.R")
+library(RCTD)
+library(Matrix)
 config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results

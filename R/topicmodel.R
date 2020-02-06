@@ -1,5 +1,3 @@
-library(caret)
-
 test_single_beads <- function(puck, gene_list, cell_type_info, trust_model = FALSE, constrain = T) {
   cell_type_names = cell_type_info[[2]]; n_cell_types = cell_type_info[[3]]
   beads = t(as.matrix(puck@counts[gene_list,]))
@@ -11,7 +9,7 @@ test_single_beads <- function(puck, gene_list, cell_type_info, trust_model = FAL
     true_labels = pred_labels
   else
     true_labels = lapply(puck@cell_labels, function(x) cell_type_map[as.character(x),"cindex"])
-  conf_mat = confusionMatrix(factor(pred_labels,cell_type_lev),factor(true_labels,cell_type_lev))
+  conf_mat = caret::confusionMatrix(factor(pred_labels,cell_type_lev),factor(true_labels,cell_type_lev))
   rownames(conf_mat$table) = cell_type_names; colnames(conf_mat$table) = cell_type_names
   return(list(conf_mat,weights,pred_labels))
 }

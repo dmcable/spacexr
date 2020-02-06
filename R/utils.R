@@ -1,8 +1,3 @@
-library(ggplot2) #
-library(pals) #
-library(Matrix) #
-source("IRWLS.R")
-
 make_heat_map <- function(cell_type_means, gene_list) {
   heatmap(as.matrix(cell_type_means[gene_list,]))
 }
@@ -13,8 +8,8 @@ plot_cell_types_spec <- function(puck, barcodes) {
   my_table$class = puck@cell_labels[barcodes]
   n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
   size_vec = c(3,rep(1, n_levels-1))
-  gg <- ggplot(my_table, aes(x=x, y=y)) + geom_point(aes(shape=19,color=class,size=class)) + 
-    scale_color_manual(values = kelly(n_levels+1)[2:(n_levels+1)])+ scale_shape_identity() + scale_size_manual(values=size_vec)+theme_bw() 
+  gg <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19,color=class,size=class)) +
+    ggplot2::scale_color_manual(values = pals::kelly(n_levels+1)[2:(n_levels+1)])+ ggplot2::scale_shape_identity() + ggplot2::scale_size_manual(values=size_vec)+ggplot2::theme_bw()
   gg
 }
 
@@ -22,13 +17,13 @@ plot_cell_types <- function(puck, barcodes, results_dir) {
   my_table = puck@coords[barcodes,]
   my_table$class = puck@cell_labels[barcodes]
   n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
-  my_pal = kelly(n_levels+1)[2:(n_levels+1)]
+  my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
   if(n_levels > 21)
-    my_pal = polychrome(n_levels)
+    my_pal = pals::polychrome(n_levels)
   if(n_levels > 36)
     stop("Plotting currently supports at most 36 cell types as colors")
-  plot <- ggplot(my_table, aes(x=x, y=y)) + geom_point(aes(shape=19,color=class)) + 
-    scale_color_manual(values = my_pal)+ scale_shape_identity() + theme_bw() 
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19,color=class)) +
+    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw()
   pdf(file.path(results_dir,"all_cell_types.pdf"))
   invisible(print(plot))
   dev.off()
@@ -47,7 +42,7 @@ plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
       curr_loc = curr_loc | puck@cell_labels==counter_stain
     my_table = puck@coords[curr_loc,]
     my_table$class = puck@cell_labels[curr_loc]
-    plots[[i]] <- ggplot(my_table, aes(x=x, y=y)) + geom_point(aes(shape=19, color = class)) + scale_shape_identity() + theme_bw() + ggtitle(cell_type) 
+    plots[[i]] <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19, color = class)) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::ggtitle(cell_type)
   }
   #l = mget(plots)
   if(!is.null(counter_stain))
@@ -59,11 +54,11 @@ plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
 }
 
 
-downsample <- function(raw.data, cell.names, UMI = 500, replicates = 1) { 
+downsample <- function(raw.data, cell.names, UMI = 500, replicates = 1) {
   datalist = list()
   labellist = list()
   for (i in 1:dim(raw.data)[2]) { #dim(reference@assays$RNA@counts)[2]) {
-    datalist[[i]] <- Matrix(rmultinom(replicates,UMI,raw.data[,i]),sparse=TRUE) 
+    datalist[[i]] <- Matrix::Matrix(rmultinom(replicates,UMI,raw.data[,i]),sparse=TRUE)
     labellist[[i]] <- rep(cell.names[i],replicates)
   }
   sub_beads = do.call(cbind, datalist)
@@ -142,11 +137,11 @@ get_marker_data <- function(cell_type_names, reference, cell_type_means, gene_li
     #marker_data$across = marker_list %in% marker_pass
     marker_data$cell_type = cell_type_names[max.col(marker_means)]
     if(marker_plot)
-      ggplot(marker_data, aes(x=mean, y=entropy, color=across)) + geom_point();
+      ggplot2::ggplot(marker_data, ggplot2::aes(x=mean, y=entropy, color=across)) + ggplot2::geom_point();
   }
 }
 
-remap_celltypes <- function(cell_dict_file, cell_ident) { 
+remap_celltypes <- function(cell_dict_file, cell_ident) {
   cell_type_dict <- read.csv(file=cell_dict_file, header=TRUE, sep=",")
   rownames(cell_type_dict) = cell_type_dict[,'Cluster']
   true_type_names = lapply(cell_ident, function(x) cell_type_dict[as.character(x),"Name"])
@@ -164,25 +159,7 @@ get_worst_gene <- function(raw_data, cell_type_means, gene_list, desired_cell_ty
   return(worst_gene)
 }
 
-#classifies by computing the deviance (log likelihood) of a cell type via a poisson model of that cell type
-#example: classify_cell_type(drop_ref@assays$RNA@counts, n_cell_types, marker_list, cell_type_means)
-classify_cell_type <- function(raw.data, n_cell_types, gene_list, cell_type_means, nUMI = NULL) {
-  #do deviance matrix
-  dev_mat = matrix(0, nrow = dim(raw.data)[2], ncol = n_cell_types)
-  if(is.null(nUMI))
-    nUMI = colSums(raw.data)
-  for (i in 1:dim(raw.data)[2]) {
-    bead_vec = raw.data[gene_list,i]
-    UMI = nUMI[i]
-    for (j in 1:n_cell_types) {
-      reg_data = cell_type_means[gene_list,j] * UMI
-      EPSILON = 1e-18
-      deviance = (bead_vec - reg_data) + bead_vec * (log(reg_data + EPSILON) - log(bead_vec + EPSILON))
-      dev_mat[i,j] = sum(deviance)/UMI #avg deviance
-    }
-  }
-  return(max.col(dev_mat))
-}
+
 
 #plots the deviance of genes for predicting a bead as a particular cell type.
 #example: plot_deviance_hist(bead_vec, "Purkinje", cell_type_means, marker_list, nUMI)
@@ -195,7 +172,6 @@ plot_deviance_hist <- function(bead_vec,cell_type, cell_type_means, gene_list, n
   deviance = (bead_vec - reg_data[[cell_type]]) + bead_vec * (log(reg_data[[cell_type]] + EPSILON) - log(bead_vec + EPSILON))
   dev_df = as.data.frame(deviance)
   rownames(dev_df) = gene_list
-  #ggplot(dev_df, aes(x=deviance)) + geom_histogram(binwidth=.3, color="black", fill="white")
   dev_df = dev_df[order(deviance), , drop=FALSE]
   if(verbose)
     print(sum(dev_df))
