@@ -15,7 +15,7 @@ if(!dir.exists(bulkdir))
 puck = read.slideseq(slideseqdir, count_file = config$puckfile)
 puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min)
 reference <- readRDS(paste(refdir,config$reffile,sep="/"))
-cell_type_info <- get_cell_type_info(reference@raw.data, reference@meta.data$liger_ident_coarse)
+cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse)
 cell_type_means = cell_type_info[[1]]; cell_type_names = cell_type_info[[2]]
 bulk_vec = rowSums(puck@counts)
 gene_list = get_gene_list(cell_type_means, puck, cutoff_val = config$gene_cutoff)
