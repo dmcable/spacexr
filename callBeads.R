@@ -4,6 +4,9 @@ config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results
 slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+resultsdir = file.path(slideseqdir,"results")
+if(!dir.exists(resultsdir))
+  dir.create(resultsdir)
 bulkdir <- paste(slideseqdir,"results/Bulk",sep="/")
 if(!dir.exists(bulkdir))
   dir.create(bulkdir)
@@ -22,7 +25,6 @@ puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
 puck = restrict_puck(puck, colnames(puck@counts))
 
 test_results = process_data(puck, gene_list, cell_type_info, proportions, trust_model = T, constrain = T)
-resultsdir = file.path(slideseqdir,"results")
 saveRDS(test_results, file = paste(resultsdir,"test_results.RDS",sep="/"))
 conf_mat = test_results[[1]]; weights = test_results[[2]]; pred_labels = test_results[[3]]
 puck@cell_labels = factor(names(test_results[[3]]),cell_type_names)
