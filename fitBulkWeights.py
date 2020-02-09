@@ -37,12 +37,12 @@ X_var = tf.compat.v1.placeholder("float32")
 Y_var = tf.compat.v1.placeholder("float32") 
 my_loss = loss(model(X_var),Y_var)
 batch_loss = loss(model.predict_batch(X_var),Y_var)
-optimizer = tf.train.AdamOptimizer(1e-4).minimize(my_loss)
+optimizer = tf.train.AdamOptimizer(1e-6).minimize(my_loss)
 init = tf.global_variables_initializer() 
 
 
 #train the model
-training_epochs = 50
+training_epochs = 2000
 with tf.Session() as sess: 
      
     # Initializing the Variables 
@@ -56,7 +56,7 @@ with tf.Session() as sess:
             sess.run(optimizer, feed_dict = {X_var : _x, Y_var : _y}) 
           
         # Displaying the result after every 5 epochs 
-        if (epoch + 1) % 5 == 0: 
+        if (epoch + 1) % 20 == 0: 
             # Calculating the cost a every epoch 
             c = sess.run(batch_loss, feed_dict = {X_var : X, Y_var : b}) 
             print("Epoch", (epoch + 1), ": cost =", c, "w =", sess.run(model.w)) 

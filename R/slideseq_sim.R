@@ -59,9 +59,9 @@ decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, 
 
 #in parallel, does the (all cell type) decomposition of a batch of beads
 decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T) {
-  if(parallel::detectCores() < 8)
-    stop('Please run on a machine with at least 8 cores')
-  numCores <- 8
+  numCores = parallel::detectCores()
+  if(parallel::detectCores() > 8)
+    numCores <- 8
   cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
   doParallel::registerDoParallel(cl)
   environ = c('decompose','solveIRWLS.weights',
