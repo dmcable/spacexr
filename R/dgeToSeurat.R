@@ -13,5 +13,6 @@ dgeToSeurat <- function(refdir) {
   meta_data$liger_ident_coarse = true_type_names
   reference = Seurat::CreateSeuratObject(raw.data, meta.data = meta_data)
   saveRDS(reference, paste(refdir,"SCRef.RDS",sep="/"))
-  create_downsampled_data(reference, refdir)
+  dref <- create_downsampled_data(reference, refdir)
+  create_downsampled_data(dref, refdir, n_samples = 300)
 }

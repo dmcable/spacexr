@@ -87,7 +87,8 @@ create_downsampled_data <- function(reference, refdir, cell_type_import = NULL,n
   reference@assays$RNA@counts = reference@assays$RNA@counts[,index_keep]
   reference@meta.data = reference@meta.data[index_keep,]
   reference@meta.data$liger_ident_coarse = droplevels(reference@meta.data$liger_ident_coarse)
-  reference@assays$RNA@data <-reference@assays$RNA@data[1:2,1:2]
+  reference@assays$RNA@data <-matrix(0,nrow=2,ncol=2)
+  reference@assays$RNA@scale.data <- matrix(0,nrow=2,ncol=2)
   if(save.file)
     saveRDS(reference, paste(refdir,"/scRefSubsampled", n_samples, ".RDS",sep=""))
   return(reference)

@@ -18,6 +18,8 @@ n_cell_types = cell_type_info[[3]]
 
 proportions <- read.csv(file.path(bulkdir,"weights.csv"))$Weight
 names(proportions) = cell_type_names
+print("callBeads: estimated bulk composition: ")
+print(proportions)
 #now we switch to a different gene list
 gene_list = get_gene_list(cell_type_means, puck, cutoff_val = config$gene_cutoff_reg)
 print(paste("callBeads: number of genes used for regression:", length(gene_list)))
@@ -32,3 +34,5 @@ names(puck@cell_labels) = colnames(puck@counts)
 saveRDS(puck,file.path(resultsdir,"puck_labeled.RDS"))
 plot_cell_types_ind(puck, resultsdir)
 plot_cell_types(puck, colnames(puck@counts), resultsdir)
+print("callBeads: occurences of cell types:")
+print(diag(conf_mat$table))
