@@ -23,7 +23,7 @@ print("prepareBulkData: amount of each cell type in the reference:")
 print(table(reference@meta.data$liger_ident_coarse))
 bulk_vec = rowSums(puck@counts)
 print(paste("prepareBulkData: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
-gene_list = get_gene_list(cell_type_means, puck, cutoff_val = config$gene_cutoff)
+gene_list = get_de_genes(cell_type_means, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff)
 print(paste("prepareBulkData: number of genes used for Platform Effect Estimation:", length(gene_list)))
 nUMI = sum(bulk_vec)
 X = cell_type_means[gene_list,] * nUMI

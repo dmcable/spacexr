@@ -189,6 +189,26 @@ get_gene_list <- function(cell_type_means, puck, cutoff_val = 1/20000) {
   return(gene_list)
 }
 
+#finds DE genes
+get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = .00015) {
+  total_gene_list = c()
+  epsilon = 1e-9
+  bulk_vec = rowSums(puck@counts)
+  gene_list = rownames(cell_type_means)
+  gene_list = intersect(gene_list,names(bulk_vec))
+  gene_list = gene_list[bulk_vec[gene_list] > 0]
+  for(cell_type in cell_type_names) {
+    other_mean = rowMeans(cell_type_means[gene_list,cell_type_names != cell_type])
+    logFC = log(cell_type_means[gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
+    type_gene_list = which((logFC > fc_thresh) & (cell_type_means[gene_list,cell_type] > expr_thresh))
+    print(paste0("get_de_genes: ", cell_type, " found DE genes: ",length(type_gene_list)))
+    total_gene_list = union(total_gene_list, type_gene_list)
+  }
+  total_gene_list = gene_list[total_gene_list]
+  print(paste0("get_de_genes: total DE genes: ",length(total_gene_list)))
+  return(total_gene_list)
+}
+
 #given a list of cell labels, computes the (smoothed) proportion with each label.
 #if not null nUMI, then it does it weighted by nUMI
 #if constrain, sum to 1, otherwise sum to orginial sum

@@ -42,7 +42,7 @@ init = tf.global_variables_initializer()
 
 
 #train the model
-training_epochs = 2000
+training_epochs = cfg['default']['training_epochs']
 with tf.Session() as sess: 
      
     # Initializing the Variables 

@@ -21,7 +21,7 @@ names(proportions) = cell_type_names
 print("callBeads: estimated bulk composition: ")
 print(proportions)
 #now we switch to a different gene list
-gene_list = get_gene_list(cell_type_means, puck, cutoff_val = config$gene_cutoff_reg)
+gene_list = get_de_genes(cell_type_means, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg)
 print(paste("callBeads: number of genes used for regression:", length(gene_list)))
 puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
 puck = restrict_puck(puck, colnames(puck@counts))
