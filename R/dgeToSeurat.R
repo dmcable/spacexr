@@ -1,6 +1,14 @@
 #input: refdir, the directory of the reference
 #e.g. dgeToSeurat('Data/Reference/KidneyHumanReference')
 dgeToSeurat <- function(refdir) {
+  #check for , at end of header of DGE
+  dge_file = file.path(refdir,"dge.csv")
+  conn <- file(dge_file,open="r")
+  lines <-readLines(conn)
+  text_len = nchar(lines[1])
+  if(substr(lines[1],text_len,text_len) == ",")
+   lines[1] <- substr(lines[1],1,text_len-1)
+  writeLines(lines,dge_file)
   raw.data = t(read.csv(file.path(refdir,"dge.csv")))
   meta_data = read.csv(file.path(refdir,"meta_data.csv"))
   rownames(meta_data) = meta_data$barcode
