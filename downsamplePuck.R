@@ -1,0 +1,5 @@
+library(RCTD)
+library(Matrix)
+config <- config::get()
+slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+counts <- readr::read_csv(file = paste(slideseqdir,config$puckfile,sep="/"))
