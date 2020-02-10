@@ -1,15 +1,15 @@
 get_cell_type_info <- function(raw.data, cell_types, cell_type_names = NULL) {
   if(is.null(cell_type_names))
     cell_type_names = levels(cell_types)
-  
+
   n_cell_types = length(cell_type_names)
-  
+
   get_cell_mean <- function(cell_type) {
     cell_type_data = raw.data[,cell_types == cell_type]
     normData = sweep(cell_type_data,2,colSums(cell_type_data),`/`)
     return(rowSums(normData) / dim(normData)[2])
   }
-  
+
   cell_type = cell_type_names[1]
   cell_type_means <- data.frame(get_cell_mean(cell_type))
   colnames(cell_type_means)[1] = cell_type
@@ -24,7 +24,7 @@ get_cell_type_info <- function(raw.data, cell_types, cell_type_names = NULL) {
 get_norm_ref <- function(puck, cell_type_means, gene_list, proportions) {
   bulk_vec = rowSums(puck@counts)
   weight_avg = rowSums(sweep(cell_type_means[gene_list,],2,proportions,'*'))
-  target_means = bulk_vec[gene_list]/sum(bulk_vec)
+  target_means = bulk_vec[gene_list]/sum(puck@nUMI)
   cell_type_means_renorm = sweep(cell_type_means[gene_list,],1,weight_avg / target_means,'/')
 }
 

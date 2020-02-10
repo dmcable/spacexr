@@ -50,10 +50,10 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
 }
 
 #decompose
-decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE) {
+decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F) {
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
-  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain)
+  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose)
   return(weights)
 }
 
