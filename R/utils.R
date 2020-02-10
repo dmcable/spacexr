@@ -212,7 +212,7 @@ get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = 
 #given a list of cell labels, computes the (smoothed) proportion with each label.
 #if not null nUMI, then it does it weighted by nUMI
 #if constrain, sum to 1, otherwise sum to orginial sum
-compute_proportions <- function(cell_labels, cell_type_names, nUMI = NULL, smoothing_par = 1/300) {
+compute_proportions <- function(cell_labels, cell_type_names, nUMI = NULL, smoothing_par = 1/1000) {
   if(is.null(nUMI))
     true_counts = as.data.frame(table(cell_labels))
   else {
