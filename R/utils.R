@@ -22,8 +22,8 @@ plot_cell_types <- function(puck, barcodes, results_dir) {
     my_pal = pals::polychrome(n_levels)
   if(n_levels > 36)
     stop("Plotting currently supports at most 36 cell types as colors")
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19,color=class)) +
-    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw()
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
+    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
   pdf(file.path(results_dir,"all_cell_types.pdf"))
   invisible(print(plot))
   dev.off()
