@@ -59,6 +59,9 @@ decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, 
 
 #in parallel, does the (all cell type) decomposition of a batch of beads
 decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T) {
+  out_file = "logs/decompose_batch_log.txt"
+  if (file.exists(out_file))
+    file.remove(out_file)
   numCores = parallel::detectCores()
   if(parallel::detectCores() > 8)
     numCores <- 8
@@ -67,6 +70,8 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
   environ = c('decompose','solveIRWLS.weights',
               'solveOLS','solveWLS')
   weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+    if(i %% 100 == 0)
+      cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
     decompose(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain)
   }
   parallel::stopCluster(cl)
