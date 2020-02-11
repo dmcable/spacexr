@@ -12,7 +12,7 @@ if(!dir.exists(bulkdir))
   dir.create(bulkdir)
 puck = read.slideseq(slideseqdir, count_file = config$puckfile)
 reference <- readRDS(paste(refdir,config$reffile,sep="/"))
-cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse)
+cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
 cell_type_means = cell_type_info[[1]]; cell_type_names = cell_type_info[[2]]
 n_cell_types = cell_type_info[[3]]
 
