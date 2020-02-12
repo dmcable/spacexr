@@ -19,6 +19,13 @@ bead_mix <- function(test_ref, gene_list, UMI1, UMI2, type1, type2) {
   return(data.matrix((as.matrix(bead))))
 }
 
+bead_singlet <- function(test_ref, gene_list, UMI, cell_type) {
+  nUMI = test_ref@meta.data$nUMI
+  firstInd = sample(intersect(which(test_ref@meta.data$liger_ident_coarse == cell_type) , which(nUMI > 1000)),1)
+  bead = sub_sample_cell(gene_list, test_ref@assays$RNA@counts, firstInd, UMI)
+  return(data.matrix((as.matrix(bead))))
+}
+
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
@@ -93,6 +100,28 @@ process_bead <- function(cell_type_info, gene_list, UMI_tot, bead) {
       }
     }
   weights = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type)
+  return(weights)
+}
+
+#doublet decomposition for the whole puck.
+process_beads_batch <- function(cell_type_info, gene_list, puck, constrain = T) {
+  beads = t(as.matrix(puck@counts[gene_list,]))
+  out_file = "logs/decompose_batch_log.txt"
+  if (file.exists(out_file))
+    file.remove(out_file)
+  numCores = parallel::detectCores()
+  if(parallel::detectCores() > 8)
+    numCores <- 8
+  cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
+  doParallel::registerDoParallel(cl)
+  environ = c('process_bead','decompose','decompose_sparse','solveIRWLS.weights',
+              'solveOLS','solveWLS')
+  weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+    if(i %% 100 == 0)
+      cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
+    process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,])
+  }
+  parallel::stopCluster(cl)
   return(weights)
 }
 
@@ -190,9 +219,13 @@ get_marker_score <- function(marker_data, cell_type_means, bead, type1, type2, U
 
 #returns the marker score for cell_type
 #gene_means is the mean of the gene in the test dataset or the reference dataset
-get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_means,score_threshold = 10) {
+get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_means,score_threshold = 10, score_mode = T) {
   gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
-  cell_score = mean(unlist(lapply(bead[gene_list]/(gene_means[gene_list]*UMI_tot), function(x) min(x,score_threshold))))
+  mark_genes = unlist(lapply(bead[gene_list]/(gene_means[gene_list]*UMI_tot), function(x) min(x,score_threshold)))
+  if(score_mode)
+    return(mean(mark_genes))
+  else
+    return(tail(mark_genes[order(mark_genes)],10))
 }
 
 #TODO: remember to take into account the mean of the new dataset
