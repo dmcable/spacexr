@@ -1,5 +1,6 @@
 library(RCTD)
 library(Matrix)
+print("callBeads: begin")
 config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results
@@ -25,6 +26,7 @@ gene_list = get_de_genes(cell_type_means, puck, fc_thresh = config$fc_cutoff_reg
 print(paste("callBeads: number of genes used for regression:", length(gene_list)))
 puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
 puck = restrict_puck(puck, colnames(puck@counts))
+print(paste("callBeads: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
 
 test_results = process_data(puck, gene_list, cell_type_info, proportions, trust_model = T, constrain = F)
 saveRDS(test_results, file = paste(resultsdir,"test_results.RDS",sep="/"))
@@ -36,3 +38,4 @@ plot_cell_types_ind(puck, resultsdir)
 plot_cell_types(puck, colnames(puck@counts), resultsdir)
 print("callBeads: occurences of cell types:")
 print(diag(conf_mat$table))
+print("callBeads: end")
