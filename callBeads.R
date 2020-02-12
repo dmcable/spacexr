@@ -1,5 +1,6 @@
 library(RCTD)
 library(Matrix)
+print("callBeads: begin")
 config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results
@@ -37,3 +38,4 @@ plot_cell_types_ind(puck, resultsdir)
 plot_cell_types(puck, colnames(puck@counts), resultsdir)
 print("callBeads: occurences of cell types:")
 print(diag(conf_mat$table))
+print("callBeads: end")

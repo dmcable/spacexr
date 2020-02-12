@@ -2,6 +2,7 @@
 #working directory must be the Cell Demixing folder.
 library(RCTD)
 library(Matrix)
+print("prepareBulkData: begin")
 config <- config::get()
 refdir <- file.path("Data/Reference",config$reffolder)
 dir.create(file.path(refdir, "results"), showWarnings = FALSE) #folder to save results
@@ -35,4 +36,4 @@ X = cell_type_means[gene_list,] * nUMI
 b = bulk_vec[gene_list]
 write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
 write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
-
+print("prepareBulkData: end")
