@@ -16,6 +16,7 @@ puck = read.slideseq(slideseqdir, count_file = config$puckfile)
 puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min)
 reference <- readRDS(paste(refdir,config$reffile,sep="/"))
 print(paste("prepareBulkData: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
+print(paste("prepareBulkData: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
 cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
 cell_type_means = cell_type_info[[1]]; cell_type_names = cell_type_info[[2]]
 print("prepareBulkData: amount of each cell type in the reference:")

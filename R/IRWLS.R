@@ -53,18 +53,18 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, delta = NUL
 #or bead_mode is false and nUMI is vector
 solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   my_args = list(...)
-  multiplier<-1*2^(j-1)
   solution<-pmax(initialSol,0)
   if(bead_mode) {
     prediction = S%*%solution
-    threshold<-nUMI/2^(j-1)
+    threshold<-1e-4
     prediction[which(prediction < threshold)] = threshold
   } else {
     throw("Not currently supporting non bead_mode")
     #v[which(v < threshold)] = threshold[which(v < threshold)]
   }
   #robust regression
-  scaled_residual = abs(S%*%solution - B)/sqrt(prediction)
+  scaled_residual = abs(S%*%solution - B)
+  scaled_residual[prediction > 1] = scaled_residual[prediction > 1] / prediction[prediction > 1]
   exceed_sr = scaled_residual[scaled_residual > 1]
   prediction[scaled_residual > 1] = prediction[scaled_residual > 1] * (exceed_sr^2/(2*exceed_sr - 1))
   #end robust region of code
