@@ -34,27 +34,29 @@ plot_puck_continuous <- function(puck, barcodes, plot_val) {
   my_table = puck@coords[barcodes,]
   my_table$value = plot_val[barcodes]
   plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 1.5, shape=19,color=value)) +
-    scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
   plot
   #pdf(file.path(results_dir,"all_cell_types.pdf"))
   #invisible(print(plot))
   #dev.off()
 }
 
-plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0) {
+plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, positive = F) {
   my_cond = puck@nUMI > minUMI
   if(!is.null(cell_type))
     my_cond = my_cond & (puck@cell_labels == cell_type)
+  if(positive)
+    my_cond = my_cond & (plot_val > 0)
   plot_puck_continuous(puck, names(which(my_cond)), plot_val)
 }
 
-plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0) {
+plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
   gene_vals = puck@counts[gene,]
-  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI)
+  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, positive = positive)
 }
 
-plot_puck_wrapper(puck, log(puck@nUMI,2), cell_type, minUMI = 100)
-plot_puck_gene(puck, "Marcksl1", cell_type = cell_type, minUMI =100)
+plot_puck_wrapper(puck, log(puck@nUMI,2), cell_type, minUMI = 300)
+plot_puck_gene(puck, "Stmn2", cell_type = NULL, minUMI =100, positive = T)
 proportions_sm = smooth_proportions(proportions, constrain = F, smoothing_par = 1e-6)
 cell_type_means_renorm <- get_norm_ref(puck, cell_type_means, gene_list, proportions_sm)
 cell_type_means_regood <- get_norm_ref(puck, cell_type_means, gene_list, proportions)

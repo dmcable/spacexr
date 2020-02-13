@@ -28,7 +28,7 @@ test_doublet_beads <- function(puck, gene_list, cell_type_info, SINGLET_THRESH =
 process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, trust_model = FALSE, constrain = T) {
   cell_type_info_renorm = cell_type_info
   if(!is.null(proportions)) {
-    proportions = smooth_proportions(proportions, constrain = F)
+    proportions = smooth_proportions(proportions, smoothing_par = 0, constrain = F)
     cell_type_info_renorm[[1]] = get_norm_ref(puck, cell_type_info[[1]], gene_list, proportions)
   }
   test_results <- test_single_beads(puck, gene_list, cell_type_info_renorm, trust_model = trust_model, constrain = constrain)
