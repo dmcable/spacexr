@@ -26,34 +26,61 @@ print(paste("callBeads: number of genes used for regression:", length(gene_list)
 cell_type_means_renorm <- get_norm_ref(puck, cell_type_means, gene_list, proportions)
 marker_data = get_marker_data(cell_type_names, reference, cell_type_means_renorm, gene_list, marker_provided = TRUE)
 cell_type = "Neurogenesis"
+marker_scores <- get_marker_scores(marker_data, puck, cell_type, cell_type_means_renorm)
+plot_puck_wrapper(puck, marker_scores, NULL, minUMI = 300, min_val = 0.5)
+test_results = readRDS(file = paste(resultsdir,"test_results.RDS",sep="/"))
+
+weights <- t(as.data.frame(matrix(unlist(test_results[[2]]), nrow=n_cell_types)))
+rownames(weights) = colnames(puck@counts)
+colnames(weights) = cell_type_names
+norm_weights = sweep(weights, 1, rowSums(weights), '/')
+cell_type = "Cajal_Retzius"
+plot_puck_wrapper(puck, weights[,cell_type], NULL, minUMI = 300, min_val = 0.15, max_val = 1)
+plot(weights[,cell_type], norm_weights[,cell_type])
+
+
+suspected = marker_scores[marker_scores > 1] #to be NG
+weights[names(suspected),]
+bead = puck@counts[,names(suspected)[1]]
+markers_pres = get_marker_score_type(marker_data, bead, puck@nUMI[names(suspected)[1]], cell_type, gene_means,score_threshold = 10, score_mode = F)
+bead[names(markers_pres)]
+cell_type_means_renorm[names(markers_pres), c("CA3", "Denate", "Neurogenesis")]
+
+#make the residuals plot
+min_sample = 12900
+max_sample = 13000
+prediction = sweep(as.matrix(cell_type_means_renorm) %*% as.matrix(t(weights[min_sample:max_sample,])), 2, puck@nUMI[min_sample:max_sample], '*')
+Y = puck@counts[gene_list,min_sample:max_sample]
+residuals_sq = (prediction- Y)^2
+prediction = as.vector(prediction); residuals_sq = as.vector(residuals_sq)
+residuals_sq = residuals_sq[order(prediction)]
+prediction = prediction[order(prediction)]
+names(prediction) = 1:length(prediction); names(residuals_sq) = 1:length(prediction)
+
+
+ma <- function(x, n = 5){stats::filter(x, rep(1 / n, n), sides = 2)}
+
+plot(prediction, ma(residuals_sq, 100), type = "n")
+lines(prediction, ma(residuals_sq, 100))
+
+plot(prediction, ma(residuals_sq, 100), type = "n", xlim = c(0,10), ylim = c(0,50))
+lines(prediction, ma(residuals_sq, 100))
+
+plot(prediction, ma(residuals_sq, 300), type = "n", xlim = c(0,5), ylim = c(0,30))
+lines(prediction, ma(residuals_sq, 300))
+
+plot(prediction, ma(residuals_sq, 400), type = "n", xlim = c(0,2.5), ylim = c(0,15))
+lines(prediction, ma(residuals_sq, 400))
+
+plot(prediction, ma(residuals_sq, 1000), type = "n", xlim = c(0,1), ylim = c(0,2.5))
+lines(prediction, ma(residuals_sq, 1000))
+
+plot(prediction, ma(residuals_sq, 1000), type = "n", xlim = c(0,.2), ylim = c(0,.3))
+lines(prediction, ma(residuals_sq, 1000))
+
 my_type = marker_data[marker_data$cell_type == cell_type,]
 my_type$nPuck = rowSums(puck@counts[rownames(my_type),])
-#plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val) {
-  my_pal = pals::kovesi.rainbow(20)
-  my_table = puck@coords[barcodes,]
-  my_table$value = plot_val[barcodes]
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 1.5, shape=19,color=value)) +
-    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  plot
-  #pdf(file.path(results_dir,"all_cell_types.pdf"))
-  #invisible(print(plot))
-  #dev.off()
-}
 
-plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, positive = F) {
-  my_cond = puck@nUMI > minUMI
-  if(!is.null(cell_type))
-    my_cond = my_cond & (puck@cell_labels == cell_type)
-  if(positive)
-    my_cond = my_cond & (plot_val > 0)
-  plot_puck_continuous(puck, names(which(my_cond)), plot_val)
-}
-
-plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
-  gene_vals = puck@counts[gene,]
-  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, positive = positive)
-}
 
 plot_puck_wrapper(puck, log(puck@nUMI,2), cell_type, minUMI = 300)
 plot_puck_gene(puck, "Stmn2", cell_type = NULL, minUMI =100, positive = T)
@@ -67,7 +94,7 @@ decompose(cell_type_means_soft, gene_list, total_UMI, bulk_vec, verbose=F)
 decompose(cell_type_means_regood, gene_list, total_UMI, bulk_vec, verbose=F)
 decompose(cell_type_means_renorm, gene_list, puck@nUMI[type_ind[4]], puck@counts[,type_ind[4]], verbose = F)
 res = decompose(cell_type_means_renorm, gene_list, puck@nUMI[type_ind[ind]], puck@counts[,type_ind[ind]], verbose = F)
-gene_means = rowMeans(cell_type_means[rownames(marker_data),])
+gene_means = rowMeans(cell_type_means_renorm[rownames(marker_data),])
 print(get_marker_score_type(marker_data, bulk_vec,total_UMI,cell_type,gene_means))
 print(get_marker_score_type(marker_data, puck@counts[,type_ind[2]],puck@nUMI[type_ind[2]],cell_type,gene_means))
 for (cell_type_oth in cell_type_names)

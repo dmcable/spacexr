@@ -1,7 +1,7 @@
-test_single_beads <- function(puck, gene_list, cell_type_info, trust_model = FALSE, constrain = T) {
+test_single_beads <- function(puck, gene_list, cell_type_info, trust_model = FALSE, constrain = T, OLS = F) {
   cell_type_names = cell_type_info[[2]]; n_cell_types = cell_type_info[[3]]
   beads = t(as.matrix(puck@counts[gene_list,]))
-  weights = decompose_batch(puck@nUMI, cell_type_info[[1]], beads, gene_list, constrain = constrain)
+  weights = decompose_batch(puck@nUMI, cell_type_info[[1]], beads, gene_list, constrain = constrain, OLS = OLS)
   pred_labels = unlist(lapply(weights,function(x) which.max(x)))
   cell_type_lev = factor(1:n_cell_types)
   cell_type_map = data.frame(cindex = 1:n_cell_types, row.names = cell_type_names)
@@ -25,12 +25,12 @@ test_doublet_beads <- function(puck, gene_list, cell_type_info, SINGLET_THRESH =
 
 #main function for assigning cell type labels and decompositions to a dataset.
 #if proportions is null, does not renormalize cell type means
-process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, trust_model = FALSE, constrain = T) {
+process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, trust_model = FALSE, constrain = T, OLS = F) {
   cell_type_info_renorm = cell_type_info
   if(!is.null(proportions)) {
     proportions = smooth_proportions(proportions, smoothing_par = 0, constrain = F)
     cell_type_info_renorm[[1]] = get_norm_ref(puck, cell_type_info[[1]], gene_list, proportions)
   }
-  test_results <- test_single_beads(puck, gene_list, cell_type_info_renorm, trust_model = trust_model, constrain = constrain)
+  test_results <- test_single_beads(puck, gene_list, cell_type_info_renorm, trust_model = trust_model, constrain = constrain, OLS = OLS)
   return(test_results)
 }

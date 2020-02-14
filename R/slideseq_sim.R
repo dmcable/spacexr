@@ -65,7 +65,7 @@ decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, 
 }
 
 #in parallel, does the (all cell type) decomposition of a batch of beads
-decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T) {
+decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T, OLS = F) {
   out_file = "logs/decompose_batch_log.txt"
   if (file.exists(out_file))
     file.remove(out_file)
@@ -79,7 +79,7 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
   weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
-    decompose(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain)
+    decompose(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
   }
   parallel::stopCluster(cl)
   return(weights)
@@ -226,6 +226,18 @@ get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_me
     return(mean(mark_genes))
   else
     return(tail(mark_genes[order(mark_genes)],10))
+}
+
+#get marker scores for some cell type
+get_marker_scores <- function(marker_data, puck, cell_type, cell_type_means, score_threshold = 10) {
+  gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
+  gene_means = rowMeans(cell_type_means[rownames(marker_data),])
+  scores = numeric(dim(puck@counts)[2])
+  for (i in 1:dim(puck@counts)[2]) {
+    scores[i] <- get_marker_score_type(marker_data[gene_list,], puck@counts[gene_list,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
+  }
+  names(scores) = colnames(puck@counts)
+  return(scores)
 }
 
 #TODO: remember to take into account the mean of the new dataset
