@@ -63,10 +63,12 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
     #v[which(v < threshold)] = threshold[which(v < threshold)]
   }
   #robust regression
+  prev_prediction = prediction
   scaled_residual = abs(S%*%solution - B)
   scaled_residual[prediction > 1] = scaled_residual[prediction > 1] / prediction[prediction > 1]
   exceed_sr = scaled_residual[scaled_residual > 1]
   prediction[scaled_residual > 1] = prediction[scaled_residual > 1] * (exceed_sr^2/(2*exceed_sr - 1))
+  prediction[prev_prediction > 1] = prediction[prev_prediction > 1] * prev_prediction[prev_prediction > 1]
   #end robust region of code
   W<-diag(as.vector(1/prediction))
   D_mat<-t(S)%*%W%*%S

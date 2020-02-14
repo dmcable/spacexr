@@ -235,3 +235,34 @@ smooth_proportions <- function(proportions, smoothing_par = 1/300, constrain = T
   proportions = proportions + smoothing_par #smoothing
   proportions = target_sum * proportions / sum(proportions)
 }
+
+#plots a continuous value over the puck
+plot_puck_continuous <- function(puck, barcodes, plot_val) {
+  my_pal = pals::kovesi.rainbow(20)
+  my_table = puck@coords[barcodes,]
+  my_table$value = plot_val[barcodes]
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 1.5, shape=19,color=value)) +
+    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+  plot
+  #pdf(file.path(results_dir,"all_cell_types.pdf"))
+  #invisible(print(plot))
+  #dev.off()
+}
+
+#plots a continunous value over certain beads in the puck
+plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, min_val = NULL, max_val = NULL) {
+  my_cond = puck@nUMI > minUMI
+  if(!is.null(cell_type))
+    my_cond = my_cond & (puck@cell_labels == cell_type)
+  if(!is.null(min_val))
+    my_cond = my_cond & (plot_val > min_val)
+  if(!is.null(max_val))
+    plot_val[plot_val > max_val] = max_val
+  plot_puck_continuous(puck, names(which(my_cond)), plot_val)
+}
+
+#plots a gene over the puck. Positive restricts plotting to positive.
+plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
+  gene_vals = puck@counts[gene,]
+  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, min_val = positive - 0.5)
+}
