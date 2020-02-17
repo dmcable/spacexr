@@ -29,7 +29,7 @@ bead_singlet <- function(test_ref, gene_list, UMI, cell_type) {
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
-decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, denoise = F, custom_list = NULL, verbose=F, constrain = F) {
+decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, denoise = F, custom_list = NULL, verbose=F, constrain = T) {
   if(is.null(custom_list))
     cell_types = c(type1,type2)
   else
@@ -143,7 +143,7 @@ weight_recovery_test <- function(test_ref, gene_list, cell_type_means, type1, ty
     UMI2 = UMI_tot - UMI1
     for (t in 1:trials) {
       bead= bead_mix(test_ref, gene_list, UMI1, UMI2, type1, type2)
-      weights = decompose_sparse(cell_type_means, gene_list, UMI_tot, bead, type1, type2)
+      weights = decompose_sparse(cell_type_means, gene_list, UMI_tot, bead, type1, type2, constrain = F)
       type1_avg[prop_ind] = type1_avg[prop_ind] + weights[1]
       type1_moment2[prop_ind] = type1_moment2[prop_ind] + (weights[1]^2)
     }
