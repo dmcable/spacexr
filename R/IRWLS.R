@@ -54,43 +54,13 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, delta = NUL
 solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   my_args = list(...)
   solution<-pmax(initialSol,0)
-  if(bead_mode) {
-    prediction = S%*%solution
-    threshold<-1e-4
-    prediction[which(prediction < threshold)] = threshold
-  } else {
-    throw("Not currently supporting non bead_mode")
-    #v[which(v < threshold)] = threshold[which(v < threshold)]
-  }
-  #robust regression
-  prev_prediction = prediction
-  scaled_residual = abs(S%*%solution - B)
-  scaled_residual[prediction > 1] = scaled_residual[prediction > 1] / prediction[prediction > 1]
-  exceed_sr = scaled_residual[scaled_residual > 1]
-  prediction[scaled_residual > 1] = prediction[scaled_residual > 1] * (exceed_sr^2/(2*exceed_sr - 1))
-  prediction[prev_prediction > 1] = prediction[prev_prediction > 1] * prev_prediction[prev_prediction > 1]
-  #end robust region of code
-  W<-diag(as.vector(1/prediction))
+  prediction = abs(S%*%solution)
+  V <- get_V(prediction)
+  sigma_bar <- pmax(sqrt(V),1)
+  scaled_residual = abs(S%*%solution - B) / sigma_bar
+  W<-diag(as.vector(phi_der(scaled_residual)/V))
   D_mat<-t(S)%*%W%*%S
   d_vec<- t(S)%*%W%*%B
-  norm_factor = sum(abs(B))
-  if(! bead_mode) {
-    norm_factor = norm_factor / sum(abs(my_args$alpha))
-  }
-  D_mat <- D_mat / norm_factor
-  d_vec <- d_vec / norm_factor
-  if('lambda' %in% names(my_args) && my_args$lambda > 0) {
-    if(! 'alpha' %in% names(my_args) && max(my_args$alpha) > 0)
-      throw("Used regularization option lambda without specifying alpha")
-    sum_solution <- sum(solution)
-    D_mat <- D_mat + diag(dim(S)[2]) * my_args$lambda  / (sum_solution ^ 2)
-    d_vec <- d_vec + (my_args$lambda / sum_solution) * my_args$alpha
-  }
-  if(FALSE) { #'delta' %in% names(my_args) && my_args$delta > 0
-    if(! ('q' %in% names(my_args) || 'epsilon' %in% names(my_args)))
-      throw("Used sparsity option delta without specifying both epsilon and q")
-    D_mat <- D_mat + diag(my_args$q*my_args$delta/((sol**2 + my_args$epsilon**2)**(1-my_args$q/2)))
-  }
   norm_factor <- norm(D_mat,"2")
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
@@ -106,3 +76,20 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   names(solution)<-colnames(S)
   return(solution)
 }
+
+#derivative of phi
+phi_der <- function(r, c = 1) {
+  r <- abs(r)
+  x <- numeric(length(r))
+  x[r <= c] = 1
+  x[r > c] = c*(2*r[r>c] - c)/(r[r > c]^2)
+  return(x)
+}
+
+get_V <- function(x, epsilon = 1e-4) {
+  V = x
+  V[V < epsilon] <- epsilon
+  V[V > 1] <- V[V > 1]^2
+  return(V)
+}
+
