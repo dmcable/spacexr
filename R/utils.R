@@ -1,59 +1,3 @@
-make_heat_map <- function(cell_type_means, gene_list) {
-  heatmap(as.matrix(cell_type_means[gene_list,]))
-}
-
-#plotting where one cell type is bigger than others
-plot_cell_types_spec <- function(puck, barcodes) {
-  my_table = puck@coords[barcodes,]
-  my_table$class = puck@cell_labels[barcodes]
-  n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
-  size_vec = c(3,rep(1, n_levels-1))
-  gg <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19,color=class,size=class)) +
-    ggplot2::scale_color_manual(values = pals::kelly(n_levels+1)[2:(n_levels+1)])+ ggplot2::scale_shape_identity() + ggplot2::scale_size_manual(values=size_vec)+ggplot2::theme_bw()
-  gg
-}
-
-plot_cell_types <- function(puck, barcodes, results_dir) {
-  my_table = puck@coords[barcodes,]
-  my_table$class = puck@cell_labels[barcodes]
-  n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
-  my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
-  if(n_levels > 21)
-    my_pal = pals::polychrome(n_levels)
-  if(n_levels > 36)
-    stop("Plotting currently supports at most 36 cell types as colors")
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
-    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  pdf(file.path(results_dir,"all_cell_types.pdf"))
-  invisible(print(plot))
-  dev.off()
-}
-
-#individually plots cell types
-#if counter_stain = cell_type, then it also plots one cell type as a reference
-plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
-  cell_types = levels(droplevels(puck@cell_labels))
-  n_levels = length(cell_types)
-  plots <- vector(mode = "list", length = n_levels)
-  for(i in 1:n_levels) {
-    cell_type = cell_types[i]
-    curr_loc = puck@cell_labels==cell_type
-    if(!is.null(counter_stain) && cell_type != counter_stain)
-      curr_loc = curr_loc | puck@cell_labels==counter_stain
-    my_table = puck@coords[curr_loc,]
-    my_table$class = puck@cell_labels[curr_loc]
-    plots[[i]] <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19, color = class)) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::ggtitle(cell_type)
-  }
-  #l = mget(plots)
-  if(!is.null(counter_stain))
-    pdf(file.path(results_dir,paste0("cell_type_calls_counter_",counter_stain,".pdf")))
-  else
-    pdf(file.path(results_dir,"cell_type_calls.pdf"))
-  invisible(lapply(plots, print))
-  dev.off()
-}
-
-
 downsample <- function(raw.data, cell.names, UMI = 500, replicates = 1) {
   datalist = list()
   labellist = list()
@@ -190,13 +134,15 @@ get_gene_list <- function(cell_type_means, puck, cutoff_val = 1/20000) {
 }
 
 #finds DE genes
-get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = .00015) {
+#Genes must be observed a minimum of MIN_OBS times to mitigate sampling noise in the
+#Platform effect estimation
+get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
   total_gene_list = c()
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
   gene_list = rownames(cell_type_means)
   gene_list = intersect(gene_list,names(bulk_vec))
-  gene_list = gene_list[bulk_vec[gene_list] > 0]
+  gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
   for(cell_type in cell_type_names) {
     other_mean = rowMeans(cell_type_means[gene_list,cell_type_names != cell_type])
     logFC = log(cell_type_means[gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
@@ -236,33 +182,39 @@ smooth_proportions <- function(proportions, smoothing_par = 1/300, constrain = T
   proportions = target_sum * proportions / sum(proportions)
 }
 
-#plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val) {
-  my_pal = pals::kovesi.rainbow(20)
-  my_table = puck@coords[barcodes,]
-  my_table$value = plot_val[barcodes]
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 1.5, shape=19,color=value)) +
-    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  plot
-  #pdf(file.path(results_dir,"all_cell_types.pdf"))
-  #invisible(print(plot))
-  #dev.off()
+
+#plot marker scores for each cell type
+get_marker_scores <- function(cell_type_info, marker_data, puck) {
+  marker_scores <- vector(mode = "list", length = cell_type_info[[3]])
+  for(i in 1:cell_type_info[[2]]) {
+    cell_type = cell_type_names[i]
+    marker_scores[[i]] <- get_marker_scores(marker_data, puck, cell_type, cell_type_info[[1]])
+  }
+  marker_scores_df <- t(as.data.frame(do.call(rbind, marker_scores)))
+  colnames(marker_scores_df) = cell_type_info[[2]]
+  return(marker_scores_df)
 }
 
-#plots a continunous value over certain beads in the puck
-plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, min_val = NULL, max_val = NULL) {
-  my_cond = puck@nUMI > minUMI
-  if(!is.null(cell_type))
-    my_cond = my_cond & (puck@cell_labels == cell_type)
-  if(!is.null(min_val))
-    my_cond = my_cond & (plot_val > min_val)
-  if(!is.null(max_val))
-    plot_val[plot_val > max_val] = max_val
-  plot_puck_continuous(puck, names(which(my_cond)), plot_val)
+#min weight to be considered a singlet as a function of nUMI
+UMI_cutoff <- function(nUMI) {
+  return (pmax(0.25, 2 - log(nUMI,2) / 5))
 }
 
-#plots a gene over the puck. Positive restricts plotting to positive.
-plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
-  gene_vals = puck@counts[gene,]
-  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, min_val = positive - 0.5)
+#get correlation between weight and markers
+get_corr <- function(cell_type_info, norm_marker_scores, weights) {
+  correlations = numeric(cell_type_info[[3]])
+  names(correlations) = cell_type_info[[2]]
+  for (cell_type in cell_type_info[[2]])
+    correlations[cell_type] = cor(norm_marker_scores[,cell_type], weights[,cell_type])
+  write.csv(correlations, file.path(resultsdir,"correlation_markers.csv"))
+}
+
+
+prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
+  bulk_vec = rowSums(puck@counts)
+  nUMI = sum(bulk_vec)
+  X = cell_type_means[gene_list,] * nUMI
+  b = bulk_vec[gene_list]
+  write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
+  write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
 }

@@ -19,6 +19,7 @@ n_cell_types = cell_type_info[[3]]
 
 proportions <- read.csv(file.path(bulkdir,"weights.csv"))$Weight
 names(proportions) = cell_type_names
+proportions <- proportions / sum(proportions)
 print("callBeads: estimated bulk composition: ")
 print(proportions)
 #now we switch to a different gene list

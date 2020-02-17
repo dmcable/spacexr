@@ -27,13 +27,8 @@ CELL_MIN = 25 # need at least this for each cell type
 if(min(cell_counts) < CELL_MIN)
   stop(paste0("prepareBulkData error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
 print(paste("prepareBulkData: number of cell types used:", cell_type_info[[3]]))
-bulk_vec = rowSums(puck@counts)
 print(paste("prepareBulkData: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
 gene_list = get_de_genes(cell_type_means, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff)
 print(paste("prepareBulkData: number of genes used for Platform Effect Estimation:", length(gene_list)))
-nUMI = sum(bulk_vec)
-X = cell_type_means[gene_list,] * nUMI
-b = bulk_vec[gene_list]
-write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
-write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
+prepareBulkData(bulkdir, cell_type_means, puck, gene_list)
 print("prepareBulkData: end")

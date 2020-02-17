@@ -29,7 +29,7 @@ bead_singlet <- function(test_ref, gene_list, UMI, cell_type) {
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
-decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, denoise = F, custom_list = NULL, verbose=F) {
+decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, denoise = F, custom_list = NULL, verbose=F, constrain = F) {
   if(is.null(custom_list))
     cell_types = c(type1,type2)
   else
@@ -41,7 +41,8 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
     colnames(reg_data)[length(cell_types) + 1] = "Noise"
   } else
     reg_data = reg_data[,cell_types]
-  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = TRUE, verbose = verbose)
+  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose)
+  weights=weights / sum(weights)
   if(! score_mode)
     return(weights)
   else {
@@ -153,12 +154,12 @@ weight_recovery_test <- function(test_ref, gene_list, cell_type_means, type1, ty
   proportion = UMI1_vec / UMI_tot
   const_stderr = 1.96
   plot_df <- data.frame(proportion,type1_avg,const_stderr*st_dev)
-  p<- ggplot2::ggplot(plot_df, aes(x=proportion, y=type1_avg, colour = "type1_avg")) +
+  p<- ggplot2::ggplot(plot_df, ggplot2::aes(x=proportion, y=type1_avg, colour = "type1_avg")) +
     ggplot2::geom_line() +
     ggplot2::geom_point()+
-    ggplot2::geom_line(aes(y=proportion,colour = "proportion")) +
-    ggplot2::geom_errorbar(aes(ymin=type1_avg-st_dev, ymax=type1_avg+st_dev), width=.05,
-                  position=position_dodge(0.05))
+    ggplot2::geom_line(ggplot2::aes(y=proportion,colour = "proportion")) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin=type1_avg-st_dev, ymax=type1_avg+st_dev), width=.05,
+                  position=ggplot2::position_dodge(0.05))
   print(p)
   if(save.file) {
     out_dir = paste(mydir,"Output/CompositionRecovery",sep="/")
@@ -230,6 +231,18 @@ get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_me
 
 #get marker scores for some cell type
 get_marker_scores <- function(marker_data, puck, cell_type, cell_type_means, score_threshold = 10) {
+  gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
+  gene_means = rowMeans(cell_type_means[rownames(marker_data),])
+  scores = numeric(dim(puck@counts)[2])
+  for (i in 1:dim(puck@counts)[2]) {
+    scores[i] <- get_marker_score_type(marker_data[gene_list,], puck@counts[gene_list,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
+  }
+  names(scores) = colnames(puck@counts)
+  return(scores)
+}
+
+#marker scores for all cell types
+get_norm_marker_scores <- function(marker_data, puck, cell_type, cell_type_means, score_threshold = 10) {
   gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
   gene_means = rowMeans(cell_type_means[rownames(marker_data),])
   scores = numeric(dim(puck@counts)[2])

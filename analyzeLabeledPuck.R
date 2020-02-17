@@ -24,21 +24,31 @@ print(proportions)
 gene_list = get_de_genes(cell_type_means, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg)
 print(paste("callBeads: number of genes used for regression:", length(gene_list)))
 cell_type_means_renorm <- get_norm_ref(puck, cell_type_means, gene_list, proportions)
+cell_type_info_renorm = cell_type_info
+cell_type_info_renorm[[1]] <- cell_type_means_renorm
 marker_data = get_marker_data(cell_type_names, reference, cell_type_means_renorm, gene_list, marker_provided = TRUE)
-cell_type = "Neurogenesis"
-marker_scores <- get_marker_scores(marker_data, puck, cell_type, cell_type_means_renorm)
-plot_puck_wrapper(puck, marker_scores, NULL, minUMI = 300, min_val = 0.5)
+
 test_results = readRDS(file = paste(resultsdir,"test_results.RDS",sep="/"))
 
 weights <- t(as.data.frame(matrix(unlist(test_results[[2]]), nrow=n_cell_types)))
 rownames(weights) = colnames(puck@counts)
 colnames(weights) = cell_type_names
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
-cell_type = "Cajal_Retzius"
-plot_puck_wrapper(puck, weights[,cell_type], NULL, minUMI = 300, min_val = 0.15, max_val = 1)
-plot(weights[,cell_type], norm_weights[,cell_type])
+marker_scores_df <- get_marker_scores(cell_type_info_renorm, marker_data, puck)
+norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
+
+#make the plots
+plot_meta_genes(cell_type_info,marker_scores_df, resultsdir)
+plot_norm_meta_genes(cell_type_info,norm_marker_scores, resultsdir)
+plot_weight_distribution(cell_type_info, puck, resultsdir)
+plot_weights(cell_type_info, puck, resultsdir, weights)
+plot_weights_unthreshold(cell_type_info, puck, resultsdir, weights)
+plot_confidence_rate(puck, resultsdir, weights)
+get_corr(cell_type_info, norm_marker_scores, weights)
 
 
+
+#random debugging
 suspected = marker_scores[marker_scores > 1] #to be NG
 weights[names(suspected),]
 bead = puck@counts[,names(suspected)[1]]
@@ -58,7 +68,7 @@ prediction = prediction[order(prediction)]
 names(prediction) = 1:length(prediction); names(residuals_sq) = 1:length(prediction)
 
 
-ma <- function(x, n = 5){stats::filter(x, rep(1 / n, n), sides = 2)}
+
 
 plot(prediction, ma(residuals_sq, 100), type = "n")
 lines(prediction, ma(residuals_sq, 100))
@@ -80,6 +90,7 @@ lines(prediction, ma(residuals_sq, 1000))
 
 my_type = marker_data[marker_data$cell_type == cell_type,]
 my_type$nPuck = rowSums(puck@counts[rownames(my_type),])
+
 
 
 plot_puck_wrapper(puck, log(puck@nUMI,2), cell_type, minUMI = 300)

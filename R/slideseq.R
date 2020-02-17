@@ -78,7 +78,7 @@ get_uniform_data <- function(puck, delta = 50) {
 }
 
 #given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
-restrict_counts <- function(puck, gene_list, UMI_thresh = 0, UMI_max = 10000) {
+restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
   keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
   puck@counts = puck@counts[gene_list,keep_loc]
   if(length(puck@cell_labels) > 0) #check cell_labels non null
