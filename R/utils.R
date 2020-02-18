@@ -141,6 +141,7 @@ get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = 
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
   gene_list = rownames(cell_type_means)
+  gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
   for(cell_type in cell_type_names) {

@@ -188,14 +188,14 @@ plot_heat_map(avg_weights)
 #make simulated doublets (50/50 mixture, 1000 total UMI)
 
 #scratch quick test
-type1 = "Purkinje"
-type2 = "Granule"
+type1 = "Granule"
+type2 = "Purkinje"
 cell_type_info_renorm = cell_type_info
 cell_type_info_renorm[[1]] = get_norm_ref(puck_test, cell_type_info[[1]], gene_list, proportions)
 cell_type_means_renorm <- cell_type_info_renorm[[1]]
 weight_recovery_test(test_reference, gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
-doublet_accuracy_test(test_reference, gene_list, cell_type_info_renorm, type1, type2, conditions = 10, trials = 4)
-bead = bead_mix(test_reference, gene_list, 800, 200, type1, type2)
+doublet_accuracy_test(test_reference, gene_list, cell_type_info_renorm, type1, type2, conditions = 10, trials = 20)
+bead = bead_mix(test_reference, gene_list, 500, 500, type1, type2)
 decompose(cell_type_means_renorm, gene_list, 1000, bead, constrain=F)
 decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = T)
 decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, "MLI2", type1, score_mode = T)
@@ -206,7 +206,9 @@ weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
 
 #here we plot the quasiliklihood for Y = 1
 bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)
-weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = F, constrain = F)
+results = process_bead(cell_type_info_renorm, gene_list, 1000, bead, constrain = F)
+print(results)
+weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = F, constrain = F, verbose = T)
 print(weights)
 cell_types = c(type1,type2)
 reg_data = cell_type_means_renorm[gene_list,] * 1000
@@ -214,7 +216,7 @@ reg_data = data.matrix(reg_data)
 reg_data = reg_data[,cell_types]
 prediction = reg_data %*% weights
 
-weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, "MLI2", score_mode = F, constrain = F)
+weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, "Astrocytes", score_mode = F, constrain = F, verbose = T)
 cell_types = c(type1,"MLI2")
 reg_data = cell_type_means_renorm[gene_list,] * 1000
 reg_data = data.matrix(reg_data)
@@ -222,39 +224,110 @@ reg_data = reg_data[,cell_types]
 prediction = reg_data %*% weights
 
 
-M = 500000
-Y_max = 15
-J_mat = matrix(0, nrow = Y_max, ncol = M)
+M = 10000000
+Y_max = 50 #to be 100
+L = 100000
+mult = 100 # mult*L = M
+Q_mat = matrix(0, nrow = Y_max, ncol = 2*L)
 for (Y in 0:(Y_max-1)) {
-  delta = 1e-4
+  delta = 1e-5
   x = (1:M) * delta
   V <- get_V(x)
   sigma <- sqrt(V)
   sigma_bar <- pmax(sigma, 1)
   scaled_residual <- (Y - x)/sigma_bar
-  results <- phi(scaled_residual)/sigma
-  J_mat[Y+1,] = cumsum(results)*delta
-  J_mat[Y+1,] = J_mat[Y+1,] - J_mat[Y+1,round(Y/delta+1)]
+  results <- sigma_bar*phi(scaled_residual)/(sigma^2)
+  precise_J <- cumsum(results)*delta
+  precise_J <- precise_J - precise_J[round(Y/delta+1)]
+  Q_mat[Y+1,1:L] = precise_J[1:L]
+  Q_mat[Y+1,(L+1):(2*L)] = precise_J[(1:L)*mult]
 }
-plot(x,J_mat[3,],type="n",xlim=c(0,5))
-lines(x,J_mat[3,])
 
+get_QL <- function(Y, x, delta = 1e-5, L = 100000, mult = 100, Y_max = 100) {
+  if(Y > Y_max - 1)
+    Y = Y_max - 1
+  my_index = x/delta
+  if(my_index < 1)
+    my_index = 1
+  if(my_index <= L) {
+    first_ind = floor(my_index)
+    other_p = my_index - first_ind
+    return (1-other_p)*Q_mat[Y+1,first_ind] + other_p*Q_mat[Y+1,first_ind+1]
+  } else {
+    my_index = my_index / mult
+    if(my_index >= L)
+      my_index = L - 1e-9
+    first_ind = floor(my_index)
+    other_p = my_index - first_ind
+    return (1-other_p)*Q_mat[Y+1,L + first_ind] + other_p*Q_mat[Y+1,L + first_ind+1]
+  }
+}
+plot(x,J_mat[1,],type="n",xlim=c(0,10))
+lines(x,J_mat[1,])
+bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)
+
+#weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = F, constrain = F)
+print(weights)
+
+bead = bead_mix(test_reference, gene_list, 300,700, type1, type2)
+UMI_tot = 1000
+
+
+cell_types = c(type1,type2)
+reg_data = cell_type_means_renorm[gene_list,] * UMI_tot
+reg_data = data.matrix(reg_data)
+reg_data = reg_data[,cell_types]
+weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
 J = 0
+J_list = numeric(length(gene_list))
+names(J_list) = gene_list
 prediction = reg_data %*% weights
 for(gene in gene_list) {
   Y = bead[gene,]
   x = round(prediction[gene,]/delta) + 1
+  J_list[gene] = -J_mat[Y+1,x]
   J = J + J_mat[Y+1,x]
 }
-print(J)
+scaled_residual = (prediction - bead)/(sqrt(get_V(prediction)))
+my_score = sum(abs(scaled_residual))
 
+#weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type2, "MLI2", score_mode = F, constrain = F)
+cell_types = c(type2,"MLI2")
+reg_data = cell_type_means_renorm[gene_list,] * UMI_tot
+reg_data = data.matrix(reg_data)
+reg_data = reg_data[,cell_types]
+#weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose)
+weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
+prediction_bad = reg_data %*% weights
+#print(my_score)
+print(J)
 J = 0
+J_list_bad = numeric(length(gene_list))
+names(J_list_bad) = gene_list
 for(gene in gene_list) {
   Y = bead[gene,]
   x = round(prediction_bad[gene,]/delta) + 1
+  J_list_bad[gene] = -J_mat[Y+1,x]
   J = J + J_mat[Y+1,x]
 }
 print(J)
-
-
-
+scaled_residual_bad = (prediction_bad - bead)/(sqrt(get_V(prediction_bad)))
+my_score = sum(abs(scaled_residual_bad))
+#print(my_score)
+scaled_residual <-
+score_df <- data.frame(J_list,J_list_bad,scaled_residual,scaled_residual_bad)
+abs_score_df <- abs(score_df)
+abs_score_df <- abs_score_df[order(abs_score_df$J_list),]
+abs_score_df[gene_list,"prediction"] <- prediction[gene_list,]
+abs_score_df[gene_list,"prediction_bad"] <- prediction_bad[gene_list,]
+abs_score_df[gene_list,"Y"] <- bead[gene_list,]
+print(colSums(abs_score_df))
+head_df <- head(abs_score_df,400)
+head_df <- head_df[order(head_df$scaled_residual_bad),]
+tail(head_df)
+norm_l =colSums(abs_score_df)
+norm_l["J_list_bad"] = norm_l["J_list"]
+norm_l["scaled_residual_bad"] = norm_l["scaled_residual"]
+my_df <- abs_score_df[abs_score_df$Y == 0 & ((abs_score_df$prediction > 0.05) | (abs_score_df$prediction_bad > 0.05)),]
+my_df <- abs_score_df[abs_score_df$Y > 0 & ((abs_score_df$prediction < 0.5) | (abs_score_df$prediction_bad < 0.5)),]
+print(colSums(my_df)/norm_l)

@@ -37,17 +37,24 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
   reg_data = reg_data[,cell_types]
-  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose)
-  weights=weights / sum(weights)
-  if(! score_mode)
-    return(weights)
-  else {
-    prediction = reg_data %*% weights
-    scaled_residual = (prediction - bead)/(sqrt(get_V(prediction)))
-    my_score = sum(abs(scaled_residual))
-    if(plot)
-      hist(abs(scaled_residual)[abs(scaled_residual) > 5], breaks=60)
-    return(my_score)
+  if(score_mode)
+    n.iter = 15
+  else
+    n.iter = 50
+  results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose, n.iter = n.iter)
+  if(! score_mode) {
+    results$weights = results$weights / sum(results$weights)
+    return(results)
+  } else {
+    prediction = reg_data %*% results$weights
+    delta = 1e-5
+    total_score=0
+    for(gene in gene_list) {
+      Y = bead[gene,]
+      x = round(prediction[gene,]/delta) + 1
+      total_score = total_score + J_mat[Y+1,x]
+    }
+    return (-total_score)
   }
 }
 
@@ -99,21 +106,38 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
 }
 
 #main function for decomposing a single bead
-process_bead <- function(cell_type_info, gene_list, UMI_tot, bead) {
-  weights = decompose(cell_type_info[[1]], gene_list, UMI_tot, bead)
-  first_type = names(which.max(weights))
+process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T) {
+  singlet_cutoff = 0.2; QL_score_cutoff = 10
+  all_weights = decompose(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
+  first_type = names(which.max(all_weights))
   min_score = 0
+  second_score = 0
+  other_type = NULL
   second_type = NULL
   for (type in cell_type_info[[2]])
     if(type != first_type) {
-      score = decompose_sparse_score(cell_type_info[[1]], gene_list, UMI_tot, bead, type, first_type)
+      score = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type, first_type, score_mode = T, constrain = constrain)
       if(is.null(second_type) || score < min_score) {
+        other_type <- second_type
+        second_score <- min_score
         min_score = score
         second_type = type
+      } else if(is.null(other_type) || score < second_score) {
+        second_score <- score
+        other_type <- type
       }
     }
-  weights = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type)
-  return(weights)
+  doublet_weights = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type, constrain = constrain)
+  if(max(all_weights) < UMI_cutoff(UMI_tot))
+    spot_class <- "reject"
+  else if(doublet_weights[2] < singlet_cutoff)
+    spot_class <- "singlet"
+  else if(second_score - min_score > QL_score_cutoff)
+    spot_class <- "doublet_certain"
+  else
+    spot_class <- "doublet_uncertain"
+  spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
+  return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type, doublet_weights = doublet_weights, min_score = min_score, second_score = second_score, other_type = other_type))
 }
 
 #doublet decomposition for the whole puck.
@@ -129,12 +153,13 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, constrain = T) 
   doParallel::registerDoParallel(cl)
   environ = c('process_bead','decompose','decompose_sparse','solveIRWLS.weights',
               'solveOLS','solveWLS')
-  weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
     process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,])
   }
   parallel::stopCluster(cl)
+
   return(weights)
 }
 
@@ -190,7 +215,7 @@ doublet_accuracy_test <- function(test_ref, gene_list, cell_type_info, type1, ty
     UMI2 = UMI_tot - UMI1
     for (t in 1:trials) {
       bead = bead_mix(test_ref, gene_list, UMI1, UMI2, type1, type2)
-      weights = process_bead(cell_type_info, gene_list, UMI_tot, bead)
+      weights = process_bead(cell_type_info, gene_list, UMI_tot, bead, constrain = F)
       max_name = names(which.max(weights))
       if(max_name != type1 && max_name != type2)
         first_failed_vec[prop_ind] = first_failed_vec[prop_ind] + 1

@@ -19,32 +19,27 @@ solveOLS<-function(S,B){
 #solve using WLS with weights dampened by a certain dampening constant
 #if constrain, constrain the weights to sum up to 1
 #eta is alpha in the sparsity paper
-solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, delta = NULL, q = 0.5, s = 1, eta = 0.9, verbose = FALSE){
+solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50){
   solution<-solveOLS(S,B) #first solve OLS, use this solution to find a starting point for the weights
   if(OLS)
     return(solution)
   solution<- (solution*0) + 1/length(solution) #actually, just ignore the OLS solution
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
-  j<-19; change<-1; epsilon = 1; n.iter = 50
-  while(change>.001 && iterations<n.iter){
-    new_solution<-solveWLS(S,B,solution,j, nUMI,TRUE, constrain=constrain, delta = delta, q=q, epsilon = epsilon)
+  j<-19; change<-1;
+  MIN_CHANGE <- .001
+  while(change > MIN_CHANGE && iterations<n.iter){
+    new_solution<-solveWLS(S,B,solution,j, nUMI,TRUE, constrain=constrain)
     change<-norm(as.matrix(new_solution-solution))
     if(verbose)
-      print(paste("Change:",change)) #print(paste("Granule:",solution["Granule"]))
+      print(paste("Change:",change))
     solution <- new_solution
-    #print(names(which.max(solution)))
-    #print(max(solution))
-    if(! is.null(delta)) {
-      epsilon <- min(epsilon, eta*(sort(solution)[length(solution) - s]))
-      if(verbose)
-        print(paste("Epsilon:",epsilon))
-      if(epsilon < 1e-1)
-        break
-    }
     iterations<-iterations+1
   }
-  return(new_solution)
+  converged <- T
+  if(change > MIN_CHANGE)
+    converged <- F
+  return(list(solution = new_solution, converged = converged))
 }
 
 #solve WLS given a dampening constant
@@ -60,7 +55,7 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   scaled_residual = -(S%*%solution - B) / sigma_bar
   phi_d <- phi_der(scaled_residual)
   weight <- as.vector(phi_d/V)
-  weight_b = as.vector(1/sqrt(V)*(phi(scaled_residual) - scaled_residual*phi_d))
+  weight_b = as.vector(sigma_bar/V*(phi(scaled_residual) - scaled_residual*phi_d))
   W<-diag(weight)
   D_mat<-t(S)%*%W%*%S
   d_vec<- t(S)%*%W%*%B + t(S)%*%weight_b
