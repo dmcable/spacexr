@@ -57,10 +57,13 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   prediction = abs(S%*%solution)
   V <- get_V(prediction)
   sigma_bar <- pmax(sqrt(V),1)
-  scaled_residual = abs(S%*%solution - B) / sigma_bar
-  W<-diag(as.vector(phi_der(scaled_residual)/V))
+  scaled_residual = -(S%*%solution - B) / sigma_bar
+  phi_d <- phi_der(scaled_residual)
+  weight <- as.vector(phi_d/V)
+  weight_b = as.vector(1/sqrt(V)*(phi(scaled_residual) - scaled_residual*phi_d))
+  W<-diag(weight)
   D_mat<-t(S)%*%W%*%S
-  d_vec<- t(S)%*%W%*%B
+  d_vec<- t(S)%*%W%*%B + t(S)%*%weight_b
   norm_factor <- norm(D_mat,"2")
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
@@ -83,6 +86,16 @@ phi_der <- function(r, c = 1) {
   x <- numeric(length(r))
   x[r <= c] = 1
   x[r > c] = c*(2*r[r>c] - c)/(r[r > c]^2)
+  return(x)
+}
+
+phi <- function(r, c = 1) {
+  neg = r < 0
+  r <- abs(r)
+  x <- numeric(length(r))
+  x[r <= c] = r[r <= c]
+  x[r > c] = c*(2*log(r[r>c]/c) + c/r[r>c])
+  x[neg] = -x[neg]
   return(x)
 }
 

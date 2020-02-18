@@ -29,32 +29,44 @@ bead_singlet <- function(test_ref, gene_list, UMI, cell_type) {
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
-decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, denoise = F, custom_list = NULL, verbose=F, constrain = T) {
+decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, custom_list = NULL, verbose=F, constrain = T) {
   if(is.null(custom_list))
     cell_types = c(type1,type2)
   else
     cell_types = custom_list
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
-  if(denoise) {
-    reg_data = cbind(reg_data[,cell_types],rowMeans(reg_data))
-    colnames(reg_data)[length(cell_types) + 1] = "Noise"
-  } else
-    reg_data = reg_data[,cell_types]
+  reg_data = reg_data[,cell_types]
   weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose)
   weights=weights / sum(weights)
   if(! score_mode)
     return(weights)
   else {
     prediction = reg_data %*% weights
-    j<-19; threshold<-nUMI/2^(j-1)
-    prediction[which(prediction < threshold)] = threshold
-    scaled_residual = (reg_data %*% weights - bead)/(sqrt(prediction))
+    scaled_residual = (prediction - bead)/(sqrt(get_V(prediction)))
     my_score = sum(abs(scaled_residual))
     if(plot)
       hist(abs(scaled_residual)[abs(scaled_residual) > 5], breaks=60)
     return(my_score)
   }
+}
+
+decompose_sparse_score <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL) {
+  cell_types = c(type1,type2)
+  reg_data = cell_type_means[gene_list,] * nUMI
+  reg_data = data.matrix(reg_data)
+  reg_data = reg_data[,cell_types]
+  M = 100
+  best_score = Inf
+  for(p in (0:M)/M) {
+    weights=c(p, 1-p)
+    prediction = reg_data %*% weights
+    scaled_residual = (prediction - bead)/(sqrt(get_V(prediction)))
+    my_score = sum(abs(scaled_residual))
+    if(my_score < best_score)
+      best_score = my_score
+  }
+  return(best_score)
 }
 
 #decompose
@@ -94,7 +106,7 @@ process_bead <- function(cell_type_info, gene_list, UMI_tot, bead) {
   second_type = NULL
   for (type in cell_type_info[[2]])
     if(type != first_type) {
-      score = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type, first_type, score_mode = T)
+      score = decompose_sparse_score(cell_type_info[[1]], gene_list, UMI_tot, bead, type, first_type)
       if(is.null(second_type) || score < min_score) {
         min_score = score
         second_type = type

@@ -188,15 +188,73 @@ plot_heat_map(avg_weights)
 #make simulated doublets (50/50 mixture, 1000 total UMI)
 
 #scratch quick test
-type1 = "Granule"
-type2 = "Purkinje"
+type1 = "Purkinje"
+type2 = "Granule"
 cell_type_info_renorm = cell_type_info
 cell_type_info_renorm[[1]] = get_norm_ref(puck_test, cell_type_info[[1]], gene_list, proportions)
 cell_type_means_renorm <- cell_type_info_renorm[[1]]
 weight_recovery_test(test_reference, gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
-bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)
+doublet_accuracy_test(test_reference, gene_list, cell_type_info_renorm, type1, type2, conditions = 10, trials = 4)
+bead = bead_mix(test_reference, gene_list, 800, 200, type1, type2)
 decompose(cell_type_means_renorm, gene_list, 1000, bead, constrain=F)
 decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = T)
-decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, "Endothelial", type1, score_mode = T)
+decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, "MLI2", type1, score_mode = T)
+decompose_sparse_score(cell_type_means_renorm, gene_list, 1000, bead, type1, type2)
+decompose_sparse_score(cell_type_means_renorm, gene_list, 1000, bead, type1, "MLI2")
+decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, "MLI2", type1, score_mode = T)
+weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
+
+#here we plot the quasiliklihood for Y = 1
+bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)
+weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, score_mode = F, constrain = F)
+print(weights)
+cell_types = c(type1,type2)
+reg_data = cell_type_means_renorm[gene_list,] * 1000
+reg_data = data.matrix(reg_data)
+reg_data = reg_data[,cell_types]
+prediction = reg_data %*% weights
+
+weights <- decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, "MLI2", score_mode = F, constrain = F)
+cell_types = c(type1,"MLI2")
+reg_data = cell_type_means_renorm[gene_list,] * 1000
+reg_data = data.matrix(reg_data)
+reg_data = reg_data[,cell_types]
+prediction = reg_data %*% weights
+
+
+M = 500000
+Y_max = 15
+J_mat = matrix(0, nrow = Y_max, ncol = M)
+for (Y in 0:(Y_max-1)) {
+  delta = 1e-4
+  x = (1:M) * delta
+  V <- get_V(x)
+  sigma <- sqrt(V)
+  sigma_bar <- pmax(sigma, 1)
+  scaled_residual <- (Y - x)/sigma_bar
+  results <- phi(scaled_residual)/sigma
+  J_mat[Y+1,] = cumsum(results)*delta
+  J_mat[Y+1,] = J_mat[Y+1,] - J_mat[Y+1,round(Y/delta+1)]
+}
+plot(x,J_mat[3,],type="n",xlim=c(0,5))
+lines(x,J_mat[3,])
+
+J = 0
+prediction = reg_data %*% weights
+for(gene in gene_list) {
+  Y = bead[gene,]
+  x = round(prediction[gene,]/delta) + 1
+  J = J + J_mat[Y+1,x]
+}
+print(J)
+
+J = 0
+for(gene in gene_list) {
+  Y = bead[gene,]
+  x = round(prediction_bad[gene,]/delta) + 1
+  J = J + J_mat[Y+1,x]
+}
+print(J)
+
 
 
