@@ -205,6 +205,7 @@ decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, "MLI2", type1, s
 weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
 
 #here we plot the quasiliklihood for Y = 1
+Q_mat <- get_Q_mat()
 bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)
 results = process_bead(cell_type_info_renorm, gene_list, 1000, bead, constrain = F)
 print(results)
@@ -224,44 +225,12 @@ reg_data = reg_data[,cell_types]
 prediction = reg_data %*% weights
 
 
-M = 10000000
-Y_max = 50 #to be 100
-L = 100000
-mult = 100 # mult*L = M
-Q_mat = matrix(0, nrow = Y_max, ncol = 2*L)
-for (Y in 0:(Y_max-1)) {
-  delta = 1e-5
-  x = (1:M) * delta
-  V <- get_V(x)
-  sigma <- sqrt(V)
-  sigma_bar <- pmax(sigma, 1)
-  scaled_residual <- (Y - x)/sigma_bar
-  results <- sigma_bar*phi(scaled_residual)/(sigma^2)
-  precise_J <- cumsum(results)*delta
-  precise_J <- precise_J - precise_J[round(Y/delta+1)]
-  Q_mat[Y+1,1:L] = precise_J[1:L]
-  Q_mat[Y+1,(L+1):(2*L)] = precise_J[(1:L)*mult]
-}
 
-get_QL <- function(Y, x, delta = 1e-5, L = 100000, mult = 100, Y_max = 100) {
-  if(Y > Y_max - 1)
-    Y = Y_max - 1
-  my_index = x/delta
-  if(my_index < 1)
-    my_index = 1
-  if(my_index <= L) {
-    first_ind = floor(my_index)
-    other_p = my_index - first_ind
-    return (1-other_p)*Q_mat[Y+1,first_ind] + other_p*Q_mat[Y+1,first_ind+1]
-  } else {
-    my_index = my_index / mult
-    if(my_index >= L)
-      my_index = L - 1e-9
-    first_ind = floor(my_index)
-    other_p = my_index - first_ind
-    return (1-other_p)*Q_mat[Y+1,L + first_ind] + other_p*Q_mat[Y+1,L + first_ind+1]
-  }
-}
+
+Y = 0; n = 1000003
+print(J_mat[Y+1,n])
+print(get_QL(Y,n*delta))
+
 plot(x,J_mat[1,],type="n",xlim=c(0,10))
 lines(x,J_mat[1,])
 bead = bead_mix(test_reference, gene_list, 500,500, type1, type2)

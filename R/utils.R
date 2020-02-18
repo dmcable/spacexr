@@ -183,19 +183,6 @@ smooth_proportions <- function(proportions, smoothing_par = 1/300, constrain = T
   proportions = target_sum * proportions / sum(proportions)
 }
 
-
-#plot marker scores for each cell type
-get_marker_scores <- function(cell_type_info, marker_data, puck) {
-  marker_scores <- vector(mode = "list", length = cell_type_info[[3]])
-  for(i in 1:cell_type_info[[2]]) {
-    cell_type = cell_type_names[i]
-    marker_scores[[i]] <- get_marker_scores(marker_data, puck, cell_type, cell_type_info[[1]])
-  }
-  marker_scores_df <- t(as.data.frame(do.call(rbind, marker_scores)))
-  colnames(marker_scores_df) = cell_type_info[[2]]
-  return(marker_scores_df)
-}
-
 #min weight to be considered a singlet as a function of nUMI
 UMI_cutoff <- function(nUMI) {
   return (pmax(0.25, 2 - log(nUMI,2) / 5))

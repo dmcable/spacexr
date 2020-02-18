@@ -36,10 +36,7 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
     solution <- new_solution
     iterations<-iterations+1
   }
-  converged <- T
-  if(change > MIN_CHANGE)
-    converged <- F
-  return(list(solution = new_solution, converged = converged))
+  return(list(weights = new_solution, converged = (change <= MIN_CHANGE)))
 }
 
 #solve WLS given a dampening constant
@@ -100,4 +97,3 @@ get_V <- function(x, epsilon = 1e-4) {
   V[V > 1] <- V[V > 1]^2
   return(V)
 }
-

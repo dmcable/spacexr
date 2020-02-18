@@ -51,8 +51,8 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
     total_score=0
     for(gene in gene_list) {
       Y = bead[gene,]
-      x = round(prediction[gene,]/delta) + 1
-      total_score = total_score + J_mat[Y+1,x]
+      #x = round(prediction[gene,]/delta) + 1
+      total_score = total_score + get_QL(Y, prediction[gene,]) #J_mat[Y+1,x]
     }
     return (-total_score)
   }
@@ -80,8 +80,8 @@ decompose_sparse_score <- function(cell_type_means, gene_list, nUMI, bead, type1
 decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F) {
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
-  weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose)
-  return(weights)
+  results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose)
+  return(results)
 }
 
 #in parallel, does the (all cell type) decomposition of a batch of beads
@@ -108,7 +108,9 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
 #main function for decomposing a single bead
 process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T) {
   singlet_cutoff = 0.2; QL_score_cutoff = 10
-  all_weights = decompose(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
+  results_all = decompose(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
+  all_weights <- results_all$weights
+  conv_all <- results_all$converged
   first_type = names(which.max(all_weights))
   min_score = 0
   second_score = 0
@@ -127,7 +129,8 @@ process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T
         other_type <- type
       }
     }
-  doublet_weights = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type, constrain = constrain)
+  doublet_results = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type, constrain = constrain)
+  doublet_weights = doublet_results$weights; conv_doublet = doublet_results$converged
   if(max(all_weights) < UMI_cutoff(UMI_tot))
     spot_class <- "reject"
   else if(doublet_weights[2] < singlet_cutoff)
@@ -137,7 +140,9 @@ process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T
   else
     spot_class <- "doublet_uncertain"
   spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
-  return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type, doublet_weights = doublet_weights, min_score = min_score, second_score = second_score, other_type = other_type))
+  return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
+              doublet_weights = doublet_weights, min_score = min_score, second_score = second_score,
+              other_type = other_type, conv_all = conv_all, conv_doublet = conv_doublet))
 }
 
 #doublet decomposition for the whole puck.
