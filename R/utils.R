@@ -136,18 +136,18 @@ get_gene_list <- function(cell_type_means, puck, cutoff_val = 1/20000) {
 #finds DE genes
 #Genes must be observed a minimum of MIN_OBS times to mitigate sampling noise in the
 #Platform effect estimation
-get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
+get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
   total_gene_list = c()
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
-  gene_list = rownames(cell_type_means)
+  gene_list = rownames(cell_type_info[[1]])
   gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
-  for(cell_type in cell_type_names) {
-    other_mean = rowMeans(cell_type_means[gene_list,cell_type_names != cell_type])
-    logFC = log(cell_type_means[gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
-    type_gene_list = which((logFC > fc_thresh) & (cell_type_means[gene_list,cell_type] > expr_thresh))
+  for(cell_type in cell_type_info[[2]]) {
+    other_mean = rowMeans(cell_type_info[[1]][gene_list,cell_type_info[[2]] != cell_type])
+    logFC = log(cell_type_info[[1]][gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
+    type_gene_list = which((logFC > fc_thresh) & (cell_type_info[[1]][gene_list,cell_type] > expr_thresh))
     print(paste0("get_de_genes: ", cell_type, " found DE genes: ",length(type_gene_list)))
     total_gene_list = union(total_gene_list, type_gene_list)
   }
@@ -205,4 +205,67 @@ prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
   b = bulk_vec[gene_list]
   write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
   write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
+}
+
+#if test_reference is not null, it will convert this to a slideseq object rather than read in one
+#if puck_file is not null, then reads in puck from this file
+#if load_info_renorm, loads cell type info from MetaData/cell_type_info_renorm.RDS. Takes gene_list to be rownames of cell_type_info (renorm)
+init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
+  print("init_RCTD: begin")
+  config <- config::get()
+  slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+  resultsdir = file.path(slideseqdir,"results")
+  if(!dir.exists(resultsdir))
+    dir.create(resultsdir)
+  bulkdir <- paste(slideseqdir,"results/Bulk",sep="/")
+  if(!dir.exists(bulkdir))
+    dir.create(bulkdir)
+  if(load_info_renorm) {
+    cell_type_info <- readRDS(file.path(slideseqdir, "MetaData/cell_type_info_renorm.RDS"))
+    reference <- NULL; refdir <- NULL
+  } else {
+    refdir <- file.path("Data/Reference",config$reffolder)
+    reference <- readRDS(paste(refdir,config$reffile,sep="/"))
+    print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
+    print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
+    cell_counts = table(reference@meta.data$liger_ident_coarse)
+    print(cell_counts)
+    CELL_MIN = 25 # need at least this for each cell type
+    if(min(cell_counts) < CELL_MIN)
+      stop(paste0("init_RCTD error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
+    cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
+  }
+  print(paste("init_RCTD: number of cell types used:", cell_type_info[[3]]))
+  proportions <- NULL
+  if(get_proportions) {
+    proportions <- read.csv(file.path(bulkdir,"weights.csv"))$Weight
+    names(proportions) = cell_type_info[[2]]
+    proportions <- proportions / sum(proportions)
+    print("init_RCTD: estimated bulk composition: ")
+    print(proportions)
+  }
+  if(is.null(test_reference)) {
+    if(is.null(puck_file))
+      puck = readRDS(file.path(slideseqdir, config$puckrds))
+    else
+      puck = readRDS(file.path(slideseqdir, puck_file))
+  }
+  else
+    puck <- seurat.to.slideseq(test_reference, cell_type_info)
+  if(load_info_renorm)
+    gene_list = rownames(cell_type_info[[1]])
+  else {
+    if(gene_list_reg)
+      gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = MIN_OBS)
+    else
+      gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = MIN_OBS)
+  }
+  print(paste("init_RCTD: number of genes used:", length(gene_list)))
+  puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
+  puck = restrict_puck(puck, colnames(puck@counts))
+  print(paste("init_RCTD: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
+  print("init_RCTD: end")
+  return(list(refdir = refdir, slideseqdir = slideseqdir, bulkdir = bulkdir, reference = reference,
+              proportions = proportions, gene_list = gene_list, puck = puck, cell_type_info = cell_type_info,
+              config = config))
 }

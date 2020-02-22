@@ -31,8 +31,10 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
   while(change > MIN_CHANGE && iterations<n.iter){
     new_solution<-solveWLS(S,B,solution,j, nUMI,TRUE, constrain=constrain)
     change<-norm(as.matrix(new_solution-solution))
-    if(verbose)
+    if(verbose) {
       print(paste("Change:",change))
+      print(solution)
+    }
     solution <- new_solution
     iterations<-iterations+1
   }

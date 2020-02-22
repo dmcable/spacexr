@@ -6,8 +6,6 @@ setClass("Slideseq",
      counts = "dgCMatrix",
      n_cell_type = "integer",
      cell_type_names = "character",
-     center = "numeric",
-     radius = "numeric",
      nUMI = "numeric",
      cell_labels = "factor"
    ),
@@ -16,8 +14,6 @@ setClass("Slideseq",
      n_cell_type = NA_integer_,
      coords = data.frame(NULL),
      counts = NULL,
-     center = NaN,
-     radius = NaN,
      nUMI = NA_integer_,
      cell_labels = factor(NULL)
    )
@@ -41,12 +37,23 @@ read.slideseq <- function(datadir, count_file = NULL) {
   Slideseq(coords, as(as(counts,"matrix"),"dgCMatrix"))
 }
 
+fake_coords <- function(counts) {
+  coords <- data.frame(Matrix(0,nrow=dim(counts)[2],ncol=2))
+  colnames(coords) <- c('x','y')
+  rownames(coords) <- colnames(counts)
+  return(coords)
+}
+
 #constructor of slideseq object
-Slideseq <- function(coords, counts) {
-  nUMI = colSums(counts)
-  center = c(mean(coords$x), mean(coords$y))
-  radius = 1000 #not currently implemented
-  new("Slideseq", coords = coords, counts = counts, center = center, radius = radius, nUMI = nUMI)
+Slideseq <- function(coords = NULL, counts, nUMI = NULL) {
+  if(is.null(coords)) {
+    coords <- fake_coords(counts)
+  }
+  if(is.null(nUMI)) {
+    nUMI = colSums(counts)
+  }
+  names(nUMI) <- colnames(counts)
+  new("Slideseq", coords = coords, counts = counts, nUMI = nUMI)
 }
 
 #Use the seurat object to create a 'fake' slideseq object
@@ -58,24 +65,11 @@ seurat.to.slideseq <- function(reference, cell_type_info) {
   names(cell_labels) = colnames(counts)
   cell_type_names = cell_type_info[[2]]
   n_cell_type = cell_type_info[[3]]
-  new("Slideseq", counts = counts, cell_labels = cell_labels, cell_type_names = cell_type_names,
-      nUMI = nUMI, n_cell_type = n_cell_type)
+  coords <- fake_coords(counts)
+  new("Slideseq", coords = coords, counts = counts, cell_labels = cell_labels,
+      cell_type_names = cell_type_names, nUMI = nUMI, n_cell_type = n_cell_type)
 }
 
-#get a uniformly spaced set of points within the range of the puck
-get_uniform_points <- function(puck, delta = 50) {
-  x_vals = seq(puck@center[1] - puck@radius,puck@center[1] + puck@radius,by=delta)
-  y_vals = seq(puck@center[2] - puck@radius,puck@center[2] + puck@radius,by=delta)
-  point_list <- expand.grid(x = x_vals, y = y_vals)
-  #filter out the ones outside circle
-  point_list = point_list[apply(point_list[,c('x','y')], 1, function(x) center_dist(puck@center,x[1],x[2])) < puck@radius,]
-}
-
-#get data for prediction on uniform points
-get_uniform_data <- function(puck, delta = 50) {
-  point_list = get_uniform_points(puck, delta)
-  prediction_data = augment_prediction_data(puck,point_list)
-}
 
 #given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
 restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
@@ -111,7 +105,20 @@ crop_puck_line <- function(puck, line_dat) {
   return (restrict_puck(puck, rownames(puck@coords[keep_loc,])))
 }
 
-crop_puck_circle <- function(puck, radius_mult) {
-  keep_loc = (puck@coords$x - puck@center[1])^2 + (puck@coords$y - puck@center[2])^2 < (radius_mult*puck@radius)^2
-  return (restrict_puck(puck, rownames(puck@coords[keep_loc,])))
+
+split_puck <- function(puck, slideseqdir, n_folds) {
+  splitdir <- file.path(slideseqdir, "SplitPuck")
+  if(!dir.exists(splitdir))
+    dir.create(splitdir)
+  splitresdir <- file.path(slideseqdir, "SplitPuckResults")
+  if(!dir.exists(splitresdir))
+    dir.create(splitresdir)
+  do.call(file.remove, list(list.files(splitdir, full.names = TRUE)))
+  do.call(file.remove, list(list.files(splitresdir, full.names = TRUE)))
+  barcodes <- colnames(puck@counts)
+  N <- length(barcodes)
+  for (i in 1:n_folds) {
+    puck_fold <- restrict_puck(puck, barcodes[(round((i-1)*N/n_folds) + 1):round(i*N/n_folds)])
+    saveRDS(puck_fold, file.path(splitdir, paste0("puck",i,".RDS")))
+  }
 }

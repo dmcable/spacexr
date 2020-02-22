@@ -47,15 +47,20 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
     return(results)
   } else {
     prediction = reg_data %*% results$weights
-    delta = 1e-5
-    total_score=0
-    for(gene in gene_list) {
-      Y = bead[gene,]
-      #x = round(prediction[gene,]/delta) + 1
-      total_score = total_score + get_QL(Y, prediction[gene,]) #J_mat[Y+1,x]
-    }
-    return (-total_score)
+    total_score = get_likelihood(gene_list, prediction, bead)
+    return (total_score)
   }
+}
+
+get_likelihood <- function(gene_list, prediction, bead) {
+  delta = 1e-5
+  total_score=0
+  for(gene in gene_list) {
+    Y = bead[gene]
+    #x = round(prediction[gene,]/delta) + 1
+    total_score = total_score + get_QL(Y, prediction[gene,]) #J_mat[Y+1,x]
+  }
+  return(-total_score)
 }
 
 decompose_sparse_score <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL) {
@@ -76,8 +81,8 @@ decompose_sparse_score <- function(cell_type_means, gene_list, nUMI, bead, type1
   return(best_score)
 }
 
-#decompose
-decompose <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F) {
+#decompose with all cell types
+decompose_full <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F) {
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
   results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose)
@@ -94,12 +99,12 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
     numCores <- 8
   cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
   doParallel::registerDoParallel(cl)
-  environ = c('decompose','solveIRWLS.weights',
+  environ = c('decompose_full','solveIRWLS.weights',
               'solveOLS','solveWLS')
   weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
-    decompose(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
+    decompose_full(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
   }
   parallel::stopCluster(cl)
   return(weights)
@@ -108,7 +113,7 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
 #main function for decomposing a single bead
 process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T) {
   singlet_cutoff = 0.2; QL_score_cutoff = 10
-  results_all = decompose(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
+  results_all = decompose_full(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
   all_weights <- results_all$weights
   conv_all <- results_all$converged
   first_type = names(which.max(all_weights))
@@ -156,16 +161,16 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, constrain = T) 
     numCores <- 8
   cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
   doParallel::registerDoParallel(cl)
-  environ = c('process_bead','decompose','decompose_sparse','solveIRWLS.weights',
-              'solveOLS','solveWLS')
-  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+  #environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat')
+
+  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = c('Q_mat')) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
-    process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,])
+    assign("Q_mat",Q_mat, envir = globalenv())
+    process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,], constrain = constrain)
   }
   parallel::stopCluster(cl)
-
-  return(weights)
+  return(results)
 }
 
 

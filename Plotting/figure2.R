@@ -169,7 +169,7 @@ b = bulk_vec[cur_gene_list]
 write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
 write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
 
-gene_list = get_de_genes(cell_type_means, puck_test, fc_thresh = 0.75, expr_thresh = .0003)
+gene_list = get_de_genes(cell_type_means, puck_test, fc_thresh = 0.75, expr_thresh = .0002)
 test_results = process_data(puck_test, gene_list, cell_type_info, proportions, trust_model = F, constrain = F, OLS = F)
 plot_heat_map(test_results[[1]]$table)
 weights <- t(as.data.frame(matrix(unlist(test_results[[2]]), nrow=n_cell_types)))
@@ -187,6 +187,17 @@ plot_heat_map(avg_weights)
 
 #make simulated doublets (50/50 mixture, 1000 total UMI)
 
+#scratch one of each
+nUMI = test_reference@meta.data$nUMI
+firstInd = sample(intersect(which(test_reference@meta.data$liger_ident_coarse == type1) , which(nUMI > 1000)),1)
+secondInd = sample(intersect(which(test_reference@meta.data$liger_ident_coarse == type2) , which(nUMI > 1000)),1)
+bead1 = as.matrix(sub_sample_cell(iv$gene_list, test_reference@assays$RNA@counts, firstInd, 500))[,1]
+bead2 = as.matrix(sub_sample_cell(iv$gene_list, test_reference@assays$RNA@counts, secondInd, 500))[,1]
+results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead1 + bead2, constrain = F)
+print(results)
+bead1 = test_reference@assays$RNA@counts[iv$gene_list,firstInd]
+results1 = process_bead(cell_type_info_renorm, iv$gene_list, test_reference@meta.data$nUMI[firstInd], bead1, constrain = F)
+results2 = process_bead(cell_type_info_renorm, iv$gene_list, 500, bead2, constrain = F)
 #scratch quick test
 type1 = "Granule"
 type2 = "Purkinje"
@@ -246,16 +257,15 @@ cell_types = c(type1,type2)
 reg_data = cell_type_means_renorm[gene_list,] * UMI_tot
 reg_data = data.matrix(reg_data)
 reg_data = reg_data[,cell_types]
-weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
+weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)$weights
 J = 0
 J_list = numeric(length(gene_list))
 names(J_list) = gene_list
 prediction = reg_data %*% weights
 for(gene in gene_list) {
   Y = bead[gene,]
-  x = round(prediction[gene,]/delta) + 1
-  J_list[gene] = -J_mat[Y+1,x]
-  J = J + J_mat[Y+1,x]
+  J = J + get_QL(Y, prediction[gene,])
+  J_list[gene] = get_QL(Y, prediction[gene,])
 }
 scaled_residual = (prediction - bead)/(sqrt(get_V(prediction)))
 my_score = sum(abs(scaled_residual))
@@ -266,7 +276,7 @@ reg_data = cell_type_means_renorm[gene_list,] * UMI_tot
 reg_data = data.matrix(reg_data)
 reg_data = reg_data[,cell_types]
 #weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = constrain, verbose = verbose)
-weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)
+weights= solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, constrain = F)$weights
 prediction_bad = reg_data %*% weights
 #print(my_score)
 print(J)
@@ -275,9 +285,8 @@ J_list_bad = numeric(length(gene_list))
 names(J_list_bad) = gene_list
 for(gene in gene_list) {
   Y = bead[gene,]
-  x = round(prediction_bad[gene,]/delta) + 1
-  J_list_bad[gene] = -J_mat[Y+1,x]
-  J = J + J_mat[Y+1,x]
+  J = J + get_QL(Y, prediction_bad[gene,])
+  J_list_bad[gene] = get_QL(Y, prediction_bad[gene,])
 }
 print(J)
 scaled_residual_bad = (prediction_bad - bead)/(sqrt(get_V(prediction_bad)))
