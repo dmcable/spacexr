@@ -1,30 +1,24 @@
 puck <- readRDS(paste0(iv$slideseqdir,"/SplitPuck/puck",fold_index,".RDS"))
 puck <- iv$puck
+cell_type_info_renorm <- iv$cell_type_info
 ind = 5
 bead = puck@counts[,ind]
 ind2 = 73
 bead2 = puck@counts[,ind2]
-results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead, constrain = F)
+results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead, constrain = T)
 decompose_full(cell_type_info_renorm[[1]], iv$gene_list, 1000, bead, constrain = F, verbose = F)$weights
 
 type1 = "Endothelial"
 type2 = "Astrocytes"
 Q_mat <- get_Q_mat()
-bead = bead_mix(test_reference, iv$gene_list, 0,1000, type1, type2)
+bead = bead_mix(test_reference, iv$gene_list, 500,500, type1, type2)
 bead = bead_mix(restrict_test_ref, iv$gene_list, UMI1, UMI2, type1, type2)
 #bead2 = bead_mix(test_reference, iv$gene_list, 300,700, type1, type2)
 results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead[,1], constrain = F)
 print(results)
 UMI_tot = 1000
 get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, 1, type1, type2)
-get_prediction_sparse <- function(cell_type_means, gene_list, UMI_tot, p, type1, type2) {
-  cell_types = c(type1,type2)
-  reg_data = cell_type_means[gene_list,] * 1000
-  reg_data = data.matrix(reg_data)
-  reg_data = reg_data[,cell_types]
-  prediction = reg_data %*% c(p,1-p)
-  return(prediction)
-}
+
 #cell_types = c("Purkinje","MLI2")
 reg_data = cell_type_info_renorm[[1]][iv$gene_list,] * 1000
 reg_data = data.matrix(reg_data)
@@ -63,20 +57,19 @@ get_likelihood(iv$gene_list, prediction_bad, bead)
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 
 barcodes = (1:75)*10
+
 change_likelihood = numeric(length(barcodes)); names(change_likelihood) = barcodes
 for (barcode in barcodes) {
-  if(is.nan(change_likelihood[barcode])) {
-    print(barcode)
-    type1 = results_df[barcode, "first_type"]
-    type2 = results_df[barcode, "second_type"]
-    bead <- puck@counts[,barcode]
-    prediction <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, 1, type1, type2)
-    log_l <- get_log_l(iv$gene_list, prediction, bead)
-    p <- weights_doublet[barcode,"first_type"]
-    prediction_doub <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, p, type1, type2)
-    log_l_doub <- get_log_l(iv$gene_list, prediction_doub, bead)
-    change_likelihood[barcode] = log_l_doub - log_l
-  }
+  print(barcode)
+  type1 = results_df[barcode, "first_type"]
+  type2 = results_df[barcode, "second_type"]
+  bead <- puck@counts[,barcode]
+  prediction <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, 1, type1, type2)
+  log_l <- get_log_l(iv$gene_list, prediction, bead)
+  p <- weights_doublet[barcode,"first_type"]
+  prediction_doub <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, p, type1, type2)
+  log_l_doub <- get_log_l(iv$gene_list, prediction_doub, bead)
+  change_likelihood[barcode] = log_l_doub - log_l
 }
 
 singlets = meta_df[barcodes, ]$first_UMI == 0 | meta_df[barcodes, ]$first_UMI == 1000
@@ -100,7 +93,10 @@ prop_doublets["0"] = sum(change_likelihood[sing_barcode] < 25) / length(sing_bar
 prop_doublets["250"] = sum(change_likelihood[skew_barcode] < 25) / length(skew_barcode)
 prop_doublets["500"] = sum(change_likelihood[full_barcode] < 25) / length(full_barcode)
 plot(names(prop_doublets),prop_doublets,ylim=c(0,1),xlab="nUMI",ylab="proportion singlets")
-barcodes = (1:75)*10
+barcodes = (1:750)
+#calculates the change in likelihood between doublet and singlet
+
+
 change_likelihood_q = numeric(length(barcodes)); names(change_likelihood) = barcodes
 for (barcode in barcodes) {
   print(barcode)
@@ -108,16 +104,16 @@ for (barcode in barcodes) {
   type2 = results_df[barcode, "second_type"]
   bead <- puck@counts[,barcode]
   prediction <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, 1, type1, type2)
-  log_l <- get_likelihood(iv$gene_list, prediction, bead)
+  log_l <- calc_log_l_par(iv$gene_list, prediction, bead)
   p <- weights_doublet[barcode,"first_type"]
   prediction_doub <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, p, type1, type2)
-  log_l_doub <- get_likelihood(iv$gene_list, prediction_doub, bead)
+  log_l_doub <- calc_log_l_par(iv$gene_list, prediction_doub, bead)
   change_likelihood_q[barcode] = log_l_doub - log_l
 }
 hist(-change_likelihood_q[doub_barcode], breaks = 20, xlim = c(-30,200))
 hist(-change_likelihood_q[sing_barcode], breaks = 20, xlim = c(-30,200))
-sum(-change_likelihood_q[sing_barcode] < 30) / length(sing_barcode)
-sum(-change_likelihood_q[doub_barcode] < 30) / length(doub_barcode)
+sum(-change_likelihood_q[sing_barcode] < 25) / length(sing_barcode)
+sum(-change_likelihood_q[doub_barcode] < 25) / length(doub_barcode)
 
 #truth
 prediction <- get_prediction_sparse(cell_type_info_renorm[[1]], iv$gene_list, UMI_tot, 0.5, "Astrocytes","Granule")
@@ -199,15 +195,6 @@ a = 4/9*exp(-3^2/2)/sqrt(2*pi)
 c = 7/3
 a/(3-7/3)^2
 
-ht_pdf <- function(z, sigma) {
-  x = z/sigma
-  a = 4/9*exp(-3^2/2)/sqrt(2*pi); c = 7/3
-  C = 1/((a/(3-c) - pnorm(-3))*2 + 1)
-  p = numeric(length(z))
-  p[abs(x) < 3] = C/sqrt(2*pi)*exp(-(x[abs(x) < 3])^2/2)
-  p[abs(x) >= 3] = C*a/(abs(x[abs(x) >= 3])-c)^2
-  return(p/sigma)
-}
 x = -1000:1000/10
 y = numeric(length(x))
 for(i in 1:length(x)) {
@@ -218,35 +205,6 @@ plot(x,log(y),type="l",xlim=c(-10,10))
 
 
 
-get_Q <- function(X, k, sigma) {
-  N_Y = 200000;  gamma = 1e-4
-  N_X = length(X)
-  Y = (-N_Y:N_Y) * gamma
-  p <- ht_pdf(Y,sigma)
-  log_p <- log(ht_pdf(Y,sigma))
-  log_S <- outer(-exp(Y),X) + replicate(N_X, k*Y + log_p)
-  log_S <- (log_S - lgamma(k+1))
-  log_S <- sweep(log_S, 2, k*log(X), '+')
-  S <- exp(log_S)
-  return(colSums(S)*gamma)
-}
-results <- get_Q(X, 1)
-
-calc_Q_mat <- function(sigma,X, K = 10) {
-  N_X = length(X)
-  Q_mat <- Matrix(0, nrow= K+1, ncol = N_X)
-  batch = 100
-  for(i in 1:(K+1)) {
-    k = i-1
-    print(k)
-    for(b in 1:(N_X/batch)) {
-      X_ind = (batch*(b-1) + 1):(batch*b)
-      curr_X = X[X_ind]
-      Q_mat[i, X_ind] = get_Q(curr_X, k, sigma)
-    }
-  }
-  return(Q_mat)
-}
 N_X = 10000; delta = 1e-5
 X = (1:N_X)^1.5*delta
 Q_mat <- calc_Q_mat(sigma, X, K = 4)
@@ -281,40 +239,7 @@ the_sec_der <- 1/(x^2)*((k+1)*(k+2)*Q_mat[k+3,index] - k*(2*(k+1)*Q_mat[k+2,inde
 print(emp_sec_der)
 print(the_sec_der)
 
-calc_Q <- function(x, k) {
-  epsilon = 1e-4; X_max = 10; K = 10; delta = 1e-5
-  x = min(max(epsilon, x),X_max - epsilon); k = min(k,K)
-  l = floor((x/delta)^(2/3))
-  prop = (X[l+1] - x)/(X[l+1] - X[l])
-  return(prop*Q_mat[k+1,l] + (1-prop)*Q_mat[k+1,l+1])
-}
 
-calc_Q_d1 <- function(x, k) {
-  epsilon = 1e-4; X_max = 10; K = 9; delta = 1e-5
-  x = min(max(epsilon, x),X_max - epsilon); k = min(k,K)
-  return(1/x * (-(k+1)*calc_Q(x, k+1) + k*calc_Q(x, k)))
-}
-
-calc_Q_d2 <- function(x, k) {
-  epsilon = 1e-4; X_max = 10; K = 8; delta = 1e-5
-  x = min(max(epsilon, x),X_max - epsilon); k = min(k,K)
-  sec_der <- 1/(x^2)*((k+1)*(k+2)*calc_Q(x,k+2) - k*(2*(k+1)*calc_Q(x,k+1) - (k-1)*calc_Q(x,k)))
-  return(sec_der)
-}
-
-calc_log_p <- function(x,k) {
-  return(log(calc_Q(x,k)))
-}
-
-calc_log_p_d1 <- function(x,k) {
-  return(calc_Q_d1(x,k) / calc_Q(x,k))
-}
-
-calc_log_p_d2 <- function(x,k) {
-  p = calc_Q(x,k)
-  result = -calc_Q_d1(x,k)^2/(p^2) + calc_Q_d2(x,k)/p
-  return(result)
-}
 
 trials = 10000; k = 2
 X_check = 1:trials*(1e-5)
@@ -324,4 +249,80 @@ for(i in 1:trials) {
 }
 plot(X_check,y, type="l",col="red", xlim= c(0,0.3), ylim = c(0,1))
 lines(X,Q_mat[k+1,], col="green")
+
+gene_list = iv$gene_list
+cell_types = c(type1,type2)
+reg_data = cell_type_info_renorm[[1]][iv$gene_list,] * 1000
+reg_data = data.matrix(reg_data)
+reg_data = reg_data[,cell_types]
+S = reg_data; B = bead
+solution = as.vector(c(0.4,0.6))
+prediction = S %*% solution
+calc_log_l_par(gene_list, prediction, B)
+
+b = c(0,0)
+H = Matrix(0, nrow = 2, ncol = 2)
+for (gene in gene_list) {
+  b = b - calc_log_p_d1(prediction[gene,], B[gene,]) * S[gene,]
+  H = H - calc_log_p_d2(prediction[gene,], B[gene,]) * S[gene,] %*% t(S[gene,])
+}
+d = c(-0.000001,0.000001)
+prediction_d = S %*% (solution+d)
+change_est = b %*% d + 0.5*t(d) %*% H %*% d
+change_mes = calc_log_l_par(gene_list, prediction_d, B) - calc_log_l_par(gene_list, prediction, B)
+print(change_est); print(change_mes)
+print(change_est/change_mes)
+
+b1 = c(0,0)
+H1 = Matrix(0, nrow = 2, ncol = 2)
+d1_vec = calc_log_d1_par(gene_list, prediction, bead)
+d2_vec = calc_log_d2_par(gene_list, prediction, bead)
+for (gene in gene_list) {
+  b1 = b1 + d1_vec[gene] * S[gene,]
+  H1 = H1 + d2_vec[gene] * S[gene,] %*% t(S[gene,])
+}
+b2 = d1_vec %*% S
+H2 = t(S) %*% (diag(d2_vec) %*% S)
+
+
+b <- get_gradient(S, B, gene_list, prediction)
+H <- get_hessian(S, B, gene_list, prediction)A<-cbind(diag(dim(S)[2]))
+bzero<- (-solution)
+A_const = t(rbind(1,A))
+b_const <-c(1 - sum(solution),bzero)
+quadprog::solve.QP(H,-b,A_const,b_const,meq=1)$solution
+
+#1D scratch
+gene_list = iv$gene_list[1:100]
+S = reg_data[gene_list,1]; B = bead[gene_list,]
+solution = as.vector(c(1))
+prediction = S * solution
+calc_log_l_par(gene_list, prediction, B)
+
+b = c(0)
+H = Matrix(0, nrow = 1, ncol = 1)
+for (gene in gene_list) {
+  b = b - calc_log_p_d1(prediction[gene], B[gene]) * S[gene]
+  H = H - calc_log_p_d2(prediction[gene], B[gene]) * S[gene] %*% t(S[gene])
+}
+d = c(-0.000001)
+prediction_d = S * (solution+d)
+change_est = b * d + 0.5* H * (d^2)
+change_mes = calc_log_l_par(gene_list, prediction_d, B) - calc_log_l_par(gene_list, prediction, B)
+print(change_est); print(change_mes)
+print(change_est/change_mes)
+
+x = 1
+k = 1
+d = 0.001
+obs_d = calc_log_p(x + d,k) - calc_log_p(x,k)
+calc_d = calc_log_p_d1(x,k) * d + 0.5*(d^2)*calc_log_p_d2(x,k)
+obs_dd = calc_log_p_d1(x+d,k) - calc_log_p_d1(x,k)
+calc_dd = d*calc_log_p_d2(x,k)
+#end 1D scratch
+
+type1 = "Endothelial"
+type2 = "Astrocytes"
+bead = bead_mix(test_reference, iv$gene_list, 0,1000, type1, type2)
+decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, verbose = T, constrain = F)
 

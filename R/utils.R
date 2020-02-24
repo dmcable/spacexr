@@ -269,3 +269,14 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
               proportions = proportions, gene_list = gene_list, puck = puck, cell_type_info = cell_type_info,
               config = config))
 }
+
+get_class_df <- function(cell_type_names) {
+  class_df = data.frame(cell_type_names, row.names = cell_type_names)
+  colnames(class_df)[1] = "class"
+  class_df["Bergmann","class"] = "Astrocytes"
+  class_df["Fibroblast","class"] = "Endothelial"
+  class_df["MLI2","class"] = "MLI1"
+  class_df["Macrophages","class"] = "Microglia"
+  class_df["Polydendrocytes","class"] = "Oligodendrocytes"
+  return(class_df)
+}

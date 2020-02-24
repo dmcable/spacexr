@@ -49,26 +49,22 @@ solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
   my_args = list(...)
   solution<-pmax(initialSol,0)
   prediction = abs(S%*%solution)
-  V <- get_V(prediction)
-  sigma_bar <- pmax(sqrt(V),1)
-  scaled_residual = -(S%*%solution - B) / sigma_bar
-  phi_d <- phi_der(scaled_residual)
-  weight <- as.vector(phi_d/V)
-  weight_b = as.vector(sigma_bar/V*(phi(scaled_residual) - scaled_residual*phi_d))
-  W<-diag(weight)
-  D_mat<-t(S)%*%W%*%S
-  d_vec<- t(S)%*%W%*%B + t(S)%*%weight_b
+  threshold = max(1e-4, nUMI * 1e-7)
+  prediction = pmax(prediction, threshold)
+  gene_list = rownames(S)
+  d_vec <- -get_gradient(S, B, gene_list, prediction)
+  D_mat <- psd(get_hessian(S, B, gene_list, prediction))
   norm_factor <- norm(D_mat,"2")
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
   A<-cbind(diag(dim(S)[2]))
-  bzero<-c(rep(0,dim(S)[2]))
+  bzero<- (-solution)
   if('constrain' %in% names(my_args) && my_args$constrain) {
     A_const = t(rbind(1,A))
-    b_const <-c(1,rep(0,dim(S)[2]))
-    solution <- quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
+    b_const <-c(1 - sum(solution),bzero)
+    solution <- solution + quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
   } else {
-    solution <- quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
+    solution <- solution + quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
   }
   names(solution)<-colnames(S)
   return(solution)

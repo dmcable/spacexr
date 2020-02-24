@@ -47,7 +47,7 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
     return(results)
   } else {
     prediction = reg_data %*% results$weights
-    total_score = get_likelihood(gene_list, prediction, bead)
+    total_score = calc_log_l_par(gene_list, prediction, bead)
     return (total_score)
   }
 }
@@ -86,6 +86,7 @@ decompose_full <- function(cell_type_means, gene_list, nUMI, bead, constrain = T
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
   results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose)
+  results$weights <- results$weights / sum(results$weights)
   return(results)
 }
 
@@ -111,8 +112,8 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
 }
 
 #main function for decomposing a single bead
-process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T) {
-  singlet_cutoff = 0.2; QL_score_cutoff = 10
+process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T) {
+  singlet_cutoff = 0.2; QL_score_cutoff = 10; doublet_like_cutoff = 25
   results_all = decompose_full(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain)
   all_weights <- results_all$weights
   conv_all <- results_all$converged
@@ -136,38 +137,45 @@ process_bead <- function(cell_type_info, gene_list, UMI_tot, bead, constrain = T
     }
   doublet_results = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type, constrain = constrain)
   doublet_weights = doublet_results$weights; conv_doublet = doublet_results$converged
+  dlik <- delta_likelihood(first_type, second_type, doublet_weights[1], bead, cell_type_info[[1]], gene_list, UMI_tot)
+  class_other = F
+  if(!is.null(class_df))
+    if(class_df[second_type,"class"] == class_df[other_type,"class"])
+      class_other = T
   if(max(all_weights) < UMI_cutoff(UMI_tot))
     spot_class <- "reject"
-  else if(doublet_weights[2] < singlet_cutoff)
+  else if(dlik < doublet_like_cutoff)
     spot_class <- "singlet"
   else if(second_score - min_score > QL_score_cutoff)
     spot_class <- "doublet_certain"
+  else if(class_other)
+    spot_class <- "doublet_certain_class"
   else
     spot_class <- "doublet_uncertain"
-  spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
+  spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_certain_class", "doublet_uncertain"))
   return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
               doublet_weights = doublet_weights, min_score = min_score, second_score = second_score,
               other_type = other_type, conv_all = conv_all, conv_doublet = conv_doublet))
 }
 
 #doublet decomposition for the whole puck.
-process_beads_batch <- function(cell_type_info, gene_list, puck, constrain = T) {
+process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T) {
   beads = t(as.matrix(puck@counts[gene_list,]))
   out_file = "logs/decompose_batch_log.txt"
   if (file.exists(out_file))
     file.remove(out_file)
-  numCores = parallel::detectCores()
-  if(parallel::detectCores() > 8)
-    numCores <- 8
+  numCores = parallel::detectCores(); MAX_CORES = 8
+  if(parallel::detectCores() > MAX_CORES)
+    numCores <- MAX_CORES
   cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
   doParallel::registerDoParallel(cl)
-  #environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat')
-
-  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = c('Q_mat')) %dopar% {
+  environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val')
+  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
-    assign("Q_mat",Q_mat, envir = globalenv())
-    process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,], constrain = constrain)
+    assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
+    assign("K_val",K_val, envir = globalenv())
+    process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain)
   }
   parallel::stopCluster(cl)
   return(results)
@@ -323,4 +331,21 @@ classify_marker_batch <- function(nUMI, cell_type_means, beads, marker_data) {
     classify_cell_marker(marker_data, beads[i,], nUMI[i], cell_type_means)
   }
   return(types)
+}
+
+get_prediction_sparse <- function(cell_type_means, gene_list, UMI_tot, p, type1, type2) {
+  cell_types = c(type1,type2)
+  reg_data = cell_type_means[gene_list,] * 1000
+  reg_data = data.matrix(reg_data)
+  reg_data = reg_data[,cell_types]
+  prediction = reg_data %*% c(p,1-p)
+  return(prediction)
+}
+
+delta_likelihood <- function(type1, type2, p, bead, cell_type_means, gene_list, UMI_tot) {
+  prediction <- get_prediction_sparse(cell_type_means, gene_list, UMI_tot, 1, type1, type2)
+  log_l <- calc_log_l_par(gene_list, prediction, bead)
+  prediction_doub <- get_prediction_sparse(cell_type_means, gene_list, UMI_tot, p, type1, type2)
+  log_l_doub <- calc_log_l_par(gene_list, prediction_doub, bead)
+  return(-log_l_doub + log_l)
 }

@@ -37,5 +37,5 @@ puck <- Slideseq(NULL, beads, nUMI = rep(UMI_tot,N_samples))
 split_puck(puck, iv$slideseqdir, iv$config$n_puck_folds)
 meta_df <- data.frame(first_type, second_type, first_UMI, row.names = colnames(beads))
 meta_data <- list(n_cell_types = n_cell_types, trials = trials, n_conditions = n_conditions, N_samples = N_samples,
-                  meta_df = meta_df, UMI_tot = UMI_tot)
+                  meta_df = meta_df, UMI_tot = UMI_tot, UMI_list = UMI1_vec)
 saveRDS(meta_data,file.path(metadir,"meta_data.RDS"))
