@@ -1,11 +1,14 @@
 puck <- readRDS(paste0(iv$slideseqdir,"/SplitPuck/puck",fold_index,".RDS"))
 puck <- iv$puck
 cell_type_info_renorm <- iv$cell_type_info
-ind = 5
+ind = 425
 bead = puck@counts[,ind]
 ind2 = 73
 bead2 = puck@counts[,ind2]
 results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead, constrain = T)
+process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain)
+results <- process_bead_doublet(iv$cell_type_info, iv$gene_list, puck@nUMI[ind], puck@counts[,ind], class_df = class_df, constrain = F)
+
 decompose_full(cell_type_info_renorm[[1]], iv$gene_list, 1000, bead, constrain = F, verbose = F)$weights
 
 type1 = "Endothelial"
