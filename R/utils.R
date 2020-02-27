@@ -200,16 +200,18 @@ get_corr <- function(cell_type_info, norm_marker_scores, weights) {
 
 prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
   bulk_vec = rowSums(puck@counts)
-  nUMI = sum(bulk_vec)
+  nUMI = sum(puck@nUMI)
   X = cell_type_means[gene_list,] * nUMI
   b = bulk_vec[gene_list]
   write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
   write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
+  return(list(X=X, b=b))
 }
 
 #if test_reference is not null, it will convert this to a slideseq object rather than read in one
 #if puck_file is not null, then reads in puck from this file
 #if load_info_renorm, loads cell type info from MetaData/cell_type_info_renorm.RDS. Takes gene_list to be rownames of cell_type_info (renorm)
+#get_proportions -> calculates cell type info renorm
 init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
   print("init_RCTD: begin")
   config <- config::get()
@@ -252,6 +254,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   }
   else
     puck <- seurat.to.slideseq(test_reference, cell_type_info)
+  puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min)
   if(load_info_renorm)
     gene_list = rownames(cell_type_info[[1]])
   else {
@@ -279,4 +282,64 @@ get_class_df <- function(cell_type_names) {
   class_df["Macrophages","class"] = "Microglia"
   class_df["Polydendrocytes","class"] = "Oligodendrocytes"
   return(class_df)
+}
+
+chooseSigma <- function(prediction, counts, resultsdir, sigma_init = 1, N_epoch = 15, folder_id = "") {
+  X = as.vector(prediction)
+  X = pmax(X, 1e-4)
+  Y = as.vector(counts)
+  num_sample = min(500000, length(X)) #300000
+  big_params = F
+  use_ind = sample(1:length(X), num_sample)
+  X = X[use_ind]
+  Y = Y[use_ind]
+  sigma = sigma_init
+  alpha_init = 0.0001; batch = 25
+  X_batch = list()
+  Y_batch = list()
+  for(k in as.numeric(names(table(Y)))) {
+    X_vals <- X[Y==k]; N_X = length(X_vals)
+    for(b in 1:ceiling(N_X/batch)) {
+      X_ind = (batch*(b-1) + 1):min((batch*b),N_X)
+      curr_X = X_vals[X_ind]
+      X_batch[[length(X_batch) + 1]] <- curr_X
+      Y_batch[[length(Y_batch) + 1]] <- k
+    }
+  }
+  ordering <- sample(1:length(X_batch))
+  sigma_vals = list(sigma)
+  loss_vals = list()
+  for(j in 1:N_epoch) {
+    alpha = alpha_init / j
+    total_loss = 0
+    for(i in ordering) {
+      Q = get_Q(X_batch[[i]], Y_batch[[i]], sigma, big_params = big_params)
+      Q_d = get_Q_d(X_batch[[i]], Y_batch[[i]], sigma, big_params = big_params)
+      sigma = sigma + sum(Q_d/Q)*alpha
+      if(i%%100 == 0)
+        print(sigma)
+      total_loss = total_loss + sum(log(Q))
+      sigma_vals[[length(sigma_vals) + 1]] <- sigma
+    }
+    print(total_loss)
+    loss_vals[[length(loss_vals) + 1]] <- total_loss
+  }
+  sigresdir = file.path(resultsdir, paste0("sigma",folder_id))
+  if(!dir.exists(sigresdir))
+    dir.create(sigresdir)
+
+  saveRDS(sigma_vals, file.path(sigresdir,"sigma_vals.RDS"))
+  saveRDS(loss_vals, file.path(sigresdir,"loss_vals.RDS"))
+  saveRDS(sigma, file.path(sigresdir,"sigma.RDS"))
+
+  pdf(file.path(sigresdir,"sigma_trace.pdf"))
+  plot(unlist(sigma_vals),type = 'n')
+  lines(unlist(sigma_vals))
+  dev.off()
+
+  pdf(file.path(sigresdir,"loss_trace.pdf"))
+  plot(unlist(loss_vals),type = 'n')
+  lines(unlist(loss_vals))
+  dev.off()
+  return(sigma)
 }

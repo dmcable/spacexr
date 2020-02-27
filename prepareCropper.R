@@ -1,0 +1,16 @@
+#this script converts a DGE and coords matrix to a puck object saved as RDS
+library(RCTD)
+library(Matrix)
+print("prepareCropper: begin")
+config <- config::get()
+slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+puck = read.slideseq(slideseqdir, count_file = config$countfile)
+puck <- restrict_counts(puck, rownames(puck@counts), UMI_thresh = 10)
+puck = restrict_puck(puck, colnames(puck@counts))
+puck@coords[names(puck@nUMI), "nUMI"] = puck@nUMI
+write.table(puck@coords, file = file.path(slideseqdir,"cropper_input.txt"),row.names=FALSE,col.names= FALSE, sep="\t")
+to_keep = read.table(file = file.path(slideseqdir,"cropper_output.txt"), sep="\t")
+rownames(to_keep) = rownames(puck@coords)
+puck_restr <- restrict_puck(puck, rownames(puck@coords[as.logical(to_keep[,1]),]))
+plot_puck_wrapper(puck_restr, puck_restr@nUMI, max_val = 2000)
+saveRDS(puck_restr, file.path(slideseqdir, "puckCropped.RDS"))

@@ -199,12 +199,12 @@ bead1 = test_reference@assays$RNA@counts[iv$gene_list,firstInd]
 results1 = process_bead(cell_type_info_renorm, iv$gene_list, test_reference@meta.data$nUMI[firstInd], bead1, constrain = F)
 results2 = process_bead(cell_type_info_renorm, iv$gene_list, 500, bead2, constrain = F)
 #scratch quick test
-type1 = "Granule"
-type2 = "Purkinje"
-cell_type_info_renorm = cell_type_info
+type1 = "Fibroblast"
+type2 = "Granule"
+cell_type_info_renorm = iv$cell_type_info
 cell_type_info_renorm[[1]] = get_norm_ref(puck_test, cell_type_info[[1]], gene_list, proportions)
 cell_type_means_renorm <- cell_type_info_renorm[[1]]
-weight_recovery_test(test_reference, gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
+weight_recovery_test(test_reference, iv$gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
 doublet_accuracy_test(test_reference, gene_list, cell_type_info_renorm, type1, type2, conditions = 10, trials = 20)
 bead = bead_mix(test_reference, gene_list, 500, 500, type1, type2)
 decompose(cell_type_means_renorm, gene_list, 1000, bead, constrain=F)

@@ -19,7 +19,7 @@ solveOLS<-function(S,B){
 #solve using WLS with weights dampened by a certain dampening constant
 #if constrain, constrain the weights to sum up to 1
 #eta is alpha in the sparsity paper
-solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50){
+solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50, MIN_CHANGE = .001){
   solution<-solveOLS(S,B) #first solve OLS, use this solution to find a starting point for the weights
   if(OLS)
     return(solution)
@@ -27,7 +27,6 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
   change<-1;
-  MIN_CHANGE <- .001
   while(change > MIN_CHANGE && iterations<n.iter){
     new_solution<-solveWLS(S,B,solution, nUMI,TRUE, constrain=constrain)
     change<-norm(as.matrix(new_solution-solution))

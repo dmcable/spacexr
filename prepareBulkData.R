@@ -4,5 +4,5 @@ library(RCTD)
 library(Matrix)
 print("prepareBulkData: begin")
 iv <- init_RCTD(gene_list_reg = F, get_proportions = F) #initial variables
-prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
+results <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
 print("prepareBulkData: end")

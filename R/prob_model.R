@@ -89,18 +89,18 @@ calc_Q_d_one <- function(sigma, X_vals, k, batch = 100, big_params = T) {
   return(results)
 }
 
-calc_Q_mat <- function(sigma, X_vals, K = 10) {
+calc_Q_mat <- function(sigma, X_vals, K = 10, big_params = T) {
   N_X = length(X_vals)
   Q_mat <- Matrix(0, nrow= K+1, ncol = N_X)
   batch = 100
   for(i in 1:(K+1)) {
     k = i-1; print(k)
-    Q_mat[i, ] = calc_Q_mat_one(sigma, X_vals, k, batch = batch)
+    Q_mat[i, ] = calc_Q_mat_one(sigma, X_vals, k, batch = batch, big_params = big_params)
   }
   return(Q_mat)
 }
 
-calc_Q_par <- function(K, X_vals, sigma) {
+calc_Q_par <- function(K, X_vals, sigma, big_params = T) {
   out_file = "logs/calc_Q_log.txt"
   if (file.exists(out_file))
     file.remove(out_file)
@@ -113,18 +113,24 @@ calc_Q_par <- function(K, X_vals, sigma) {
   results <- foreach::foreach(i = 1:(K+3), .export = environ) %dopar% {
     cat(paste0("calc_Q: Finished i: ",i,"\n"), file=out_file, append=TRUE)
     k = i-1;
-    result = calc_Q_mat_one(sigma, X_vals, k, batch = 100)
+    result = calc_Q_mat_one(sigma, X_vals, k, batch = 100, big_params = big_params)
   }
   parallel::stopCluster(cl)
   return(results)
 }
 
+#not using Q also uses small params
 calc_Q <- function(x, k) {
   epsilon = 1e-4; X_max = max(X_vals); K = K_val+2; delta = 1e-5
   x = pmin(pmax(epsilon, x),X_max - epsilon); k = min(k,K)
-  l = floor((x/delta)^(2/3))
-  prop = (X_vals[l+1] - x)/(X_vals[l+1] - X_vals[l])
-  return(prop*Q_mat[k+1,l] + (1-prop)*Q_mat[k+1,l+1])
+  if(use_Q) {
+    l = floor((x/delta)^(2/3))
+    prop = (X_vals[l+1] - x)/(X_vals[l+1] - X_vals[l])
+    return(prop*Q_mat[k+1,l] + (1-prop)*Q_mat[k+1,l+1])
+  }
+  else {
+    return(calc_Q_mat_one(sigma, x, k, batch = 100, big_params = F))
+  }
 }
 
 #all values of K
@@ -213,17 +219,22 @@ get_hessian <- function(S, B, gene_list, prediction) {
 }
 
 get_der_fast <- function(S, B, gene_list, prediction) {
-  bead = B; epsilon = 1e-4; X_max = max(X_vals); delta = 1e-5
-  x = pmin(pmax(epsilon, prediction),X_max - epsilon);
-  Q_cur <- calc_Q_all(x) #need calc_log_d1 and calc_log_d2
-  bead[bead > K_val] = K_val
-  Q_k <- Q_cur[cbind(bead+1, seq_along(bead))]
-  Q_k1 <- Q_cur[cbind(bead+2, seq_along(bead))]; Q_k2 <- Q_cur[cbind(bead+3, seq_along(bead))]
-  Q_d1 = 1/x * (-(bead+1)*Q_k1 + bead*Q_k)
-  Q_d2 = 1/(x^2)*((bead+1)*(bead+2)*Q_k2 - bead*(2*(bead+1)*Q_k1 - (bead-1)*Q_k))
-  d1_vec = as.vector(Q_d1 / Q_k)
-  d2_vec = as.vector(-Q_d1^2/(Q_k^2) + Q_d2/Q_k)
-  grad = -d1_vec %*% S; hess = -(t(S) %*% (diag(d2_vec) %*% S))
+  if(use_Q) {
+    bead = B; epsilon = 1e-4; X_max = max(X_vals); delta = 1e-5
+    x = pmin(pmax(epsilon, prediction),X_max - epsilon);
+    Q_cur <- calc_Q_all(x) #need calc_log_d1 and calc_log_d2
+    bead[bead > K_val] = K_val
+    Q_k <- Q_cur[cbind(bead+1, seq_along(bead))]
+    Q_k1 <- Q_cur[cbind(bead+2, seq_along(bead))]; Q_k2 <- Q_cur[cbind(bead+3, seq_along(bead))]
+    Q_d1 = 1/x * (-(bead+1)*Q_k1 + bead*Q_k)
+    Q_d2 = 1/(x^2)*((bead+1)*(bead+2)*Q_k2 - bead*(2*(bead+1)*Q_k1 - (bead-1)*Q_k))
+    d1_vec = as.vector(Q_d1 / Q_k)
+    d2_vec = as.vector(-Q_d1^2/(Q_k^2) + Q_d2/Q_k)
+    grad = -d1_vec %*% S; hess = -(t(S) %*% (diag(d2_vec) %*% S))
+  } else {
+    grad = get_gradient(S, B, gene_list, prediction)
+    hess = get_hessian(S, B, gene_list, prediction)
+  }
   return(list(grad=grad, hess=hess))
 }
 
