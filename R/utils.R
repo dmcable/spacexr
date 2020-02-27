@@ -1,59 +1,3 @@
-make_heat_map <- function(cell_type_means, gene_list) {
-  heatmap(as.matrix(cell_type_means[gene_list,]))
-}
-
-#plotting where one cell type is bigger than others
-plot_cell_types_spec <- function(puck, barcodes) {
-  my_table = puck@coords[barcodes,]
-  my_table$class = puck@cell_labels[barcodes]
-  n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
-  size_vec = c(3,rep(1, n_levels-1))
-  gg <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19,color=class,size=class)) +
-    ggplot2::scale_color_manual(values = pals::kelly(n_levels+1)[2:(n_levels+1)])+ ggplot2::scale_shape_identity() + ggplot2::scale_size_manual(values=size_vec)+ggplot2::theme_bw()
-  gg
-}
-
-plot_cell_types <- function(puck, barcodes, results_dir) {
-  my_table = puck@coords[barcodes,]
-  my_table$class = puck@cell_labels[barcodes]
-  n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
-  my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
-  if(n_levels > 21)
-    my_pal = pals::polychrome(n_levels)
-  if(n_levels > 36)
-    stop("Plotting currently supports at most 36 cell types as colors")
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
-    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  pdf(file.path(results_dir,"all_cell_types.pdf"))
-  invisible(print(plot))
-  dev.off()
-}
-
-#individually plots cell types
-#if counter_stain = cell_type, then it also plots one cell type as a reference
-plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
-  cell_types = levels(droplevels(puck@cell_labels))
-  n_levels = length(cell_types)
-  plots <- vector(mode = "list", length = n_levels)
-  for(i in 1:n_levels) {
-    cell_type = cell_types[i]
-    curr_loc = puck@cell_labels==cell_type
-    if(!is.null(counter_stain) && cell_type != counter_stain)
-      curr_loc = curr_loc | puck@cell_labels==counter_stain
-    my_table = puck@coords[curr_loc,]
-    my_table$class = puck@cell_labels[curr_loc]
-    plots[[i]] <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(shape=19, color = class)) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::ggtitle(cell_type)
-  }
-  #l = mget(plots)
-  if(!is.null(counter_stain))
-    pdf(file.path(results_dir,paste0("cell_type_calls_counter_",counter_stain,".pdf")))
-  else
-    pdf(file.path(results_dir,"cell_type_calls.pdf"))
-  invisible(lapply(plots, print))
-  dev.off()
-}
-
-
 downsample <- function(raw.data, cell.names, UMI = 500, replicates = 1) {
   datalist = list()
   labellist = list()
@@ -190,17 +134,20 @@ get_gene_list <- function(cell_type_means, puck, cutoff_val = 1/20000) {
 }
 
 #finds DE genes
-get_de_genes <- function(cell_type_means, puck, fc_thresh = 1.25, expr_thresh = .00015) {
+#Genes must be observed a minimum of MIN_OBS times to mitigate sampling noise in the
+#Platform effect estimation
+get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
   total_gene_list = c()
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
-  gene_list = rownames(cell_type_means)
+  gene_list = rownames(cell_type_info[[1]])
+  gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
-  gene_list = gene_list[bulk_vec[gene_list] > 0]
-  for(cell_type in cell_type_names) {
-    other_mean = rowMeans(cell_type_means[gene_list,cell_type_names != cell_type])
-    logFC = log(cell_type_means[gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
-    type_gene_list = which((logFC > fc_thresh) & (cell_type_means[gene_list,cell_type] > expr_thresh))
+  gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
+  for(cell_type in cell_type_info[[2]]) {
+    other_mean = rowMeans(cell_type_info[[1]][gene_list,cell_type_info[[2]] != cell_type])
+    logFC = log(cell_type_info[[1]][gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
+    type_gene_list = which((logFC > fc_thresh) & (cell_type_info[[1]][gene_list,cell_type] > expr_thresh))
     print(paste0("get_de_genes: ", cell_type, " found DE genes: ",length(type_gene_list)))
     total_gene_list = union(total_gene_list, type_gene_list)
   }
@@ -236,33 +183,163 @@ smooth_proportions <- function(proportions, smoothing_par = 1/300, constrain = T
   proportions = target_sum * proportions / sum(proportions)
 }
 
-#plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val) {
-  my_pal = pals::kovesi.rainbow(20)
-  my_table = puck@coords[barcodes,]
-  my_table$value = plot_val[barcodes]
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 1.5, shape=19,color=value)) +
-    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  plot
-  #pdf(file.path(results_dir,"all_cell_types.pdf"))
-  #invisible(print(plot))
-  #dev.off()
+#min weight to be considered a singlet as a function of nUMI
+UMI_cutoff <- function(nUMI) {
+  return (pmax(0.25, 2 - log(nUMI,2) / 5))
 }
 
-#plots a continunous value over certain beads in the puck
-plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, min_val = NULL, max_val = NULL) {
-  my_cond = puck@nUMI > minUMI
-  if(!is.null(cell_type))
-    my_cond = my_cond & (puck@cell_labels == cell_type)
-  if(!is.null(min_val))
-    my_cond = my_cond & (plot_val > min_val)
-  if(!is.null(max_val))
-    plot_val[plot_val > max_val] = max_val
-  plot_puck_continuous(puck, names(which(my_cond)), plot_val)
+#get correlation between weight and markers
+get_corr <- function(cell_type_info, norm_marker_scores, weights) {
+  correlations = numeric(cell_type_info[[3]])
+  names(correlations) = cell_type_info[[2]]
+  for (cell_type in cell_type_info[[2]])
+    correlations[cell_type] = cor(norm_marker_scores[,cell_type], weights[,cell_type])
+  write.csv(correlations, file.path(resultsdir,"correlation_markers.csv"))
 }
 
-#plots a gene over the puck. Positive restricts plotting to positive.
-plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
-  gene_vals = puck@counts[gene,]
-  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, min_val = positive - 0.5)
+
+prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
+  bulk_vec = rowSums(puck@counts)
+  nUMI = sum(puck@nUMI)
+  X = cell_type_means[gene_list,] * nUMI
+  b = bulk_vec[gene_list]
+  write.csv(as.matrix(X),file.path(bulkdir,"X_bulk.csv"))
+  write.csv(as.matrix(b),file.path(bulkdir,"b_bulk.csv"))
+  return(list(X=X, b=b))
+}
+
+#if test_reference is not null, it will convert this to a slideseq object rather than read in one
+#if puck_file is not null, then reads in puck from this file
+#if load_info_renorm, loads cell type info from MetaData/cell_type_info_renorm.RDS. Takes gene_list to be rownames of cell_type_info (renorm)
+#get_proportions -> calculates cell type info renorm
+init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
+  print("init_RCTD: begin")
+  config <- config::get()
+  slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+  resultsdir = file.path(slideseqdir,"results")
+  if(!dir.exists(resultsdir))
+    dir.create(resultsdir)
+  bulkdir <- paste(slideseqdir,"results/Bulk",sep="/")
+  if(!dir.exists(bulkdir))
+    dir.create(bulkdir)
+  if(load_info_renorm) {
+    cell_type_info <- readRDS(file.path(slideseqdir, "MetaData/cell_type_info_renorm.RDS"))
+    reference <- NULL; refdir <- NULL
+  } else {
+    refdir <- file.path("Data/Reference",config$reffolder)
+    reference <- readRDS(paste(refdir,config$reffile,sep="/"))
+    print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
+    print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
+    cell_counts = table(reference@meta.data$liger_ident_coarse)
+    print(cell_counts)
+    CELL_MIN = 25 # need at least this for each cell type
+    if(min(cell_counts) < CELL_MIN)
+      stop(paste0("init_RCTD error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
+    cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
+  }
+  print(paste("init_RCTD: number of cell types used:", cell_type_info[[3]]))
+  proportions <- NULL
+  if(get_proportions) {
+    proportions <- read.csv(file.path(bulkdir,"weights.csv"))$Weight
+    names(proportions) = cell_type_info[[2]]
+    proportions <- proportions / sum(proportions)
+    print("init_RCTD: estimated bulk composition: ")
+    print(proportions)
+  }
+  if(is.null(test_reference)) {
+    if(is.null(puck_file))
+      puck = readRDS(file.path(slideseqdir, config$puckrds))
+    else
+      puck = readRDS(file.path(slideseqdir, puck_file))
+  }
+  else
+    puck <- seurat.to.slideseq(test_reference, cell_type_info)
+  puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min)
+  if(load_info_renorm)
+    gene_list = rownames(cell_type_info[[1]])
+  else {
+    if(gene_list_reg)
+      gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = MIN_OBS)
+    else
+      gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = MIN_OBS)
+  }
+  print(paste("init_RCTD: number of genes used:", length(gene_list)))
+  puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
+  puck = restrict_puck(puck, colnames(puck@counts))
+  print(paste("init_RCTD: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
+  print("init_RCTD: end")
+  return(list(refdir = refdir, slideseqdir = slideseqdir, bulkdir = bulkdir, reference = reference,
+              proportions = proportions, gene_list = gene_list, puck = puck, cell_type_info = cell_type_info,
+              config = config))
+}
+
+get_class_df <- function(cell_type_names) {
+  class_df = data.frame(cell_type_names, row.names = cell_type_names)
+  colnames(class_df)[1] = "class"
+  class_df["Bergmann","class"] = "Astrocytes"
+  class_df["Fibroblast","class"] = "Endothelial"
+  class_df["MLI2","class"] = "MLI1"
+  class_df["Macrophages","class"] = "Microglia"
+  class_df["Polydendrocytes","class"] = "Oligodendrocytes"
+  return(class_df)
+}
+
+chooseSigma <- function(prediction, counts, resultsdir, sigma_init = 1, N_epoch = 15, folder_id = "") {
+  X = as.vector(prediction)
+  X = pmax(X, 1e-4)
+  Y = as.vector(counts)
+  num_sample = min(500000, length(X)) #300000
+  big_params = F
+  use_ind = sample(1:length(X), num_sample)
+  X = X[use_ind]
+  Y = Y[use_ind]
+  sigma = sigma_init
+  alpha_init = 0.0001; batch = 25
+  X_batch = list()
+  Y_batch = list()
+  for(k in as.numeric(names(table(Y)))) {
+    X_vals <- X[Y==k]; N_X = length(X_vals)
+    for(b in 1:ceiling(N_X/batch)) {
+      X_ind = (batch*(b-1) + 1):min((batch*b),N_X)
+      curr_X = X_vals[X_ind]
+      X_batch[[length(X_batch) + 1]] <- curr_X
+      Y_batch[[length(Y_batch) + 1]] <- k
+    }
+  }
+  ordering <- sample(1:length(X_batch))
+  sigma_vals = list(sigma)
+  loss_vals = list()
+  for(j in 1:N_epoch) {
+    alpha = alpha_init / j
+    total_loss = 0
+    for(i in ordering) {
+      Q = get_Q(X_batch[[i]], Y_batch[[i]], sigma, big_params = big_params)
+      Q_d = get_Q_d(X_batch[[i]], Y_batch[[i]], sigma, big_params = big_params)
+      sigma = sigma + sum(Q_d/Q)*alpha
+      if(i%%100 == 0)
+        print(sigma)
+      total_loss = total_loss + sum(log(Q))
+      sigma_vals[[length(sigma_vals) + 1]] <- sigma
+    }
+    print(total_loss)
+    loss_vals[[length(loss_vals) + 1]] <- total_loss
+  }
+  sigresdir = file.path(resultsdir, paste0("sigma",folder_id))
+  if(!dir.exists(sigresdir))
+    dir.create(sigresdir)
+
+  saveRDS(sigma_vals, file.path(sigresdir,"sigma_vals.RDS"))
+  saveRDS(loss_vals, file.path(sigresdir,"loss_vals.RDS"))
+  saveRDS(sigma, file.path(sigresdir,"sigma.RDS"))
+
+  pdf(file.path(sigresdir,"sigma_trace.pdf"))
+  plot(unlist(sigma_vals),type = 'n')
+  lines(unlist(sigma_vals))
+  dev.off()
+
+  pdf(file.path(sigresdir,"loss_trace.pdf"))
+  plot(unlist(loss_vals),type = 'n')
+  lines(unlist(loss_vals))
+  dev.off()
+  return(sigma)
 }

@@ -34,3 +34,44 @@ process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, tr
   test_results <- test_single_beads(puck, gene_list, cell_type_info_renorm, trust_model = trust_model, constrain = constrain, OLS = OLS)
   return(test_results)
 }
+
+
+#calculates the quasilikelihood function as a matrix
+get_Q_mat <- function(delta = 1e-5, L = 100000, mult = 100, Y_max = 100) {
+  Q_mat = matrix(0, nrow = Y_max, ncol = 2*L)
+  for (Y in 0:(Y_max-1)) {
+    x = (1:(L*mult)) * delta
+    V <- get_V(x)
+    sigma <- sqrt(V)
+    sigma_bar <- pmax(sigma, 1)
+    scaled_residual <- (Y - x)/sigma_bar
+    results <- sigma_bar*phi(scaled_residual)/(sigma^2)
+    precise_J <- cumsum(results)*delta
+    precise_J <- precise_J - precise_J[round(Y/delta+1)]
+    Q_mat[Y+1,1:L] = precise_J[1:L]
+    Q_mat[Y+1,(L+1):(2*L)] = precise_J[(1:L)*mult]
+  }
+  return(Q_mat)
+}
+
+#assumes Q_mat was initialized as a global variable using get_Q_mat with same params for delta, L, mult, and Y_max
+get_QL <- function(Y, x, delta = 1e-5, L = 100000, mult = 100, Y_max = 100) {
+  if(Y > Y_max - 1)
+    Y = Y_max - 1
+  my_index = x/delta
+  if(my_index < 1)
+    my_index = 1
+  if(my_index <= L) {
+    first_ind = floor(my_index)
+    other_p = my_index - first_ind
+    return ((1-other_p)*Q_mat[Y+1,first_ind] + other_p*Q_mat[Y+1,first_ind+1])
+  } else {
+    my_index = my_index / mult
+    if(my_index >= L)
+      my_index = L - 1e-9
+    first_ind = floor(my_index)
+    other_p = my_index - first_ind
+    return ((1-other_p)*Q_mat[Y+1,L + first_ind] + other_p*Q_mat[Y+1,L + first_ind+1])
+  }
+}
+
