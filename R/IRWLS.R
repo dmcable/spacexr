@@ -26,10 +26,10 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
   solution<- (solution*0) + 1/length(solution) #actually, just ignore the OLS solution
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
-  j<-19; change<-1;
+  change<-1;
   MIN_CHANGE <- .001
   while(change > MIN_CHANGE && iterations<n.iter){
-    new_solution<-solveWLS(S,B,solution,j, nUMI,TRUE, constrain=constrain)
+    new_solution<-solveWLS(S,B,solution, nUMI,TRUE, constrain=constrain)
     change<-norm(as.matrix(new_solution-solution))
     if(verbose) {
       print(paste("Change:",change))
@@ -45,26 +45,28 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
 #for ..., think of alpha, lambda, constrain = TRUE
 #either bead_mode is true and nUMI is scalar
 #or bead_mode is false and nUMI is vector
-solveWLS<-function(S,B,initialSol,j, nUMI,bead_mode,...){
+solveWLS<-function(S,B,initialSol, nUMI,bead_mode,...){
   my_args = list(...)
   solution<-pmax(initialSol,0)
   prediction = abs(S%*%solution)
   threshold = max(1e-4, nUMI * 1e-7)
   prediction = pmax(prediction, threshold)
   gene_list = rownames(S)
-  d_vec <- -get_gradient(S, B, gene_list, prediction)
-  D_mat <- psd(get_hessian(S, B, gene_list, prediction))
+  derivatives <- get_der_fast(S, B, gene_list, prediction)
+  d_vec <- -derivatives$grad
+  D_mat <- psd(derivatives$hess)
   norm_factor <- norm(D_mat,"2")
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
   A<-cbind(diag(dim(S)[2]))
   bzero<- (-solution)
+  alpha = 0.3
   if('constrain' %in% names(my_args) && my_args$constrain) {
     A_const = t(rbind(1,A))
     b_const <-c(1 - sum(solution),bzero)
-    solution <- solution + quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
+    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
   } else {
-    solution <- solution + quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
+    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
   }
   names(solution)<-colnames(S)
   return(solution)

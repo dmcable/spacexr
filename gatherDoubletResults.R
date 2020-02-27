@@ -22,29 +22,54 @@ rownames(weights) = barcodes; rownames(weights_doublet) = barcodes
 colnames(weights) = iv$cell_type_info[[2]]; colnames(weights_doublet) = c('first_type', 'second_type')
 empty_cell_types = factor(character(N),levels = cell_type_names)
 spot_levels <- c("reject", "singlet", "doublet_certain", "doublet_certain_class", "doublet_uncertain")
-results_df <- data.frame(spot_class = factor(character(N),levels=spot_levels),
-                         first_type = empty_cell_types, second_type = empty_cell_types,
-                         other_type = empty_cell_types, min_score = numeric(N), second_score = numeric(N),
-                         conv_all = logical(N), conv_doublet = logical(N))
-for(i in 1:N) {
-  weights_doublet[i,] = results[[i]]$doublet_weights
-  weights[i,] = results[[i]]$all_weights
-  results_df[i, "spot_class"] = results[[i]]$spot_class
-  results_df[i, "first_type"] = results[[i]]$first_type
-  results_df[i, "second_type"] = results[[i]]$second_type
-  results_df[i, "other_type"] = results[[i]]$other_type
-  results_df[i, "min_score"] = results[[i]]$min_score
-  results_df[i, "second_score"] = results[[i]]$second_score
-  results_df[i, "conv_all"] = results[[i]]$conv_all
-  results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
+doublet_mode <- T
+if(doublet_mode) {
+  spot_levels <- c("reject", "singlet", "doublet_certain", "doublet_uncertain")
+  results_df <- data.frame(spot_class = factor(character(N),levels=spot_levels),
+                           first_type = empty_cell_types, second_type = empty_cell_types,
+                           first_class = logical(N), second_class = logical(N),
+                           min_score = numeric(N), singlet_score = numeric(N),
+                           conv_all = logical(N), conv_doublet = logical(N))
+  for(i in 1:N) {
+    weights_doublet[i,] = results[[i]]$doublet_weights
+    weights[i,] = results[[i]]$all_weights
+    results_df[i, "spot_class"] = results[[i]]$spot_class
+    results_df[i, "first_type"] = results[[i]]$first_type
+    results_df[i, "second_type"] = results[[i]]$second_type
+    results_df[i, "first_class"] = results[[i]]$first_class
+    results_df[i, "second_class"] = results[[i]]$second_class
+    results_df[i, "min_score"] = results[[i]]$min_score
+    results_df[i, "singlet_score"] = results[[i]]$singlet_score
+    results_df[i, "conv_all"] = results[[i]]$conv_all
+    results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
+  }
+} else {
+  results_df <- data.frame(spot_class = factor(character(N),levels=spot_levels),
+                           first_type = empty_cell_types, second_type = empty_cell_types,
+                           other_type = empty_cell_types, min_score = numeric(N), second_score = numeric(N),
+                           conv_all = logical(N), conv_doublet = logical(N))
+  for(i in 1:N) {
+    weights_doublet[i,] = results[[i]]$doublet_weights
+    weights[i,] = results[[i]]$all_weights
+    results_df[i, "spot_class"] = results[[i]]$spot_class
+    results_df[i, "first_type"] = results[[i]]$first_type
+    results_df[i, "second_type"] = results[[i]]$second_type
+    results_df[i, "other_type"] = results[[i]]$other_type
+    results_df[i, "min_score"] = results[[i]]$min_score
+    results_df[i, "second_score"] = results[[i]]$second_score
+    results_df[i, "conv_all"] = results[[i]]$conv_all
+    results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
+  }
 }
 
 #only for ground truth
 UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
+UMI_list <- c(0,250,500,750,1000) #for now
 class_df <- get_class_df(cell_type_names)
 common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 resultsdir = file.path(iv$slideseqdir, "results")
 square_results <- plot_doublet_identification(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
+square_results <- plot_doublet_identification_certain(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
 plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy.png'), save.file = T, normalize = F)
 write.csv(as.matrix(square_results), file.path(resultsdir,'doublet_avg_accuracy.csv'))
 #next make the confusion matrix
@@ -80,7 +105,7 @@ for(nUMI in UMI_list[1:N_UMI_cond]) {
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
-ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series))
+ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
 
 
 #plot doublet proportions
@@ -95,6 +120,6 @@ for(nUMI in UMI_list[1:N_UMI_cond]) {
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
-ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series))
+ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
 
 

@@ -7,9 +7,9 @@ ind2 = 73
 bead2 = puck@counts[,ind2]
 results = process_bead(cell_type_info_renorm, iv$gene_list, 1000, bead, constrain = T)
 process_bead(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain)
-results <- process_bead_doublet(iv$cell_type_info, iv$gene_list, puck@nUMI[ind], puck@counts[,ind], class_df = class_df, constrain = F)
+results <- process_bead_doublet(iv$cell_type_info, iv$gene_list, iv$puck@nUMI[ind], iv$puck@counts[,ind], class_df = class_df, constrain = F)
 
-decompose_full(cell_type_info_renorm[[1]], iv$gene_list, 1000, bead, constrain = F, verbose = F)$weights
+system.time({decompose_full(iv$cell_type_info[[1]], iv$gene_list, 1000, bead, constrain = F, verbose = T)$weights})
 
 type1 = "Endothelial"
 type2 = "Astrocytes"
@@ -255,7 +255,7 @@ lines(X,Q_mat[k+1,], col="green")
 
 gene_list = iv$gene_list
 cell_types = c(type1,type2)
-reg_data = cell_type_info_renorm[[1]][iv$gene_list,] * 1000
+reg_data = iv$cell_type_info[[1]][iv$gene_list,] * 1000
 reg_data = data.matrix(reg_data)
 reg_data = reg_data[,cell_types]
 S = reg_data; B = bead
