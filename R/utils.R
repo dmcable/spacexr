@@ -214,8 +214,9 @@ prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
 #get_proportions -> calculates cell type info renorm
 init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
   print("init_RCTD: begin")
-  config <- config::get()
-  slideseqdir <- file.path("Data/Slideseq",config$slideseqfolder)
+  config <- config::get(file = "conf/test.yml", use_parent = FALSE)
+  config_data <- config::get(file = "conf/dataset.yml", use_parent = FALSE)
+  slideseqdir <- file.path("Data/Slideseq",config_data$slideseqfolder)
   resultsdir = file.path(slideseqdir,"results")
   if(!dir.exists(resultsdir))
     dir.create(resultsdir)
@@ -226,8 +227,8 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
     cell_type_info <- readRDS(file.path(slideseqdir, "MetaData/cell_type_info_renorm.RDS"))
     reference <- NULL; refdir <- NULL
   } else {
-    refdir <- file.path("Data/Reference",config$reffolder)
-    reference <- readRDS(paste(refdir,config$reffile,sep="/"))
+    refdir <- file.path("Data/Reference",config_data$reffolder)
+    reference <- readRDS(paste(refdir,config_data$reffile,sep="/"))
     print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
     print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
     cell_counts = table(reference@meta.data$liger_ident_coarse)
@@ -248,7 +249,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   }
   if(is.null(test_reference)) {
     if(is.null(puck_file))
-      puck = readRDS(file.path(slideseqdir, config$puckrds))
+      puck = readRDS(file.path(slideseqdir, config_data$puckrds))
     else
       puck = readRDS(file.path(slideseqdir, puck_file))
   }
@@ -270,7 +271,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   print("init_RCTD: end")
   return(list(refdir = refdir, slideseqdir = slideseqdir, bulkdir = bulkdir, reference = reference,
               proportions = proportions, gene_list = gene_list, puck = puck, cell_type_info = cell_type_info,
-              config = config))
+              config = config, n_puck_folds = config_data$n_puck_folds))
 }
 
 get_class_df <- function(cell_type_names) {
