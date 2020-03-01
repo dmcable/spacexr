@@ -214,8 +214,8 @@ prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
 #get_proportions -> calculates cell type info renorm
 init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
   print("init_RCTD: begin")
-  config <- config::get(file = "conf/test.yml", use_parent = FALSE)
   config_data <- config::get(file = "conf/dataset.yml", use_parent = FALSE)
+  config <- config::get(file = paste0("conf/",config_data$config_mode,".yml"), use_parent = FALSE)
   slideseqdir <- file.path("Data/Slideseq",config_data$slideseqfolder)
   resultsdir = file.path(slideseqdir,"results")
   if(!dir.exists(resultsdir))
