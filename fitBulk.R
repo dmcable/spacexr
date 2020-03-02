@@ -9,6 +9,7 @@ use_Q = F
 X_vals = c(max(bulkData$X+1))
 K_val = max(bulkData$b + 1)
 sigma = 1
+print('fitBulk: decomposing bulk')
 decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
 prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
 sigma <- sqrt(mean((log(prediction) - log(bulkData$b))^2))
