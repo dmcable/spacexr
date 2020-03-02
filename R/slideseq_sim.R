@@ -389,13 +389,12 @@ get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_me
     return(tail(mark_genes[order(mark_genes)],10))
 }
 
-#get marker scores for some cell type
-get_marker_scores <- function(marker_data, puck, cell_type, cell_type_means, score_threshold = 10) {
-  gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
+#get marker scores for all cell types
+get_marker_scores <- function(marker_data, puck, cell_type_means, score_threshold = 10) {
   gene_means = rowMeans(cell_type_means[rownames(marker_data),])
   scores = numeric(dim(puck@counts)[2])
   for (i in 1:dim(puck@counts)[2]) {
-    scores[i] <- get_marker_score_type(marker_data[gene_list,], puck@counts[gene_list,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
+    scores[i] <- get_marker_score_type(marker_data, puck@counts[,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
   }
   names(scores) = colnames(puck@counts)
   return(scores)

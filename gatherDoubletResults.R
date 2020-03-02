@@ -4,18 +4,17 @@ library(dplyr)
 library(ggplot2)
 require(reshape2)
 source('Plotting/figure_utils.R')
-config <- config::get()
+iv <- init_RCTD(gene_list_reg = F, get_proportions = F)
+puck = iv$puck
 iv <- init_RCTD(load_info_renorm = T) #initial variables
+resultsdir <- paste0(iv$slideseqdir,"/results")
 cell_type_names = iv$cell_type_info[[2]]
 results <- list()
-for (fold_index in 1:config$n_puck_folds) {
+for (fold_index in 1:iv$n_puck_folds) {
   results <- append(results, readRDS(paste0(iv$slideseqdir,"/SplitPuckResults/results",fold_index,".RDS")))
 }
-metadir <- file.path(iv$slideseqdir,"MetaData")
-meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
-meta_df <- meta_data$meta_df
-barcodes <- rownames(meta_df)
-N <- meta_data$N_samples
+barcodes <- colnames(puck@counts)
+N <- length(results)
 weights = Matrix(0, nrow = N, ncol = iv$cell_type_info[[3]])
 weights_doublet = Matrix(0, nrow = N, ncol = 2)
 rownames(weights) = barcodes; rownames(weights_doublet) = barcodes
@@ -31,6 +30,8 @@ if(doublet_mode) {
                            min_score = numeric(N), singlet_score = numeric(N),
                            conv_all = logical(N), conv_doublet = logical(N))
   for(i in 1:N) {
+    if(i %% 100 == 0)
+      print(i)
     weights_doublet[i,] = results[[i]]$doublet_weights
     weights[i,] = results[[i]]$all_weights
     results_df[i, "spot_class"] = results[[i]]$spot_class
@@ -62,7 +63,22 @@ if(doublet_mode) {
   }
 }
 
+marker_data = get_marker_data(cell_type_info[[2]], NULL, cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
+norm_weights = sweep(weights, 1, rowSums(weights), '/')
+marker_scores_df <- get_marker_scores(cell_type_info, marker_data, puck)
+norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
+
+#make the plots
+plot_meta_genes(cell_type_info,marker_scores_df, resultsdir)
+plot_norm_meta_genes(cell_type_info,norm_marker_scores, resultsdir)
+plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights)
+plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights)
+plot_confidence_rate(puck, resultsdir, norm_weights)
+
 #only for ground truth
+metadir <- file.path(iv$slideseqdir,"MetaData")
+meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
+meta_df <- meta_data$meta_df
 UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
 UMI_list <- c(0,250,500,750,1000) #for now
 class_df <- get_class_df(cell_type_names)

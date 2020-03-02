@@ -144,7 +144,7 @@ plot_confidence_rate <- function(puck, resultsdir, weights) {
   y_vals = y_vals[order(x_vals)]
   labeled = ma(y_vals,500)
   x_vals = x_vals[order(x_vals)]
-  plot(x_vals, labeled, type = 'n', xlab = "log2(N_UMI)", ylab = "Percent called as singlets")
+  plot(x_vals, labeled, type = 'n', xlab = "log2(N_UMI)", ylab = "Percent called as singlets", ylim = c(0, 1))
   lines(x_vals, labeled)
   lines(x_vals, (1:length(x_vals)) / length(x_vals), col ="red")
   dev.off()
