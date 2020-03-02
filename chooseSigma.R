@@ -7,12 +7,21 @@ cell_type_means = iv$cell_type_info[[1]]
 puck = iv$puck
 #get initial classification
 MIN_UMI = 300
+<<<<<<< HEAD
 N_fit = min(500,sum(puck@nUMI > MIN_UMI)) #500
 fit_ind = sample(names(puck@nUMI[puck@nUMI > MIN_UMI]), N_fit)
 beads = t(as.matrix(puck@counts[iv$gene_list,fit_ind]))
 N_X = 50000 # 50000
 delta = 1e-5; X_vals = (1:N_X)^1.5*delta
 K_val = 100 #100
+=======
+N_fit = min(iv$config$N_fit,sum(puck@nUMI > MIN_UMI))
+fit_ind = sample(names(puck@nUMI[puck@nUMI > MIN_UMI]), N_fit)
+beads = t(as.matrix(puck@counts[iv$gene_list,fit_ind]))
+N_X = iv$config$N_X # 50000
+delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = iv$config$K_val #100
+>>>>>>> dev
 sigma = 1; use_Q = T
 true_predictions = F
 if(true_predictions) {
@@ -29,8 +38,13 @@ if(true_predictions) {
   }
 } else {
   #Q_mat <- readRDS(file.path(resultsdir,'QQ_mat.RDS'))
+<<<<<<< HEAD
   results <- calc_Q_par(K_val, X_vals, sigma, big_params = F)
   print(paste('chooseSigma: calculating initial Q_mat with sigma = ',sigma))
+=======
+  print(paste('chooseSigma: calculating initial Q_mat with sigma = ',sigma))
+  results <- calc_Q_par(K_val, X_vals, sigma, big_params = F)
+>>>>>>> dev
   Q_mat <-t(as.data.frame(matrix(unlist(results), nrow=length(unlist(results[1])))))
   print(paste('chooseSigma: getting initial weights for #samples: ',N_fit))
   results = decompose_batch(puck@nUMI[fit_ind], iv$cell_type_info[[1]], beads, iv$gene_list, constrain = F)
@@ -43,7 +57,11 @@ if(true_predictions) {
 }
 counts <- t(beads)
 
+<<<<<<< HEAD
 sigma <- chooseSigma(prediction, counts, resultsdir, sigma_init = sigma)
+=======
+sigma <- chooseSigma(prediction, counts, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch)
+>>>>>>> dev
 
 results <- calc_Q_par(K_val, X_vals, sigma, big_params = T)
 Q_mat <-t(as.data.frame(matrix(unlist(results), nrow=length(unlist(results[1])))))

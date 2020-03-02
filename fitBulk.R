@@ -2,6 +2,7 @@ library(RCTD)
 library(Matrix)
 #scratch
 iv <- init_RCTD(gene_list_reg = F, get_proportions = F) #initial variables
+<<<<<<< HEAD
 split_puck(iv$puck, iv$slideseqdir, iv$config$n_puck_folds)
 results <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
 resultsdir <- paste0(iv$slideseqdir,"/results")
@@ -17,6 +18,24 @@ decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv
 prediction <- as.matrix(results$X) %*% decompose_results$weights
 sigma <- chooseSigma(prediction, results$b, resultsdir, sigma_init = sigma, N_epoch = 30, folder_id = "Bulk2")
 decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), results$b, verbose = T, constrain = F, MIN_CHANGE = 0.0001, n.iter = 100)
+=======
+split_puck(iv$puck, iv$slideseqdir, iv$n_puck_folds)
+bulkData <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
+resultsdir <- paste0(iv$slideseqdir,"/results")
+use_Q = F
+X_vals = c(max(bulkData$X+1))
+K_val = max(bulkData$b + 1)
+sigma = 1
+print('fitBulk: decomposing bulk')
+decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
+prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
+sigma <- sqrt(mean((log(prediction) - log(bulkData$b))^2))
+sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk1")
+decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
+prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
+sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk2")
+decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
+>>>>>>> dev
 proportions = decompose_results$weights
 saveRDS(proportions, paste0(resultsdir,'/Bulk/weights.RDS'))
 #split_puck(puck, slideseqdir, config$n_puck_folds)
