@@ -62,18 +62,42 @@ if(doublet_mode) {
     results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
   }
 }
+rownames(results_df) = barcodes
 
-marker_data = get_marker_data(cell_type_info[[2]], NULL, cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
+marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
-marker_scores_df <- get_marker_scores(cell_type_info, marker_data, puck)
+marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
 norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
 
 #make the plots
-plot_meta_genes(cell_type_info,marker_scores_df, resultsdir)
-plot_norm_meta_genes(cell_type_info,norm_marker_scores, resultsdir)
+plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)
+plot_norm_meta_genes(iv$cell_type_info,norm_marker_scores, resultsdir)
 plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_confidence_rate(puck, resultsdir, norm_weights)
+plot_weight_distribution(iv$cell_type_info, puck, resultsdir, norm_weights)
+get_corr(iv$cell_type_info, norm_marker_scores, norm_weights)
+plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet)
+plot_cond_occur(cell_type_info, resultsdir, norm_weights)
+plot_occur_unthreshold(cell_type_info, resultsdir, norm_weights)
+
+#doublets :)
+doublets <- results_df[results_df$spot_class == "doublet_certain",]
+plot_doublets(doublets, resultsdir, iv$cell_type_info)
+plot_doublets_type(doublets, resultsdir, iv$cell_type_info)
+doub_occur <- table(doublets$second_type, doublets$first_type)
+plot_heat_map(doub_occur/sum(doub_occur)*20, normalize = F)
+# create a dataset
+specie <- c(rep("sorgho" , 3) , rep("poacee" , 3) , rep("banana" , 3) , rep("triticum" , 3) )
+condition <- rep(c("normal" , "stress" , "Nitrogen") , 4)
+value <- abs(rnorm(12 , 0 , 15))
+data <- data.frame(specie,condition,value)
+data <- melt(t(doub_occur)); colnames(data) = c("First","Second", "Count")
+
+# Stacked
+ggplot(data, aes(fill=Second, y=Count, x=First)) +
+  geom_bar(position="stack", stat="identity")
+
 
 #only for ground truth
 metadir <- file.path(iv$slideseqdir,"MetaData")

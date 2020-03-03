@@ -390,52 +390,20 @@ get_marker_score_type <- function(marker_data, bead, UMI_tot, cell_type, gene_me
 }
 
 #get marker scores for all cell types
-get_marker_scores <- function(marker_data, puck, cell_type_means, score_threshold = 10) {
-  gene_means = rowMeans(cell_type_means[rownames(marker_data),])
-  scores = numeric(dim(puck@counts)[2])
-  for (i in 1:dim(puck@counts)[2]) {
-    scores[i] <- get_marker_score_type(marker_data, puck@counts[,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
-  }
-  names(scores) = colnames(puck@counts)
-  return(scores)
-}
-
-#marker scores for all cell types
-get_norm_marker_scores <- function(marker_data, puck, cell_type, cell_type_means, score_threshold = 10) {
-  gene_list = rownames(marker_data)[marker_data$cell_type==cell_type]
-  gene_means = rowMeans(cell_type_means[rownames(marker_data),])
-  scores = numeric(dim(puck@counts)[2])
-  for (i in 1:dim(puck@counts)[2]) {
-    scores[i] <- get_marker_score_type(marker_data[gene_list,], puck@counts[gene_list,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
-  }
-  names(scores) = colnames(puck@counts)
-  return(scores)
-}
-
-#TODO: remember to take into account the mean of the new dataset
-#simple classifier based on the marker_genes
-#cell_type_means is from the reference
-classify_cell_marker <- function(marker_data, bead, UMI_tot, cell_type_means, score_threshold = 10) {
-  max_score = 0
-  max_type = NULL
-  gene_means = rowMeans(cell_type_means[rownames(marker_data),])
-  for(cell_type in cell_type_names) {
-    cell_score = get_marker_score_type(marker_data, bead, UMI_tot, cell_type, gene_means, score_threshold = score_threshold)
-    if(is.null(max_type) || cell_score > max_score) {
-      max_score = cell_score
-      max_type = cell_type
+get_marker_scores <- function(marker_data, puck, cell_type_info, score_threshold = 10) {
+  gene_means = rowMeans(cell_type_info[[1]][rownames(marker_data),])
+  score_df <- Matrix(0, nrow = dim(puck@counts)[2], ncol = cell_type_info[[3]])
+  rownames(score_df) = colnames(puck@counts); colnames(score_df) = cell_type_info[[2]]
+  for(cell_type in cell_type_info[[2]]) {
+    scores = numeric(dim(puck@counts)[2])
+    for (i in 1:dim(puck@counts)[2]) {
+      scores[i] <- get_marker_score_type(marker_data, puck@counts[,i], puck@nUMI[i], cell_type, gene_means, score_threshold)
     }
+    score_df[,cell_type] = scores
   }
-  return(max_type)
+  return(score_df)
 }
 
-#does the (all cell type) classification of a batch of beads
-classify_marker_batch <- function(nUMI, cell_type_means, beads, marker_data) {
-  types <- foreach(i = 1:(dim(beads)[1])) %do% {
-    classify_cell_marker(marker_data, beads[i,], nUMI[i], cell_type_means)
-  }
-  return(types)
-}
 
 get_prediction_sparse <- function(cell_type_means, gene_list, UMI_tot, p, type1, type2) {
   cell_types = c(type1,type2)

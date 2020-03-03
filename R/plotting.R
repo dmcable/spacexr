@@ -16,21 +16,61 @@ plot_cell_types_spec <- function(puck, barcodes) {
   gg
 }
 
-plot_cell_types <- function(puck, barcodes, results_dir) {
+plot_doublets <- function(doublets, results_dir, cell_type_info) {
+  barcodes = rownames(doublets)
   my_table = puck@coords[barcodes,]
-  my_table$class = puck@cell_labels[barcodes]
-  n_levels = length(levels(droplevels(puck@cell_labels[barcodes])))
+  my_table$class = doublets$first_type
+  my_table2 = puck@coords[barcodes,]
+  jitter = 15
+  my_table2$x = my_table2$x + jitter
+  my_table2$class = doublets$second_type
+  my_table = rbind(my_table, my_table2)
+  n_levels = cell_type_info[[3]]
   my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+  pres = unique(as.integer(my_table$class))
+  pres = pres[order(pres)]
   if(n_levels > 21)
     my_pal = pals::polychrome(n_levels)
   if(n_levels > 36)
     stop("Plotting currently supports at most 36 cell types as colors")
   plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
-    ggplot2::scale_color_manual(values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  pdf(file.path(results_dir,"all_cell_types.pdf"))
+    ggplot2::scale_color_manual(values = my_pal[pres])+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+  pdf(file.path(results_dir,"all_doublets.pdf"))
   invisible(print(plot))
   dev.off()
 }
+
+plot_doublets_type <- function(doublets_base, results_dir, cell_type_info) {
+  plots <- vector(mode = "list", length = cell_type_info[[3]])
+  i = 1
+  for (cell_type in cell_type_info[[2]]) {
+    doublets = doublets_base[doublets_base$first_type == cell_type | doublets_base$second_type == cell_type,]
+    barcodes = rownames(doublets)
+    if(length(barcodes) > 0) {
+      my_table = puck@coords[barcodes,]
+      my_table$class = doublets$first_type
+      my_table2 = puck@coords[barcodes,]
+      jitter = 15
+      my_table2$x = my_table2$x + jitter
+      my_table2$class = doublets$second_type
+      my_table = rbind(my_table, my_table2)
+      n_levels = cell_type_info[[3]]
+      my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+      pres = unique(as.integer(my_table$class))
+      pres = pres[order(pres)]
+      if(n_levels > 21)
+        my_pal = pals::polychrome(n_levels)
+      if(n_levels > 36)
+        stop("Plotting currently supports at most 36 cell types as colors")
+      plots[[i]] <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) + ggplot2::scale_color_manual(values = my_pal[pres])+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity() +ggplot2::ggtitle(cell_type)
+    }
+    i = i + 1
+  }
+  pdf(file.path(results_dir,"all_doublets_type.pdf"))
+  invisible(lapply(plots, print))
+  dev.off()
+}
+
 
 #individually plots cell types
 #if counter_stain = cell_type, then it also plots one cell type as a reference
@@ -57,12 +97,16 @@ plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
 }
 
 #plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL) {
+plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit = NULL) {
   my_pal = pals::kovesi.rainbow(20)
   my_table = puck@coords[barcodes,]
   my_table$value = plot_val[barcodes]
+  if(!is.null(ylimit))
+    sc <- ggplot2::scale_colour_gradientn(colors = my_pal, limits = ylimit)
+  else
+    sc <- ggplot2::scale_colour_gradientn(colors = my_pal)
   plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 0.5, shape=19,color=value)) +
-    ggplot2::scale_colour_gradientn(colors = my_pal) + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+     sc + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
   if(!is.null(title))
     plot <- plot + ggplot2::ggtitle(title)
   plot
@@ -74,6 +118,7 @@ plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL) {
 #plots a continunous value over certain beads in the puck
 plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxUMI = 20000, min_val = NULL, max_val = NULL, title = NULL, my_cond = NULL) {
   UMI_filter = (puck@nUMI > minUMI) & (puck@nUMI < maxUMI)
+  ylimit = NULL
   if(!is.null(my_cond))
     my_cond = UMI_filter & my_cond
   else
@@ -82,9 +127,12 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
     my_cond = my_cond & (puck@cell_labels == cell_type)
   if(!is.null(min_val))
     my_cond = my_cond & (plot_val > min_val)
-  if(!is.null(max_val))
+  if(!is.null(max_val)) {
     plot_val[plot_val > max_val] = max_val
-  plot_puck_continuous(puck, names(which(my_cond)), plot_val, title = title)
+    if(!is.null(min_val))
+      ylimit = c(min_val, max_val)
+  }
+  plot_puck_continuous(puck, names(which(my_cond)), plot_val, title = title, ylimit = ylimit)
 }
 
 #plots a gene over the puck. Positive restricts plotting to positive.
@@ -99,9 +147,86 @@ plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
     my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI) # pmax(0.25, 0.7 - puck@nUMI / 1000)
-    plots[[i]] <- plot_puck_wrapper(puck, weights[,cell_type], NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
+    plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
+    if(sum(my_cond) > 0)
+      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
   }
   pdf(file.path(resultsdir,"cell_type_weights.pdf"))
+  invisible(lapply(plots, print))
+  dev.off()
+}
+
+#spatially plot the weights for each cell type
+plot_weights_nmf <- function(cell_type_info, puck, resultsdir, weights, thresh_nmf) {
+  plots <- vector(mode = "list", length = cell_type_info[[3]])
+  for (i in 1:cell_type_info[[3]]) {
+    cell_type = cell_type_info[[2]][i]
+    my_cond = weights[,cell_type] > thresh_nmf[cell_type,] # pmax(0.25, 0.7 - puck@nUMI / 1000)
+    plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
+    if(sum(my_cond) > 0)
+      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
+  }
+  pdf(file.path(resultsdir,"cell_type_weights.pdf"))
+  invisible(lapply(plots, print))
+  dev.off()
+}
+
+#plot the confident counts for each cell type
+plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
+  occur <- numeric(cell_type_info[[3]])
+  names(occur) = cell_type_info[[2]]
+  for (i in 1:cell_type_info[[3]]) {
+    cell_type = cell_type_info[[2]][i]
+    my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI)
+    occur[cell_type] = sum(my_cond)
+  }
+  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  pdf(file.path(resultsdir,"cell_type_occur.pdf"))
+  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_minimal()
+  invisible(print(plot))
+  dev.off()
+}
+
+#plot the confident counts for each cell type
+plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
+  occur <- table(apply(weights, 1, which.max))[as.character(1:cell_type_info[[3]])]
+  names(occur) = cell_type_info[[2]]
+  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  pdf(file.path(resultsdir,"cell_type_occur_unthreshold.pdf"))
+  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_minimal()
+  invisible(print(plot))
+  dev.off()
+}
+
+#plot the confident counts for each cell type
+plot_cond_occur_nmf <- function(cell_type_info, resultsdir, weights, thresh_nmf) {
+  occur <- numeric(cell_type_info[[3]])
+  names(occur) = cell_type_info[[2]]
+  for (i in 1:cell_type_info[[3]]) {
+    cell_type = cell_type_info[[2]][i]
+    my_cond = weights[,cell_type] > thresh_nmf[cell_type,]
+    occur[cell_type] = sum(my_cond)
+  }
+  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  pdf(file.path(resultsdir,"cell_type_occur.pdf"))
+  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_minimal()
+  invisible(print(plot))
+  dev.off()
+}
+
+#spatially plot the weights_doublet for each cell type
+plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doublet) {
+  plots <- vector(mode = "list", length = cell_type_info[[3]])
+  for (i in 1:cell_type_info[[3]]) {
+    cell_type = cell_type_info[[2]][i]
+    all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2]
+    all_weights <- c(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1])
+    plots[[i]] <- plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type)
+  }
+  pdf(file.path(resultsdir,"cell_type_weights_doublets.pdf"))
   invisible(lapply(plots, print))
   dev.off()
 }
@@ -111,7 +236,9 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
-    plots[[i]] <- plot_puck_wrapper(puck, weights[,cell_type], NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type)
+    plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
+    if(sum(weights[,cell_type]) > 0)
+      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type)
   }
   pdf(file.path(resultsdir,"cell_type_weights_unthreshold.pdf"))
   invisible(lapply(plots, print))
@@ -120,7 +247,7 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
 
 
 #plots the distribution of weights for each cell type across UMI
-plot_weight_distribution <- function(cell_type_info, puck, resultsdir) {
+plot_weight_distribution <- function(cell_type_info, puck, resultsdir, weights) {
   pdf(file.path(resultsdir,"cell_type_weight_distribution.pdf"))
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
@@ -153,7 +280,7 @@ plot_confidence_rate <- function(puck, resultsdir, weights) {
 #plot meta gene scores
 plot_meta_genes <- function(cell_type_info, marker_scores_df, resultsdir) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
-  for(i in 1:n_cell_types) {
+  for(i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][[i]]
     plots[[i]] <- plot_puck_wrapper(puck, marker_scores_df[,cell_type], NULL, minUMI = 100, min_val = 0, max_val = 3, title = cell_type)
   }
@@ -165,7 +292,7 @@ plot_meta_genes <- function(cell_type_info, marker_scores_df, resultsdir) {
 #plot norm marker gene scores
 plot_norm_meta_genes <- function(cell_type_info, norm_marker_scores, resultsdir) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
-  for(i in 1:n_cell_types) {
+  for(i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][[i]]
     plots[[i]] <- plot_puck_wrapper(puck, norm_marker_scores[,cell_type], NULL, minUMI = 100, min_val = 0, max_val = 1, title = cell_type)
   }
