@@ -11,6 +11,7 @@ solveOLS<-function(S,B){
   norm_factor <- norm(D,"2")
   D <- D / norm_factor
   d <- d / norm_factor
+  epsilon <- 1e-7; D <- D + epsilon * diag(length(d))
   solution<-quadprog::solve.QP(D,d,Ap,bp,meq=1)$solution
   names(solution)<-colnames(S)
   return(solution)
@@ -37,7 +38,7 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
     solution <- new_solution
     iterations<-iterations+1
   }
-  return(list(weights = new_solution, converged = (change <= MIN_CHANGE)))
+  return(list(weights = solution, converged = (change <= MIN_CHANGE)))
 }
 
 #solve WLS given a dampening constant
@@ -57,6 +58,7 @@ solveWLS<-function(S,B,initialSol, nUMI,bead_mode,...){
   norm_factor <- norm(D_mat,"2")
   D_mat <- D_mat / norm_factor
   d_vec <- d_vec / norm_factor
+  epsilon <- 1e-7; D_mat <- D_mat + epsilon * diag(length(d_vec))
   A<-cbind(diag(dim(S)[2]))
   bzero<- (-solution)
   alpha = 0.3
@@ -69,30 +71,4 @@ solveWLS<-function(S,B,initialSol, nUMI,bead_mode,...){
   }
   names(solution)<-colnames(S)
   return(solution)
-}
-
-#derivative of phi
-phi_der <- function(r, c = 1) {
-  r <- abs(r)
-  x <- numeric(length(r))
-  x[r <= c] = 1
-  x[r > c] = c*(2*r[r>c] - c)/(r[r > c]^2)
-  return(x)
-}
-
-phi <- function(r, c = 1) {
-  neg = r < 0
-  r <- abs(r)
-  x <- numeric(length(r))
-  x[r <= c] = r[r <= c]
-  x[r > c] = c*(2*log(r[r>c]/c) + c/r[r>c])
-  x[neg] = -x[neg]
-  return(x)
-}
-
-get_V <- function(x, epsilon = 1e-4) {
-  V = x
-  V[V < epsilon] <- epsilon
-  V[V > 1] <- V[V > 1]^2
-  return(V)
 }
