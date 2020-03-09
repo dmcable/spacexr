@@ -53,8 +53,8 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
 }
 
 #get weights and doublet
-decompose_sparse_report <- function(cell_type_info, gene_list, UMI_tot, bead, type1, type2, constrain = F) {
-  results <- decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type1, type2, score_mode = F, constrain = constrain)
+decompose_sparse_report <- function(cell_type_info, gene_list, UMI_tot, bead, type1, type2, constrain = F, verbose = F) {
+  results <- decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type1, type2, score_mode = F, constrain = constrain, verbose = verbose)
   decompose_results <- decompose_doublet(bead, results$weights, gene_list, cell_type_info, type1, type2)
   return(list(weights = results$weights, decompose_results = decompose_results))
 }
@@ -304,7 +304,7 @@ process_beads_sparse <- function(cell_type_info, gene_list, puck, meta_df, const
     numCores <- MAX_CORES
   cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
   doParallel::registerDoParallel(cl)
-  environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'use_Q')
+  environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'use_Q', 'decompose_sparse_report')
   results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)

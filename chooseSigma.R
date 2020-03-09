@@ -49,25 +49,3 @@ sigma <- chooseSigma(prediction, counts, resultsdir, sigma_init = sigma, N_epoch
 results <- calc_Q_par(K_val, X_vals, sigma, big_params = T)
 Q_mat <-t(as.data.frame(matrix(unlist(results), nrow=length(unlist(results[1])))))
 saveRDS(Q_mat, file.path(resultsdir,'Q_mat.RDS'))
-#big_params = F; sigma = 1
-#if(F) {
-#  for(i in 1:20) {
-#    Q = numeric(length(Y))
-#    for(k in as.numeric(names(table(Y)))) {
-#      Q[Y == k] = calc_Q_mat_one(sigma, X[Y==k], k, batch = 100, big_params = big_params)
-#    }
-
-#    Q_d = numeric(length(Y))
-#    for(k in as.numeric(names(table(Y)))) {
-#      Q_d[Y == k] = calc_Q_d_one(sigma, X[Y==k], k, batch = 100, big_params = big_params)
-#    }
-#   print(sum(log(Q)))
-#    sigma = sigma + sum(Q_d/Q)*alpha
-#    print(sigma)
-#  }
-#}
-
-#x = 1
-#k = 3
-#(get_Q(x, k, sigma, big_params = T) - get_Q(x, k, sigma, big_params = F))/get_Q(x, k, sigma, big_params = T)
-#(get_Q_d(x, k, sigma, big_params = T) - get_Q_d(x, k, sigma, big_params = F))/get_Q_d(x, k, sigma, big_params = T)
