@@ -9,7 +9,6 @@ iv <- init_RCTD(gene_list_reg = F, get_proportions = F)
 puck = iv$puck
 thresh_nmf <- as.data.frame(read_csv(file.path(outdir,"thresh_certainty.csv")))
 rownames(thresh_nmf) <- cell_type_info[[2]]
-plot_weights(iv$cell_type_info, puck, resultsdir, nmf_norm_weights)
 plot_weights_nmf(iv$cell_type_info, puck, resultsdir, nmf_norm_weights, thresh_nmf)
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, nmf_norm_weights)
 plot_cond_occur_nmf(cell_type_info, resultsdir, nmf_norm_weights, thresh_nmf)

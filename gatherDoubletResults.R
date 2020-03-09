@@ -63,9 +63,10 @@ if(doublet_mode) {
   }
 }
 rownames(results_df) = barcodes
-
 marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
+
+#slideseq here
 marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
 norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
 
@@ -87,8 +88,63 @@ plot_doublets(doublets, resultsdir, iv$cell_type_info)
 plot_doublets_type(doublets, resultsdir, iv$cell_type_info)
 doub_occur <- table(doublets$second_type, doublets$first_type)
 plot_heat_map(doub_occur/sum(doub_occur)*20, normalize = F)
+plot_coloc(results_df, puck, resultsdir)
+
+#decomposing doublets
+get_decomposed_data <- function(results_df, iv, puck, weights_doublet) {
+  doublets <- results_df[results_df$spot_class == "doublet_certain",]
+  first_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(iv$gene_list))
+  second_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(iv$gene_list))
+  rownames(first_DGE) = rownames(doublets); rownames(second_DGE) = rownames(doublets)
+  colnames(first_DGE) = iv$gene_list; colnames(second_DGE) = iv$gene_list
+  for(ind in 1:dim(doublets)[1]) {
+    print(ind)
+    barcode = rownames(doublets)[ind]
+    doub_res <- decompose_doublet(puck@counts[iv$gene_list,barcode], weights_doublet[barcode,], iv$gene_list, cell_type_info, results_df[barcode,"first_type"],results_df[barcode,"second_type"])
+    first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
+  }
+  singlet_id <- results_df$spot_class == "singlet"
+  norm1 <- sweep(first_DGE, 1, weights_doublet[rownames(doublets),"first_type"] * puck@nUMI[rownames(first_DGE)], '/')
+  norm2 <- sweep(second_DGE, 1, weights_doublet[rownames(doublets),"second_type"] * puck@nUMI[rownames(second_DGE)], '/')
+  norm_sing <- sweep(t(puck@counts[iv$gene_list, singlet_id]),1,puck@nUMI[singlet_id],'/')
+  all_DGE <- rbind(norm1, norm2, norm_sing)
+  cell_type_labels <- unlist(list(doublets$first_type, doublets$second_type, results_df[singlet_id, "first_type"]))
+  coords <- rbind(puck@coords[rownames(doublets),c('x','y')], puck@coords[rownames(doublets),c('x','y')], puck@coords[singlet_id,c('x','y')])
+  nUMI <- c(weights_doublet[rownames(doublets),"first_type"] *puck@nUMI[rownames(first_DGE)], weights_doublet[rownames(doublets),"second_type"]*puck@nUMI[rownames(second_DGE)], puck@nUMI[singlet_id])
+  rownames(coords) = 1:dim(coords)[1]; names(nUMI) = 1:dim(coords)[1]
+  rownames(all_DGE) = 1:dim(coords)[1]
+  puck_d <- Slideseq(coords, t(all_DGE), nUMI)
+  puck_d@cell_labels <- cell_type_labels
+  names(puck_d@cell_labels) = 1:dim(coords)[1]
+  puck_d@cell_type_names <- cell_type_info[[2]]
+  return(puck_d)
+}
+
+puck_d <- get_decomposed_data(results_df, iv, puck, weights_doublet)
+
+plot_puck_gene(puck_d, "Sparcl1", cell_type = "Purkinje", min_val = 0, max_val = .03)
+plot_puck_gene(puck_d, "Sparcl1", cell_type = "Bergmann", min_val = 0, max_val = .03)
+mean(puck_d@counts["Sparcl1", puck_d@cell_labels == "Purkinje"])
+mean(puck_d@counts["Sparcl1", puck_d@cell_labels == "Bergmann"])
+my_barc <- colnames(puck_d@counts)[puck_d@cell_labels == "Purkinje"]
+mean(puck_d@counts["Sparcl1",my_barc])
+my_barc <- colnames(puck_d@counts)[puck_d@cell_labels == "Bergmann"]
+mean(puck_d@counts["Sparcl1",my_barc])
+
+plot_puck_continuous(puck_d, colnames(puck_d@counts)[puck_d@cell_labels == "Purkinje"], puck_d@counts["Sparcl1",], ylimit = c(0,0.03))
+plot_puck_continuous(puck_d, puck_d@cell_labels == "Bergmann", puck_d@counts["Sparcl1",], ylimit = c(0,0.03))
+abs(val2[puck_d@cell_labels == "Purkinje"] - val2[puck_d@cell_labels == "Purkinje"])
+
+my_barc <- barcodes[results_df$first_type == "Bergmann" & (results_df$spot_class != "reject")]
+norm_gene <- puck@counts["Sparcl1",] / puck@nUMI
+plot_puck_continuous(puck, my_barc, norm_gene, ylimit = c(0,0.03))
+mean(pmin(norm_gene[my_barc],0.03))
+mean(norm_gene[my_barc])
+#otherwise you use all of it
+
+
 # create a dataset
-specie <- c(rep("sorgho" , 3) , rep("poacee" , 3) , rep("banana" , 3) , rep("triticum" , 3) )
+specie <- c(rep("sorgho" , 3) , rep("poacee" , 3) , rep("banana" , 3) , rep("triticum" , 3))
 condition <- rep(c("normal" , "stress" , "Nitrogen") , 4)
 value <- abs(rnorm(12 , 0 , 15))
 data <- data.frame(specie,condition,value)
@@ -99,7 +155,7 @@ ggplot(data, aes(fill=Second, y=Count, x=First)) +
   geom_bar(position="stack", stat="identity")
 
 
-#only for ground truth
+#figure 1 and figure 2 here
 metadir <- file.path(iv$slideseqdir,"MetaData")
 meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
 meta_df <- meta_data$meta_df
@@ -109,9 +165,11 @@ class_df <- get_class_df(cell_type_names)
 common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 resultsdir = file.path(iv$slideseqdir, "results")
 square_results <- plot_doublet_identification(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
-square_results <- plot_doublet_identification_certain(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
 plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy.png'), save.file = T, normalize = F)
 write.csv(as.matrix(square_results), file.path(resultsdir,'doublet_avg_accuracy.csv'))
+square_results <- plot_doublet_identification_certain(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
+plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy_certain.png'), save.file = T, normalize = F)
+write.csv(as.matrix(square_results), file.path(resultsdir,'doublet_avg_accuracy_certain.csv'))
 #next make the confusion matrix
 true_types = unlist(list(meta_df[meta_df$first_UMI == 0,"second_type"], meta_df[meta_df$first_UMI == UMI_tot,"first_type"]))
 pred_types = unlist(list(results_df[meta_df$first_UMI == 0, "first_type"], results_df[meta_df$first_UMI == UMI_tot, "first_type"]))
@@ -161,5 +219,24 @@ spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
 ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
+
+#weight recovery test
+Q_mat <- readRDS(file.path(resultsdir,'Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = T
+DropViz <- T
+if(DropViz) {
+  test_reference <- readRDS("Data/Reference/DropVizCerAnnotated/scRefSubsampled1000.RDS")
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+  restrict_test_ref <- create_downsampled_data(test_reference, NULL, cell_type_import = common_cell_types, save.file = F)
+} else {
+  restrict_test_ref <- readRDS("Data/Reference/10xCer/scRefSubsampled1000.RDS")
+  common_cell_types <- iv$cell_type_info[[2]]
+}
+type1 = "Purkinje"
+type2 = "Granule"
+cell_type_info_renorm = iv$cell_type_info
+cell_type_means_renorm <- cell_type_info_renorm[[1]]
+weight_recovery_test(restrict_test_ref, iv$gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
 
 

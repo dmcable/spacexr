@@ -52,6 +52,13 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
   }
 }
 
+#get weights and doublet
+decompose_sparse_report <- function(cell_type_info, gene_list, UMI_tot, bead, type1, type2, constrain = F) {
+  results <- decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type1, type2, score_mode = F, constrain = constrain)
+  decompose_results <- decompose_doublet(bead, results$weights, gene_list, cell_type_info, type1, type2)
+  return(list(weights = results$weights, decompose_results = decompose_results))
+}
+
 get_likelihood <- function(gene_list, prediction, bead) {
   delta = 1e-5
   total_score=0
@@ -286,6 +293,30 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
   return(results)
 }
 
+#doublet decomposition for the whole puck.
+process_beads_sparse <- function(cell_type_info, gene_list, puck, meta_df, constrain = F) {
+  beads = t(as.matrix(puck@counts[gene_list,]))
+  out_file = "logs/process_beads_log.txt"
+  if (file.exists(out_file))
+    file.remove(out_file)
+  numCores = parallel::detectCores(); MAX_CORES = 8
+  if(parallel::detectCores() > MAX_CORES)
+    numCores <- MAX_CORES
+  cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
+  doParallel::registerDoParallel(cl)
+  environ = c('process_bead','decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'use_Q')
+  results <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
+    if(i %% 100 == 0)
+      cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
+    assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
+    assign("K_val",K_val, envir = globalenv()); assign("use_Q",use_Q, envir = globalenv())
+    result = decompose_sparse_report(cell_type_info, gene_list, puck@nUMI[i], beads[i,], meta_df$first_type[i], meta_df$second_type[i], constrain = constrain)
+    result
+  }
+  parallel::stopCluster(cl)
+  return(results)
+}
+
 
 #run the weight recovery test. creates random mixtures between two cell types and tests the model's ability to
 #recover the weights
@@ -431,4 +462,23 @@ get_singlet_score <- function(cell_type_info, gene_list, bead, UMI_tot, type, co
   prediction <- get_prediction_sparse(cell_type_info[[1]], gene_list, UMI_tot, 1, type, dummy_type)
   log_l <- calc_log_l_par(gene_list, prediction, bead)
   return(log_l)
+}
+
+#decompose a doublet into two cells
+decompose_doublet <- function(bead, weights, gene_list, cell_type_info, type1, type2) {
+  N_genes = length(gene_list)
+  expect_1 = vector(mode="numeric",length = N_genes)
+  expect_2 = vector(mode="numeric",length = N_genes)
+  variance = vector(mode="numeric",length = N_genes)
+  names(expect_1) = gene_list; names(expect_2) = gene_list; names(variance) = gene_list
+  epsilon = 1e-10
+  for(ind in 1:N_genes) {
+    gene = gene_list[ind]
+    denom = weights[1] * cell_type_info[[1]][gene,type1] + weights[2] * cell_type_info[[1]][gene,type2] + epsilon
+    posterior_1 = (weights[1] * cell_type_info[[1]][gene,type1] + epsilon / 2) / denom
+    expect_1[[ind]] = posterior_1 * bead[gene]
+    expect_2[[ind]] = bead[gene] - posterior_1 * bead[gene]
+    variance[[ind]] = posterior_1 * bead[gene] * (1 - posterior_1)
+  }
+  return(list(expect_1 = expect_1, expect_2 = expect_2, variance = variance))
 }

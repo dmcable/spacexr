@@ -100,6 +100,7 @@ bead = data.matrix((as.matrix(cell1 + cell2)))
 res <- decompose_sparse(cell_type_means, gene_list, 2000, bead, "CA3", "Denate")
 p_1 = res[1]
 p_2 = res[2]
+
 int_genes = tail(rownames(bead)[order(bead)],40)
 N_genes = length(int_genes)
 expect_1 = vector(mode="numeric",length = N_genes)

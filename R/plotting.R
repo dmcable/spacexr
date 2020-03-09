@@ -128,7 +128,8 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
   if(!is.null(min_val))
     my_cond = my_cond & (plot_val > min_val)
   if(!is.null(max_val)) {
-    plot_val[plot_val > max_val] = max_val
+    epsilon = 0.00001
+    plot_val[plot_val >= max_val - epsilon] = max_val - epsilon
     if(!is.null(min_val))
       ylimit = c(min_val, max_val)
   }
@@ -136,9 +137,11 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
 }
 
 #plots a gene over the puck. Positive restricts plotting to positive.
-plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F) {
+plot_puck_gene <- function(puck, gene, cell_type = NULL, minUMI = 0, positive = F, min_val = NULL, max_val = NULL) {
   gene_vals = puck@counts[gene,]
-  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, min_val = positive - 0.5)
+  if(is.null(min_val))
+    min_val = positive - 0.5
+  plot_puck_wrapper(puck, gene_vals, cell_type, minUMI, min_val = min_val, max_val = max_val)
 }
 
 #spatially plot the weights for each cell type
@@ -161,7 +164,7 @@ plot_weights_nmf <- function(cell_type_info, puck, resultsdir, weights, thresh_n
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
-    my_cond = weights[,cell_type] > thresh_nmf[cell_type,] # pmax(0.25, 0.7 - puck@nUMI / 1000)
+    my_cond = weights[,cell_type] > thresh_nmf[cell_type] # pmax(0.25, 0.7 - puck@nUMI / 1000)
     plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
     if(sum(my_cond) > 0)
       plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
@@ -206,7 +209,7 @@ plot_cond_occur_nmf <- function(cell_type_info, resultsdir, weights, thresh_nmf)
   names(occur) = cell_type_info[[2]]
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
-    my_cond = weights[,cell_type] > thresh_nmf[cell_type,]
+    my_cond = weights[,cell_type] > thresh_nmf[cell_type]
     occur[cell_type] = sum(my_cond)
   }
   df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
@@ -300,4 +303,60 @@ plot_norm_meta_genes <- function(cell_type_info, norm_marker_scores, resultsdir)
   invisible(lapply(plots, print))
   dev.off()
 }
+
+#plot colocalization of cell types
+plot_coloc <- function(results_df, puck, resultsdir) {
+  library(fields)
+  non_reject <- results_df$spot_class != "reject"
+  loc_df <- cbind(results_df[non_reject, "first_type"], puck@coords[non_reject, c('x','y')])
+  doub_ind <- results_df$spot_class == "doublet_certain"
+  loc_df2 <- cbind(results_df[doub_ind, "second_type"], puck@coords[doub_ind, c('x','y')])
+  colnames(loc_df) = c('cell_type','x','y'); colnames(loc_df2) = c('cell_type','x','y')
+  loc_df <- rbind(loc_df, loc_df2)
+  conversion <- .65
+  D_vec_microns = 2^((0:20)/3)*10 #c(10,25, 50, 100, 200)
+  D_vec = D_vec_microns / conversion
+  enrich_all <- array(0, dim = c(length(D_vec), cell_type_info[[3]], cell_type_info[[3]]))
+  dimnames(enrich_all) <- list(D_vec_microns, cell_type_info[[2]],cell_type_info[[2]])
+  for(ind in 1:length(D_vec)) {
+    D = D_vec[ind]; N = dim(loc_df)[1]
+    mat <- rdist(loc_df[,c('x','y')])
+    mat_ind = mat <= D
+    xcoord <- floor((which(mat_ind)-1)/N) + 1
+    ycoord <- (which(mat_ind)-1) %% N + 1
+    small_df <- data.frame(xcoord, ycoord, mat[mat_ind])
+    colnames(small_df) = c('ind1', 'ind2', 'dist')
+    small_df <- small_df[small_df$ind1 < small_df$ind2, ]
+    small_df$type1 <- loc_df[small_df$ind1,"cell_type"]
+    small_df$type2 <- loc_df[small_df$ind2,"cell_type"]
+    co_occur <- table(small_df$type1, small_df$type2)
+    co_occur <- (co_occur + t(co_occur))/2
+    cell_type_proportions <- table(loc_df$cell_type)/N
+    expected <- cell_type_proportions %*% t(cell_type_proportions)*dim(small_df)[1]
+    enrich_all[ind,,] <- co_occur / expected
+  }
+  type1 = "Fibroblast"; type2 = "MLI2"
+  big_types <- which(cell_type_proportions > 0.01)
+  pdf(file.path(resultsdir,"spatial_enrichment.pdf"))
+  for(type1 in big_types)
+    for(type2 in big_types) {
+      if(type1 <= type2) {
+        plot(log(D_vec_microns,2), enrich_all[,type1, type2], type = "n", main = paste(cell_type_info[[2]][type1],cell_type_info[[2]][type2]))
+        lines(log(D_vec_microns,2), enrich_all[,type1,type2])
+      }
+    }
+  dev.off()
+  coolwarm_hcl <- colorspace::diverging_hcl(100,h = c(250, 10), c = 100, l = c(37, 88), power = c(0.7, 1.7))
+
+  pdf(file.path(resultsdir,"spatial_enrichment_heat_big.pdf"))
+  for(ind in 1:length(D_vec))
+    heatmap(pmax(pmin(log(enrich_all[ind,big_types, big_types]),2),-2), scale = "none", col = coolwarm_hcl, main = paste(round(D_vec_microns[ind]),"Microns"), breaks = (-50:50)/25)
+  dev.off()
+
+  pdf(file.path(resultsdir,"spatial_enrichment_heat_all.pdf"))
+  for(ind in 1:length(D_vec))
+    heatmap(pmax(pmin(log(enrich_all[ind,,]),2),-2), scale = "none", col = coolwarm_hcl, main = paste(round(D_vec_microns[ind]),"Microns"), breaks = (-50:50)/25)
+  dev.off()
+}
+
 

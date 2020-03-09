@@ -141,7 +141,8 @@ get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
   gene_list = rownames(cell_type_info[[1]])
-  gene_list = gene_list[-grep("mt-",gene_list)]
+  if(length(grep("mt-",gene_list)) > 0)
+    gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
   for(cell_type in cell_type_info[[2]]) {
@@ -271,7 +272,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   print("init_RCTD: end")
   return(list(refdir = refdir, slideseqdir = slideseqdir, bulkdir = bulkdir, reference = reference,
               proportions = proportions, gene_list = gene_list, puck = puck, cell_type_info = cell_type_info,
-              config = config, n_puck_folds = config_data$n_puck_folds))
+              config = config, n_puck_folds = config_data$n_puck_folds, puckrds = config_data$puckrds))
 }
 
 get_class_df <- function(cell_type_names) {
