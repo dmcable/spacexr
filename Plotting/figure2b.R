@@ -1,6 +1,6 @@
 library(RCTD)
 library(Matrix)
-DropViz <- F
+DropViz <- T
 if(DropViz) {
   test_reference <- readRDS("Data/Reference/DropVizCerAnnotated/scRefSubsampled1000.RDS")
   common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
@@ -16,7 +16,7 @@ if(!dir.exists(metadir))
   dir.create(metadir)
 
 #next, generate the fake dataset
-n_cell_types = 3 #length(common_cell_types)
+n_cell_types = length(common_cell_types)
 trials = 30 # 30
 n_conditions = 13 # 10
 N_samples = (n_cell_types * trials * n_conditions * (n_cell_types - 1))/2

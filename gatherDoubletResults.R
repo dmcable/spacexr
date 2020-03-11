@@ -143,16 +143,6 @@ mean(norm_gene[my_barc])
 #otherwise you use all of it
 
 
-# create a dataset
-specie <- c(rep("sorgho" , 3) , rep("poacee" , 3) , rep("banana" , 3) , rep("triticum" , 3))
-condition <- rep(c("normal" , "stress" , "Nitrogen") , 4)
-value <- abs(rnorm(12 , 0 , 15))
-data <- data.frame(specie,condition,value)
-data <- melt(t(doub_occur)); colnames(data) = c("First","Second", "Count")
-
-# Stacked
-ggplot(data, aes(fill=Second, y=Count, x=First)) +
-  geom_bar(position="stack", stat="identity")
 
 
 #figure 1 and figure 2 here
@@ -160,9 +150,13 @@ metadir <- file.path(iv$slideseqdir,"MetaData")
 meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
 meta_df <- meta_data$meta_df
 UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
-UMI_list <- c(0,250,500,750,1000) #for now
 class_df <- get_class_df(cell_type_names)
-common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+DropViz <- F
+if(DropViz) {
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+} else {
+  common_cell_types <- iv$cell_type_info[[2]]
+}
 resultsdir = file.path(iv$slideseqdir, "results")
 square_results <- plot_doublet_identification(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
 plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy.png'), save.file = T, normalize = F)
@@ -176,21 +170,21 @@ pred_types = unlist(list(results_df[meta_df$first_UMI == 0, "first_type"], resul
 conf_mat <- caret::confusionMatrix(pred_types,factor(true_types,levels = iv$cell_type_info[[2]]))
 plot_heat_map(conf_mat$table, file_loc = file.path(resultsdir,'confusion_matrix.png'), save.file = T)
 write.csv(conf_mat$table, file.path(resultsdir,'confusion_matrix.csv'))
-#plot doublet weights
-singlets = meta_df$first_UMI == 0 | meta_df$first_UMI == UMI_tot
-hist(weights_doublet[singlets,"first_type"],breaks = 30)
-p1 <- hist(weights_doublet[singlets,"first_type"], breaks = 20)
-p2 <- hist(weights_doublet[!singlets,"first_type"], breaks = 20)
-plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,1))  # first histogram
-plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,1), add=T)
+if(F) {
+  #plot doublet weights
+  singlets = meta_df$first_UMI == 0 | meta_df$first_UMI == UMI_tot
+  hist(weights_doublet[singlets,"first_type"],breaks = 30)
+  p1 <- hist(weights_doublet[singlets,"first_type"], breaks = 20)
+  p2 <- hist(weights_doublet[!singlets,"first_type"], breaks = 20)
+  plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,1))  # first histogram
+  plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,1), add=T)
 
-#plot all weights
-do.call(pmax, weights[singlets,])
-apply(weights[singlets,],1,max)
-p1 <- hist(apply(weights[singlets,],1,max), breaks = 20)
-p2 <- hist(apply(weights[!singlets,],1,max), breaks = 20)
-plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,1))  # first histogram
-plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,1), add=T)
+  #plot all weights
+  p1 <- hist(apply(weights[singlets,],1,max), breaks = 20)
+  p2 <- hist(apply(weights[!singlets,],1,max), breaks = 20)
+  plot( p1, col=rgb(0,0,1,1/4), xlim=c(0,1))  # first histogram
+  plot( p2, col=rgb(1,0,0,1/4), xlim=c(0,1), add=T)
+}
 
 #plot different conditions
 N_UMI_cond <- (length(UMI_list) + 1)/2
@@ -203,8 +197,9 @@ for(nUMI in UMI_list[1:N_UMI_cond]) {
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
+pdf(file.path(resultsdir, "doublet_categories.pdf"))
 ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
-
+dev.off()
 
 #plot doublet proportions
 N_UMI_cond <- (length(UMI_list) + 1)/2
@@ -218,25 +213,7 @@ for(nUMI in UMI_list[1:N_UMI_cond]) {
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
+pdf(file.path(resultsdir, "doublet_detection.pdf"))
 ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
-
-#weight recovery test
-Q_mat <- readRDS(file.path(resultsdir,'Q_mat.RDS'))
-N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
-K_val = dim(Q_mat)[1] - 3; use_Q = T
-DropViz <- T
-if(DropViz) {
-  test_reference <- readRDS("Data/Reference/DropVizCerAnnotated/scRefSubsampled1000.RDS")
-  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
-  restrict_test_ref <- create_downsampled_data(test_reference, NULL, cell_type_import = common_cell_types, save.file = F)
-} else {
-  restrict_test_ref <- readRDS("Data/Reference/10xCer/scRefSubsampled1000.RDS")
-  common_cell_types <- iv$cell_type_info[[2]]
-}
-type1 = "Purkinje"
-type2 = "Granule"
-cell_type_info_renorm = iv$cell_type_info
-cell_type_means_renorm <- cell_type_info_renorm[[1]]
-weight_recovery_test(restrict_test_ref, iv$gene_list, cell_type_means_renorm, type1, type2, conditions = 5, trials = 10)
-
+dev.off()
 
