@@ -67,8 +67,8 @@ marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
 
 #slideseq here
-marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
-norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
+#marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
+#norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
 
 #make the plots
 plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)

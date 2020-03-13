@@ -27,7 +27,8 @@ ht_pdf_ds <- function(z, sigma) {
 
 get_Q <- function(X_vals, k, sigma, big_params = T) {
   if(big_params) {
-    N_Y = 20000;  gamma = 1e-3
+    #N_Y = 20000;  gamma = 1e-3
+    N_Y = 5000;  gamma = 4e-3
   }
   else {
     N_Y = 5000;  gamma = 4e-3
@@ -44,7 +45,8 @@ get_Q <- function(X_vals, k, sigma, big_params = T) {
 
 get_Q_d <- function(X_vals, k, sigma, big_params = T) {
   if(big_params) {
-    N_Y = 20000;  gamma = 1e-3
+    #N_Y = 20000;  gamma = 1e-3
+    N_Y = 5000;  gamma = 4e-3
   }
   else {
     N_Y = 5000;  gamma = 4e-3

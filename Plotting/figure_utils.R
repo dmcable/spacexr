@@ -239,5 +239,9 @@ get_decompose_plots <- function(meta_df, type1, type2, weights_doublet, meta_dat
   t_por <- colMeans((t(first_beads[de_gene_names, rownames(cur_df_mid)]) / (beads[rownames(cur_df_mid), de_gene_names])), na.rm=T)
   plot_df <- data.frame(e_por, t_por)
   de_gene_plot <- ggplot2::ggplot(plot_df, ggplot2::aes(x=e_por,y=t_por)) + geom_point() + ggplot2::labs(title=paste(type1,type2))
-  return(list(weight_plot = weight_plot, RMSE = RMSE, bias_plot = bias_plot, err_plot = err_plot, hist_plot = hist_plot, R2 = R2, de_gene_plot = de_gene_plot))
+  plot_df <- data.frame(e_por, t_por, factor(de_gene_names, levels = de_gene_names))
+  colnames(plot_df) = c('predicted', 'true', 'gene')
+  de_ind_plot <- ggplot2::ggplot(plot_df, ggplot2::aes(x=gene,y=predicted)) + geom_point(color='darkblue') + geom_point(aes(x = gene, y = true), color='darkred') +
+    ggplot2::labs(title=paste(type1,type2))+ theme(axis.text.x = element_text(hjust = 1, angle = 45))
+  return(list(weight_plot = weight_plot, RMSE = RMSE, bias_plot = bias_plot, err_plot = err_plot, hist_plot = hist_plot, R2 = R2, de_gene_plot = de_gene_plot, de_ind_plot = de_ind_plot))
 }

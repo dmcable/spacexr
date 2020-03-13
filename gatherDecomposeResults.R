@@ -76,7 +76,7 @@ for(ind1 in 1:(meta_data$n_cell_types-1))
 decomp_dir = file.path(iv$slideseqdir,"DecomposePlots")
 if(!dir.exists(decomp_dir))
   dir.create(decomp_dir)
-for(plot_title in c('bias_plot', 'err_plot','hist_plot','de_gene_plot','weight_plot')) {
+for(plot_title in c('bias_plot', 'err_plot','hist_plot','de_gene_plot','weight_plot', 'de_ind_plot')) {
   pdf(file.path(decomp_dir,paste0(plot_title,".pdf")))
   for(ind1 in 1:(meta_data$n_cell_types-1))
     for(ind2 in (ind1+1):(meta_data$n_cell_types)) {

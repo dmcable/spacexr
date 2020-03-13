@@ -6,8 +6,9 @@ split_puck(iv$puck, iv$slideseqdir, iv$n_puck_folds)
 bulkData <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
 resultsdir <- paste0(iv$slideseqdir,"/results")
 use_Q = F
-X_vals = c(max(bulkData$X+1))
-K_val = max(bulkData$b + 1)
+ABS_MAX = 30000 #prevent numerical issues
+X_vals = c(min(max(bulkData$X+1),ABS_MAX))
+K_val = min(ABS_MAX,max(bulkData$b + 1))
 sigma = 1
 print('fitBulk: decomposing bulk')
 decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
