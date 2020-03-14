@@ -243,7 +243,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   print(paste("init_RCTD: number of cell types used:", cell_type_info[[3]]))
   proportions <- NULL
   if(get_proportions) {
-    proportions <- read.csv(file.path(bulkdir,"weights.csv"))$Weight
+    proportions <- readRDS(file.path(bulkdir,"weights.RDS"))
     names(proportions) = cell_type_info[[2]]
     proportions <- proportions / sum(proportions)
     print("init_RCTD: estimated bulk composition: ")

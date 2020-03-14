@@ -4,7 +4,12 @@ library(dplyr)
 library(ggplot2)
 require(reshape2)
 source('Plotting/figure_utils.R')
-iv <- init_RCTD(gene_list_reg = F, get_proportions = F)
+DropViz <- T
+iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz)
+if(DropViz) {
+  proportions = iv$proportions
+  cell_type_info_unnorm <- iv$cell_type_info
+}
 puck = iv$puck
 iv <- init_RCTD(load_info_renorm = T) #initial variables
 resultsdir <- paste0(iv$slideseqdir,"/results")
@@ -151,7 +156,7 @@ meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
 meta_df <- meta_data$meta_df
 UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
 class_df <- get_class_df(cell_type_names)
-DropViz <- F
+
 if(DropViz) {
   common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 } else {
@@ -217,3 +222,28 @@ pdf(file.path(resultsdir, "doublet_detection.pdf"))
 ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
 dev.off()
 
+if(DropViz) {
+  #platform effect analysis
+  true_proportions <- proportions * 0
+  true_proportions[common_cell_types] = 1
+  true_proportions = true_proportions / sum(true_proportions)
+  gene_means <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% true_proportions
+  bulk_vec = rowSums(puck@counts);
+  total_UMI <- sum(puck@nUMI)
+  true_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means,2)
+  pdf(file.path(resultsdir,'platform_histogram.pdf'))
+  hist(true_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+  dev.off()
+  gene_means_pred <- as.matrix(iv$cell_type_info[[1]][iv$gene_list,]) %*% true_proportions
+  res_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_pred,2)
+  hist(res_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+  gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% proportions
+  pred_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_unnorm_pred,2)
+  hist(pred_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+  plot(true_platform_effect, pred_platform_effect)
+  R2 = cor(true_platform_effect, pred_platform_effect)^2
+  df <- data.frame(estimated_platform_effect = pred_platform_effect,true_platform_effect=true_platform_effect)
+  pdf(file.path(resultsdir,'platform_estimation.pdf'))
+  ggplot(df,aes(x=estimated_platform_effect,y=true_platform_effect)) + geom_point(alpha = 0.2) + geom_line(aes(x=estimated_platform_effect,y=estimated_platform_effect)) + ggplot2::ggtitle(paste('R2=',R2))
+  dev.off()
+}

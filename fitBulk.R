@@ -11,14 +11,16 @@ X_vals = c(min(max(bulkData$X+1),ABS_MAX))
 K_val = min(ABS_MAX,max(bulkData$b + 1))
 sigma = 1
 print('fitBulk: decomposing bulk')
-decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
+decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK*10, n.iter = 100)
 prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
 sigma <- sqrt(mean((log(prediction) - log(bulkData$b))^2))
 sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk1")
 decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
 prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
+sigma_prev <- sigma
 sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk2")
-decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
+if(abs(sigma - sigma_prev)/(max(0.1,sigma)) > 0.02)
+  decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
 proportions = decompose_results$weights
 saveRDS(proportions, paste0(resultsdir,'/Bulk/weights.RDS'))
 #split_puck(puck, slideseqdir, config$n_puck_folds)

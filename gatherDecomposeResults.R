@@ -47,7 +47,7 @@ rownames(weights_doublet) = barcodes[1:N]; colnames(weights_doublet) = c('first_
 beads = expect1 + expect2
 
 #weight recovery plot
-DropViz <- F
+DropViz <- T
 if(DropViz) {
   common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 } else {
