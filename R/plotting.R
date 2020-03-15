@@ -227,7 +227,7 @@ plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doubl
     cell_type = cell_type_info[[2]][i]
     all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2]
     all_weights <- c(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1])
-    plots[[i]] <- plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type)
+    plots[[i]] <- plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type, ylimit = c(0,1))
   }
   pdf(file.path(resultsdir,"cell_type_weights_doublets.pdf"))
   invisible(lapply(plots, print))

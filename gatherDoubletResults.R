@@ -4,7 +4,7 @@ library(dplyr)
 library(ggplot2)
 require(reshape2)
 source('Plotting/figure_utils.R')
-DropViz <- T
+DropViz <- F
 iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz)
 if(DropViz) {
   proportions = iv$proportions
@@ -76,16 +76,16 @@ norm_weights = sweep(weights, 1, rowSums(weights), '/')
 #norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
 
 #make the plots
-plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)
-plot_norm_meta_genes(iv$cell_type_info,norm_marker_scores, resultsdir)
+#plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)
+#plot_norm_meta_genes(iv$cell_type_info,norm_marker_scores, resultsdir)
 plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_confidence_rate(puck, resultsdir, norm_weights)
 plot_weight_distribution(iv$cell_type_info, puck, resultsdir, norm_weights)
-get_corr(iv$cell_type_info, norm_marker_scores, norm_weights)
+#get_corr(iv$cell_type_info, norm_marker_scores, norm_weights)
 plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet)
-plot_cond_occur(cell_type_info, resultsdir, norm_weights)
-plot_occur_unthreshold(cell_type_info, resultsdir, norm_weights)
+plot_cond_occur(iv$cell_type_info, resultsdir, norm_weights)
+plot_occur_unthreshold(iv$cell_type_info, resultsdir, norm_weights)
 
 #doublets :)
 doublets <- results_df[results_df$spot_class == "doublet_certain",]
@@ -240,10 +240,12 @@ if(DropViz) {
   gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% proportions
   pred_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_unnorm_pred,2)
   hist(pred_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
-  plot(true_platform_effect, pred_platform_effect)
   R2 = cor(true_platform_effect, pred_platform_effect)^2
   df <- data.frame(estimated_platform_effect = pred_platform_effect,true_platform_effect=true_platform_effect)
   pdf(file.path(resultsdir,'platform_estimation.pdf'))
   ggplot(df,aes(x=estimated_platform_effect,y=true_platform_effect)) + geom_point(alpha = 0.2) + geom_line(aes(x=estimated_platform_effect,y=estimated_platform_effect)) + ggplot2::ggtitle(paste('R2=',R2))
   dev.off()
+  sig_pe <- c(sd(pred_platform_effect)*log(2), sd(true_platform_effect)*log(2))
+  names(sig_pe) <- c('sigma_pe_est','sigma_pe_true')
+  write.csv(sig_pe, file.path(resultsdir,'sig_pe.csv'))
 }

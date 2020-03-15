@@ -180,7 +180,7 @@ get_decompose_plots <- function(meta_df, type1, type2, weights_doublet, meta_dat
     ggplot2::geom_point()+
     ggplot2::geom_line(ggplot2::aes(y=proportion,colour = "proportion")) +
     ggplot2::geom_errorbar(ggplot2::aes(ymin=type1_avg-st_dev, ymax=type1_avg+st_dev), width=.05,
-                           position=ggplot2::position_dodge(0.05)) + ggplot2::labs(title=paste(type1,type2))
+                           position=ggplot2::position_dodge(0.05)) + ggplot2::labs(title=paste(type1,type2)) + theme_classic()
 
   #RMSE
   RMSE <- sqrt(mean((weights_doublet[rownames(cur_df),1] - cur_df$first_UMI/meta_data$UMI_tot)^2))
@@ -216,12 +216,12 @@ get_decompose_plots <- function(meta_df, type1, type2, weights_doublet, meta_dat
     ggplot2::geom_line() +
     ggplot2::geom_point()+
     ggplot2::geom_line(ggplot2::aes(y=true_mse,colour = "true_mse")) +
-    ggplot2::geom_line(ggplot2::aes(y=null_mse,colour = "null_mse")) + ggplot2::ylim(c(0,1)) + ggplot2::labs(title=paste(type1,type2))
+    ggplot2::geom_line(ggplot2::aes(y=null_mse,colour = "null_mse")) + ggplot2::ylim(c(0,1)) + ggplot2::labs(title=paste(type1,type2))+ theme_classic()
   plot_df = data.frame(mean_pred, mean_res)
-  bias_plot <- ggplot2::ggplot(plot_df, ggplot2::aes(x=mean_pred,y=mean_res)) + geom_line() + ggplot2::labs(title=paste(type1,type2))
+  bias_plot <- ggplot2::ggplot(plot_df, ggplot2::aes(x=mean_pred,y=mean_res)) + geom_line() + ggplot2::labs(title=paste(type1,type2))+ theme_classic()
   #overall predictions distribution
   plot_df <- as.data.frame(pred_por)
-  hist_plot <- ggplot(plot_df, aes(x=pred_por)) + geom_histogram(bins=30) + ggplot2::labs(title=paste(type1,type2))
+  hist_plot <- ggplot(plot_df, aes(x=pred_por)) + geom_histogram(bins=30) + ggplot2::labs(title=paste(type1,type2))+ theme_classic()
   overall_mse <- mean((true_por - pred_por)^2)
   null_mse <- mean((true_por - 0.5)^2)
   samp_mse <- mean(my_var)
@@ -242,6 +242,6 @@ get_decompose_plots <- function(meta_df, type1, type2, weights_doublet, meta_dat
   plot_df <- data.frame(e_por, t_por, factor(de_gene_names, levels = de_gene_names))
   colnames(plot_df) = c('predicted', 'true', 'gene')
   de_ind_plot <- ggplot2::ggplot(plot_df, ggplot2::aes(x=gene,y=predicted)) + geom_point(color='darkblue') + geom_point(aes(x = gene, y = true), color='darkred') +
-    ggplot2::labs(title=paste(type1,type2))+ theme(axis.text.x = element_text(hjust = 1, angle = 45))
+    ggplot2::labs(title=paste(type1,type2))+ theme(axis.text.x = element_text(hjust = 1, angle = 45))+ theme_classic()
   return(list(weight_plot = weight_plot, RMSE = RMSE, bias_plot = bias_plot, err_plot = err_plot, hist_plot = hist_plot, R2 = R2, de_gene_plot = de_gene_plot, de_ind_plot = de_ind_plot))
 }

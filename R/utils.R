@@ -276,14 +276,16 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
               config = config, n_puck_folds = config_data$n_puck_folds, puckrds = config_data$puckrds))
 }
 
-get_class_df <- function(cell_type_names) {
+get_class_df <- function(cell_type_names, use_classes = F) {
   class_df = data.frame(cell_type_names, row.names = cell_type_names)
   colnames(class_df)[1] = "class"
-  class_df["Bergmann","class"] = "Astrocytes"
-  class_df["Fibroblast","class"] = "Endothelial"
-  class_df["MLI2","class"] = "MLI1"
-  class_df["Macrophages","class"] = "Microglia"
-  class_df["Polydendrocytes","class"] = "Oligodendrocytes"
+  if(use_classes) {
+    class_df["Bergmann","class"] = "Astrocytes"
+    class_df["Fibroblast","class"] = "Endothelial"
+    class_df["MLI2","class"] = "MLI1"
+    class_df["Macrophages","class"] = "Microglia"
+    class_df["Polydendrocytes","class"] = "Oligodendrocytes"
+  }
   return(class_df)
 }
 
