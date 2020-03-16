@@ -257,7 +257,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   }
   else
     puck <- seurat.to.slideseq(test_reference, cell_type_info)
-  puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min)
+  puck = restrict_counts(puck, rownames(puck@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
   if(load_info_renorm)
     gene_list = rownames(cell_type_info[[1]])
   else {
@@ -267,7 +267,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
       gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = MIN_OBS)
   }
   print(paste("init_RCTD: number of genes used:", length(gene_list)))
-  puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min)
+  puck = restrict_counts(puck, gene_list, UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
   puck = restrict_puck(puck, colnames(puck@counts))
   print(paste("init_RCTD: number of spots used in test data passing UMI threshold:", dim(puck@counts)[2]))
   print("init_RCTD: end")

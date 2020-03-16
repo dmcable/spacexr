@@ -329,3 +329,4 @@ type2 = "Astrocytes"
 bead = bead_mix(test_reference, iv$gene_list, 0,1000, type1, type2)
 decompose_sparse(cell_type_means_renorm, gene_list, 1000, bead, type1, type2, verbose = T, constrain = F)
 
+

@@ -70,30 +70,61 @@ if(doublet_mode) {
 rownames(results_df) = barcodes
 marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
-
+plot_puck_wrapper(iv$puck, iv$puck@counts['Tgfbi',]/iv$puck@nUMI, max_val = 3, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, iv$puck@counts['Sox9',], max_val = 3, maxUMI = 200000)
+iv$cell_type_info[[1]][marker_data$cell_type == "HSC",c("HSC", 'Hepatocyte')]
+iv$cell_type_info[[1]]["Tgfbi",c("HSC", 'Hepatocyte')]
+plot_puck_wrapper(iv$puck, weights[,"Cholangiocyte"], max_val = 1, maxUMI = 200000)
+my_barcode <- which.max(weights[puck@nUMI >= 500,"HSC"])
+norm_weights[my_barcode,]
+hist(results_df$singlet_score - results_df$min_score, breaks = 100)
+foux_res <- results_df
+table(results_df[results_df$singlet_score - results_df$min_score > 5,"second_type"])
+foux_res[results_df$singlet_score - results_df$min_score > 5, "spot_class"] <- "doublet_certain"
+plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet, foux_res)
+#Fgfr2, Rarres2
+my_ind = 9174
+Q_mat <- readRDS(file.path(resultsdir,'Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = F
+sigma = 1
+decompose_sparse(iv$cell_type_info[[1]], iv$gene_list, puck@nUMI[my_ind], puck@counts[iv$gene_list,my_ind], type1="Hepatocyte", type2="HSC",verbose=T, constrain = F)
+my_weights <- c(.33,.032)
+prediction <- as.matrix(iv$cell_type_info[[1]][c('Hepatocyte','HSC')]) %*% my_weights * puck@nUMI[my_ind]
+gene_found <- puck@counts[iv$gene_list,my_ind][puck@counts[iv$gene_list,my_ind] > 0]
+think_df <- data.frame(gene_found, round(prediction[names(gene_found),]*100)/100, round(100*iv$cell_type_info[[1]][names(gene_found),c('Hepatocyte','HSC')]*puck@nUMI[my_ind])/100)
+colnames(think_df) <- c('Y', 'x', 'A', 'B')
+table(max.col(norm_marker_scores))
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2]
+all_weights <- c(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1])
+plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type, ylimit = c(0.75,1))
 #slideseq here
-#marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
-#norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
+marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
+norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
 
 #make the plots
-#plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)
-#plot_norm_meta_genes(iv$cell_type_info,norm_marker_scores, resultsdir)
+plot_meta_genes(iv$cell_type_info,marker_scores_df, resultsdir)
+plot_norm_meta_genes(iv$cell_type_info,norm_marker_scores, resultsdir)
+get_corr(iv$cell_type_info, norm_marker_scores, norm_weights)
 plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights)
 plot_confidence_rate(puck, resultsdir, norm_weights)
 plot_weight_distribution(iv$cell_type_info, puck, resultsdir, norm_weights)
-#get_corr(iv$cell_type_info, norm_marker_scores, norm_weights)
-plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet)
+plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet, results_df)
+#plot_weights_doublet_unthreshold(iv$cell_type_info, puck, resultsdir, weights_doublet)
 plot_cond_occur(iv$cell_type_info, resultsdir, norm_weights)
 plot_occur_unthreshold(iv$cell_type_info, resultsdir, norm_weights)
 
+
 #doublets :)
+table(results_df$spot_class)
 doublets <- results_df[results_df$spot_class == "doublet_certain",]
 plot_doublets(doublets, resultsdir, iv$cell_type_info)
 plot_doublets_type(doublets, resultsdir, iv$cell_type_info)
 doub_occur <- table(doublets$second_type, doublets$first_type)
-plot_heat_map(doub_occur/sum(doub_occur)*20, normalize = F)
-plot_coloc(results_df, puck, resultsdir)
+plot_doub_occur_stack(doub_occur, resultsdir, iv)
+plot_doub_occur_heat(doub_occur, resultsdir, iv)
+plot_coloc(results_df, puck, resultsdir, iv$cell_type_info)
 
 #decomposing doublets
 get_decomposed_data <- function(results_df, iv, puck, weights_doublet) {

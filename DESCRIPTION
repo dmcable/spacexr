@@ -20,4 +20,5 @@ Imports:
 	caret, 
 	quadprog,
 	tibble,
-	dplyr
+	dplyr,
+	reshape2

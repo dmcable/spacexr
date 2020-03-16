@@ -183,7 +183,7 @@ plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
     my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI)
     occur[cell_type] = sum(my_cond)
   }
-  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
   pdf(file.path(resultsdir,"cell_type_occur.pdf"))
   plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
     geom_bar(stat="identity")+theme_minimal()
@@ -195,7 +195,7 @@ plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
 plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
   occur <- table(apply(weights, 1, which.max))[as.character(1:cell_type_info[[3]])]
   names(occur) = cell_type_info[[2]]
-  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
   pdf(file.path(resultsdir,"cell_type_occur_unthreshold.pdf"))
   plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
     geom_bar(stat="identity")+theme_minimal()
@@ -212,7 +212,7 @@ plot_cond_occur_nmf <- function(cell_type_info, resultsdir, weights, thresh_nmf)
     my_cond = weights[,cell_type] > thresh_nmf[cell_type]
     occur[cell_type] = sum(my_cond)
   }
-  df<- melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
   pdf(file.path(resultsdir,"cell_type_occur.pdf"))
   plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
     geom_bar(stat="identity")+theme_minimal()
@@ -221,7 +221,7 @@ plot_cond_occur_nmf <- function(cell_type_info, resultsdir, weights, thresh_nmf)
 }
 
 #spatially plot the weights_doublet for each cell type
-plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doublet) {
+plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doublet, results_df) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
@@ -305,7 +305,7 @@ plot_norm_meta_genes <- function(cell_type_info, norm_marker_scores, resultsdir)
 }
 
 #plot colocalization of cell types
-plot_coloc <- function(results_df, puck, resultsdir) {
+plot_coloc <- function(results_df, puck, resultsdir, cell_type_info) {
   library(fields)
   non_reject <- results_df$spot_class != "reject"
   loc_df <- cbind(results_df[non_reject, "first_type"], puck@coords[non_reject, c('x','y')])
@@ -359,4 +359,24 @@ plot_coloc <- function(results_df, puck, resultsdir) {
   dev.off()
 }
 
+#plot doublet occurances
+plot_doub_occur_heat <- function(doub_occur, resultsdir, iv) {
+  pdf(file.path(resultsdir,'doublet_heat_map.pdf'))
+  plot_heat_map(doub_occur/sum(doub_occur)*20, normalize = F)
+  dev.off()
+}
 
+#plot doublet occurances
+plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
+  data <- reshape2::melt(doub_occur)
+  colnames(data) = c('second_type','first_type','count')
+  n_levels = iv$cell_type_info[[3]]
+  my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+  names(my_pal) = iv$cell_type_info[[2]]
+  pres = iv$cell_type_info[[2]]
+  pres = pres[order(pres)]
+  pdf(file.path(resultsdir,'doublet_stacked_bar.pdf'))
+  plot <- ggplot2::ggplot(data, aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres])
+  invisible(print(plot))
+  dev.off()
+}
