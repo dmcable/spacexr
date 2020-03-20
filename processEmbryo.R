@@ -82,7 +82,7 @@ for (gene in names(dup)) {
 
 rownames(cell_type_info[[1]]) = gene_ann[rownames(cell_type_info[[1]]),]$gene_short_name
 gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = 3)
-gene_list = get_de_genes(cell_type_info, puck, fc_thresh = 0.01, expr_thresh = .000125, MIN_OBS = 3)
-gene_list_reg = get_de_genes(cell_type_info, puck, fc_thresh = 0.01, expr_thresh = .00015, MIN_OBS = 3)
+gene_list = get_de_genes(cell_type_info, puck, fc_thresh = 0.01, expr_thresh = .00005, MIN_OBS = 1)
+gene_list_reg = get_de_genes(cell_type_info, puck, fc_thresh = 0.01, expr_thresh = .00015, MIN_OBS = 1)
 
 

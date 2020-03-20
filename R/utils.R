@@ -213,7 +213,7 @@ prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
 #if puck_file is not null, then reads in puck from this file
 #if load_info_renorm, loads cell type info from MetaData/cell_type_info_renorm.RDS. Takes gene_list to be rownames of cell_type_info (renorm)
 #get_proportions -> calculates cell type info renorm
-init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F, load_info = F) {
+init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 1, load_info_renorm = F, load_info = F) {
   print("init_RCTD: begin")
   config_data <- config::get(file = "conf/dataset.yml", use_parent = FALSE)
   print(paste("init_RCRD: using config mode:",config_data$config_mode))
