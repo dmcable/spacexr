@@ -213,7 +213,7 @@ prepareBulkData <- function(bulkdir, cell_type_means, puck, gene_list) {
 #if puck_file is not null, then reads in puck from this file
 #if load_info_renorm, loads cell type info from MetaData/cell_type_info_renorm.RDS. Takes gene_list to be rownames of cell_type_info (renorm)
 #get_proportions -> calculates cell type info renorm
-init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F) {
+init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = NULL, puck_file = NULL, MIN_OBS = 3, load_info_renorm = F, load_info = F) {
   print("init_RCTD: begin")
   config_data <- config::get(file = "conf/dataset.yml", use_parent = FALSE)
   print(paste("init_RCRD: using config mode:",config_data$config_mode))
@@ -225,11 +225,14 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   bulkdir <- paste(slideseqdir,"results/Bulk",sep="/")
   if(!dir.exists(bulkdir))
     dir.create(bulkdir)
+  refdir <- file.path("Data/Reference",config_data$reffolder)
   if(load_info_renorm) {
     cell_type_info <- readRDS(file.path(slideseqdir, "MetaData/cell_type_info_renorm.RDS"))
-    reference <- NULL; refdir <- NULL
+    reference <- NULL;
+  } else if(load_info) {
+    cell_type_info <- readRDS(file.path(refdir, "MetaData/cell_type_info.RDS"))
+    reference <- NULL;
   } else {
-    refdir <- file.path("Data/Reference",config_data$reffolder)
     reference <- readRDS(paste(refdir,config_data$reffile,sep="/"))
     print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
     print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
@@ -245,7 +248,7 @@ init_RCTD <- function(gene_list_reg = T, get_proportions = F, test_reference = N
   if(get_proportions) {
     proportions <- readRDS(file.path(bulkdir,"weights.RDS"))
     names(proportions) = cell_type_info[[2]]
-    proportions <- proportions / sum(proportions)
+    proportions <- proportions # / sum(proportions)
     print("init_RCTD: estimated bulk composition: ")
     print(proportions)
   }

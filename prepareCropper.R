@@ -10,7 +10,7 @@ puck = restrict_puck(puck, colnames(puck@counts))
 coordMat = puck@coords
 coordMat[names(puck@nUMI), "nUMI"] = puck@nUMI
 plot_puck_wrapper(puck, puck@counts['Trf',], max_val = 3, maxUMI = 200000) #Oligo
-plot_puck_wrapper(puck, puck@nUMI, max_val = 500)
+plot_puck_wrapper(puck, puck@nUMI, max_val = 1000)
 write.table(coordMat, file = file.path(slideseqdir,"cropper_input.txt"),row.names=FALSE,col.names= FALSE, sep="\t")
 to_keep = read.table(file = file.path(slideseqdir,"cropper_output.txt"), sep="\t")
 rownames(to_keep) = rownames(puck@coords)

@@ -97,18 +97,25 @@ plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
 }
 
 #plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit = NULL) {
-  my_pal = pals::kovesi.rainbow(20)
+plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit = NULL, counter_barcodes = NULL, label = F, my_pal = NULL) {
+  if(is.null(my_pal))
+    my_pal = pals::kovesi.rainbow(20)
   my_table = puck@coords[barcodes,]
   my_table$value = plot_val[barcodes]
   if(!is.null(ylimit))
     sc <- ggplot2::scale_colour_gradientn(colors = my_pal, limits = ylimit)
   else
     sc <- ggplot2::scale_colour_gradientn(colors = my_pal)
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 0.5, shape=19,color=value)) +
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=value)) +
      sc + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+  if(label)
+    plot <- plot + aes(label = which(rownames(puck@coords) %in% inter_barcodes[my_class==i])) + geom_text()
+  if(!is.null(counter_barcodes)) {
+    my_table = puck@coords[counter_barcodes,]
+    plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
+  }
   if(!is.null(title))
-    plot <- plot + ggplot2::ggtitle(title)
+    plot <- plot + ggplot2::ggtitle(title) + coord_fixed() #+ ggplot2::xlim(c(2800,5000)) + ggplot2::ylim(c(2800,6500)) +
   plot
   #pdf(file.path(results_dir,"all_cell_types.pdf"))
   #invisible(print(plot))
@@ -116,7 +123,7 @@ plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit 
 }
 
 #plots a continunous value over certain beads in the puck
-plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxUMI = 20000, min_val = NULL, max_val = NULL, title = NULL, my_cond = NULL) {
+plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxUMI = 200000, min_val = NULL, max_val = NULL, title = NULL, my_cond = NULL) {
   UMI_filter = (puck@nUMI > minUMI) & (puck@nUMI < maxUMI)
   ylimit = NULL
   if(!is.null(my_cond))
@@ -152,7 +159,7 @@ plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
     my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI) # pmax(0.25, 0.7 - puck@nUMI / 1000)
     plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
     if(sum(my_cond) > 0)
-      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
+      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,maxUMI = 200000,min_val = 0, max_val = 1, title = cell_type, my_cond = my_cond)
   }
   pdf(file.path(resultsdir,"cell_type_weights.pdf"))
   invisible(lapply(plots, print))
@@ -225,11 +232,16 @@ plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doubl
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
     cell_type = cell_type_info[[2]][i]
-    all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2]
-    all_weights <- c(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1])
-    plots[[i]] <- plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type, ylimit = c(0,1))
+    all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+    all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+    all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+    if(length(all_weights) > 0)
+      plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, title = cell_type, ylimit = c(0,1))
+    else
+      plots[[i]] <- NULL
   }
   pdf(file.path(resultsdir,"cell_type_weights_doublets.pdf"))
+
   invisible(lapply(plots, print))
   dev.off()
 }
@@ -241,7 +253,7 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
     cell_type = cell_type_info[[2]][i]
     plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
     if(sum(weights[,cell_type]) > 0)
-      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,min_val = 0, max_val = 1, title = cell_type)
+      plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,maxUMI = 200000,min_val = 0, max_val = 1, title = cell_type)
   }
   pdf(file.path(resultsdir,"cell_type_weights_unthreshold.pdf"))
   invisible(lapply(plots, print))
@@ -376,7 +388,7 @@ plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   pres = iv$cell_type_info[[2]]
   pres = pres[order(pres)]
   pdf(file.path(resultsdir,'doublet_stacked_bar.pdf'))
-  plot <- ggplot2::ggplot(data, aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres])
+  plot <- ggplot2::ggplot(data, aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + theme(axis.text.x = element_text(hjust = 1, angle = 45))
   invisible(print(plot))
   dev.off()
 }

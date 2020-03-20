@@ -70,8 +70,11 @@ if(doublet_mode) {
 rownames(results_df) = barcodes
 marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
-plot_puck_wrapper(iv$puck, iv$puck@counts['Tgfbi',]/iv$puck@nUMI, max_val = 3, maxUMI = 200000)
-plot_puck_wrapper(iv$puck, iv$puck@counts['Sox9',], max_val = 3, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, iv$puck@counts['Fibcd1',]/iv$puck@nUMI, max_val = 3, maxUMI = 200000)
+iv$puck@cell_labels = results_df$first_type
+plot_puck_wrapper(iv$puck, iv$puck@counts['Vip',], cell_type = "Interneuron",max_val = 3, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, puck@nUMI, max_val = 100000, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, norm_marker_scores[,"CA1"] + norm_marker_scores[,"CA3"] + norm_marker_scores[,"Denate"], max_val = 1, maxUMI = 200000)
 iv$cell_type_info[[1]][marker_data$cell_type == "HSC",c("HSC", 'Hepatocyte')]
 iv$cell_type_info[[1]]["Tgfbi",c("HSC", 'Hepatocyte')]
 plot_puck_wrapper(iv$puck, weights[,"Cholangiocyte"], max_val = 1, maxUMI = 200000)

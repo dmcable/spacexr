@@ -1,7 +1,7 @@
 library(gplots)
 library("RColorBrewer")
 
-plot_heat_map <- function(data, file_loc = NULL, save.file = F, normalize = T) {
+plot_heat_map <- function(data, file_loc = NULL, save.file = F, normalize = T, dendrogram = 'none') {
   if(normalize) {
     norm_conf = sweep(data, 2, colSums(data), '/')
     norm_conf[norm_conf < 0] = 0
@@ -9,10 +9,10 @@ plot_heat_map <- function(data, file_loc = NULL, save.file = F, normalize = T) {
     norm_conf = data
   if(save.file) {
     png(file = file_loc)
-    heatmap.2(norm_conf,col=rev(heat.colors(100)), breaks=seq(0,1,0.01),scale = "none",trace="none", Rowv=FALSE, Colv=FALSE,dendrogram='none')
+    heatmap.2(norm_conf,col=rev(heat.colors(100)), breaks=seq(0,1,0.01),scale = "none",trace="none", Rowv=FALSE, Colv=FALSE,dendrogram=dendrogram)
     dev.off()
   } else {
-    heatmap.2(norm_conf,col=rev(heat.colors(100)), breaks=seq(0,1,0.01), scale = "none",trace="none", Rowv=FALSE, Colv=FALSE,dendrogram='none')
+    heatmap.2(norm_conf,col=rev(heat.colors(100)), breaks=seq(0,1,0.01), scale = "none",trace="none", Rowv=FALSE, Colv=FALSE,dendrogram=dendrogram)
   }
 }
 
