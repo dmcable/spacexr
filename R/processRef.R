@@ -24,7 +24,7 @@ get_cell_type_info <- function(raw.data, cell_types, nUMI, cell_type_names = NUL
 #proportions is the estimated proportion of each cell type
 get_norm_ref <- function(puck, cell_type_means, gene_list, proportions) {
   bulk_vec = rowSums(puck@counts)
-  weight_avg = rowSums(sweep(cell_type_means[gene_list,],2,proportions,'*'))
+  weight_avg = rowSums(sweep(cell_type_means[gene_list,],2,proportions / sum(proportions),'*'))
   target_means = bulk_vec[gene_list]/sum(puck@nUMI)
   cell_type_means_renorm = sweep(cell_type_means[gene_list,],1,weight_avg / target_means,'/')
 }

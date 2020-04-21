@@ -93,7 +93,6 @@ decompose_full <- function(cell_type_means, gene_list, nUMI, bead, constrain = T
   reg_data = cell_type_means[gene_list,] * nUMI
   reg_data = data.matrix(reg_data)
   results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
-  results$weights <- results$weights
   return(results)
 }
 
@@ -109,6 +108,7 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
   doParallel::registerDoParallel(cl)
   environ = c('decompose_full','solveIRWLS.weights',
               'solveOLS','solveWLS', 'Q_mat', 'K_val','X_vals','use_Q')
+  #for(i in 1:100) {
   weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
     if(i %% 100 == 0)
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
@@ -473,6 +473,25 @@ decompose_doublet <- function(bead, weights, gene_list, cell_type_info, type1, t
   names(expect_1) = gene_list; names(expect_2) = gene_list; names(variance) = gene_list
   epsilon = 1e-10
   for(ind in 1:N_genes) {
+    gene = gene_list[ind]
+    denom = weights[1] * cell_type_info[[1]][gene,type1] + weights[2] * cell_type_info[[1]][gene,type2] + epsilon
+    posterior_1 = (weights[1] * cell_type_info[[1]][gene,type1] + epsilon / 2) / denom
+    expect_1[[ind]] = posterior_1 * bead[gene]
+    expect_2[[ind]] = bead[gene] - posterior_1 * bead[gene]
+    variance[[ind]] = posterior_1 * bead[gene] * (1 - posterior_1)
+  }
+  return(list(expect_1 = expect_1, expect_2 = expect_2, variance = variance))
+}
+
+#decompose a doublet into two cells
+decompose_doublet_fast <- function(bead, weights, gene_list, cell_type_info, type1, type2) {
+  N_genes = length(gene_list)
+  expect_1 = vector(mode="numeric",length = N_genes)
+  expect_2 = vector(mode="numeric",length = N_genes)
+  variance = vector(mode="numeric",length = N_genes)
+  names(expect_1) = gene_list; names(expect_2) = gene_list; names(variance) = gene_list
+  epsilon = 1e-10
+  for(ind in which(bead > 0)) {
     gene = gene_list[ind]
     denom = weights[1] * cell_type_info[[1]][gene,type1] + weights[2] * cell_type_info[[1]][gene,type2] + epsilon
     posterior_1 = (weights[1] * cell_type_info[[1]][gene,type1] + epsilon / 2) / denom

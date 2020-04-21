@@ -1,7 +1,7 @@
 library(RCTD)
 library(Matrix)
 #scratch
-iv <- init_RCTD(gene_list_reg = F, get_proportions = F, load_info=T) #initial variables
+iv <- init_RCTD(gene_list_reg = F, get_proportions = F, load_info=F) #initial variables
 split_puck(iv$puck, iv$slideseqdir, iv$n_puck_folds)
 bulkData <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
 resultsdir <- paste0(iv$slideseqdir,"/results")

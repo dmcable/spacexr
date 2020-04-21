@@ -5,13 +5,18 @@ library(ggplot2)
 require(reshape2)
 source('Plotting/figure_utils.R')
 DropViz <- F
-iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz)
+iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz, load_info = F)
 if(DropViz) {
   proportions = iv$proportions
   cell_type_info_unnorm <- iv$cell_type_info
 }
 puck = iv$puck
 iv <- init_RCTD(load_info_renorm = T) #initial variables
+if(DropViz) {
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+} else {
+  common_cell_types <- iv$cell_type_info[[2]]
+}
 resultsdir <- paste0(iv$slideseqdir,"/results")
 cell_type_names = iv$cell_type_info[[2]]
 results <- list()
@@ -70,9 +75,12 @@ if(doublet_mode) {
 rownames(results_df) = barcodes
 marker_data = get_marker_data(iv$cell_type_info[[2]], NULL, iv$cell_type_info[[1]], iv$gene_list, marker_provided = TRUE)
 norm_weights = sweep(weights, 1, rowSums(weights), '/')
-plot_puck_wrapper(iv$puck, iv$puck@counts['Fibcd1',]/iv$puck@nUMI, max_val = 3, maxUMI = 200000)
+
+#begin scratch
+plot_puck_wrapper(iv$puck, iv$puck@counts[gene,], max_val = 3, min_val=0.5, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, iv$puck@counts['Pantr1',], cell_type = "CA1", max_val = 3, maxUMI = 200000)
 iv$puck@cell_labels = results_df$first_type
-plot_puck_wrapper(iv$puck, iv$puck@counts['Vip',], cell_type = "Interneuron",max_val = 3, maxUMI = 200000)
+plot_puck_wrapper(iv$puck, iv$puck@counts['Sst',], cell_type = "Interneuron",max_val = 3, maxUMI = 200000)
 plot_puck_wrapper(iv$puck, puck@nUMI, max_val = 100000, maxUMI = 200000)
 plot_puck_wrapper(iv$puck, norm_marker_scores[,"CA1"] + norm_marker_scores[,"CA3"] + norm_marker_scores[,"Denate"], max_val = 1, maxUMI = 200000)
 iv$cell_type_info[[1]][marker_data$cell_type == "HSC",c("HSC", 'Hepatocyte')]
@@ -101,6 +109,8 @@ table(max.col(norm_marker_scores))
 all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2]
 all_weights <- c(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1])
 plot_puck_continuous(puck, names(all_weights), all_weights, title = cell_type, ylimit = c(0.75,1))
+#end scratch
+
 #slideseq here
 marker_scores_df <- get_marker_scores(marker_data, puck, iv$cell_type_info)
 norm_marker_scores <- sweep(marker_scores_df, 1, rowSums(marker_scores_df), '/')
@@ -118,6 +128,9 @@ plot_weights_doublet(iv$cell_type_info, puck, resultsdir, weights_doublet, resul
 plot_cond_occur(iv$cell_type_info, resultsdir, norm_weights)
 plot_occur_unthreshold(iv$cell_type_info, resultsdir, norm_weights)
 
+#save(doub_occur, iv, puck, rest_cell, norm_weights, results_df, marker_data_de, weights_doublet, file = "Plotting/Results/SlideseqCerebellum.RData")
+#save(doublets, iv, puck, norm_weights, results_df, marker_data_de, weights_doublet, file = "Plotting/Results/SlideseqHippo.RData")
+#save(iv, puck, norm_weights, results_df, marker_data_de, weights_doublet, file = "Plotting/Results/VisiumHippo.RData")
 
 #doublets :)
 table(results_df$spot_class)
@@ -130,22 +143,26 @@ plot_doub_occur_heat(doub_occur, resultsdir, iv)
 plot_coloc(results_df, puck, resultsdir, iv$cell_type_info)
 
 #decomposing doublets
-get_decomposed_data <- function(results_df, iv, puck, weights_doublet) {
+#cur_barc = (results_df$first_type == "CA1" | results_df$second_type == "CA1")
+#puck_d <- get_decomposed_data(results_df[cur_barc,], gene_list, restrict_puck(puck,barcodes[cur_barc]), weights_doublet[cur_barc,], iv$cell_type_info)
+
+
+get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, cell_type_info) {
   doublets <- results_df[results_df$spot_class == "doublet_certain",]
-  first_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(iv$gene_list))
-  second_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(iv$gene_list))
+  first_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))
+  second_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))
   rownames(first_DGE) = rownames(doublets); rownames(second_DGE) = rownames(doublets)
-  colnames(first_DGE) = iv$gene_list; colnames(second_DGE) = iv$gene_list
+  colnames(first_DGE) = gene_list; colnames(second_DGE) = gene_list
   for(ind in 1:dim(doublets)[1]) {
     print(ind)
     barcode = rownames(doublets)[ind]
-    doub_res <- decompose_doublet(puck@counts[iv$gene_list,barcode], weights_doublet[barcode,], iv$gene_list, cell_type_info, results_df[barcode,"first_type"],results_df[barcode,"second_type"])
+    doub_res <- decompose_doublet(puck@counts[gene_list,barcode], weights_doublet[barcode,], gene_list, cell_type_info, results_df[barcode,"first_type"],results_df[barcode,"second_type"])
     first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
   }
   singlet_id <- results_df$spot_class == "singlet"
   norm1 <- sweep(first_DGE, 1, weights_doublet[rownames(doublets),"first_type"] * puck@nUMI[rownames(first_DGE)], '/')
   norm2 <- sweep(second_DGE, 1, weights_doublet[rownames(doublets),"second_type"] * puck@nUMI[rownames(second_DGE)], '/')
-  norm_sing <- sweep(t(puck@counts[iv$gene_list, singlet_id]),1,puck@nUMI[singlet_id],'/')
+  norm_sing <- sweep(t(puck@counts[gene_list, singlet_id]),1,puck@nUMI[singlet_id],'/')
   all_DGE <- rbind(norm1, norm2, norm_sing)
   cell_type_labels <- unlist(list(doublets$first_type, doublets$second_type, results_df[singlet_id, "first_type"]))
   coords <- rbind(puck@coords[rownames(doublets),c('x','y')], puck@coords[rownames(doublets),c('x','y')], puck@coords[singlet_id,c('x','y')])
@@ -159,8 +176,92 @@ get_decomposed_data <- function(results_df, iv, puck, weights_doublet) {
   return(puck_d)
 }
 
-puck_d <- get_decomposed_data(results_df, iv, puck, weights_doublet)
+puck_d <- get_decomposed_data(results_df, iv$gene_list, puck, weights_doublet, iv$cell_type_info)
+puck_d2 <- get_decomposed_data(results_df, c('Pantr1','Slc6a11','Kcnj16','Entpd2'), puck, weights_doublet, iv$cell_type_info)
+plot_puck_gene(puck_d, "Pantr1", cell_type = "CA1", min_val = 0, max_val = .01)
+mean(puck_d@counts["Pclo", puck_d@cell_labels == "CA3"])
+plot_puck_continuous(puck_d, colnames(puck_d@counts)[puck_d@cell_labels == "Astrocyte"], puck_d@counts["Cpe",], ylimit = c(0,0.01))
+#hippocampus astrocytes analysis
+ast_gene_list <- rownames(iv$cell_type_info[[1]][marker_data$cell_type == "Astrocyte",])
+ast_gene_list <- intersect(ast_gene_list, rownames(puck_d@counts))
+ast_gene_list <- ast_gene_list[iv$cell_type_info[[1]][ast_gene_list,"Astrocyte"]/apply(iv$cell_type_info[[1]][ast_gene_list,cell_type_list_not],1,max) >= 10]
+ast_gene_list <- c('Entpd2', ast_gene_list)
+non_reject <- results_df$spot_class != "reject"
+loc_df <- cbind(results_df[non_reject, "first_type"], puck@coords[non_reject, c('x','y')])
+doub_ind <- results_df$spot_class == "doublet_certain"
+loc_df2 <- cbind(results_df[doub_ind, "second_type"], puck@coords[doub_ind, c('x','y')])
+colnames(loc_df) = c('cell_type','x','y'); colnames(loc_df2) = c('cell_type','x','y')
+loc_df <- rbind(loc_df, loc_df2)
+conversion <- .65
+D_vec_microns = 40
+D_vec = D_vec_microns / conversion
+D = D_vec
+library(fields)
+library(tidyr)
+mat <- rdist(loc_df[,c('x','y')])
+mat_ind = mat <= D
+xcoord <- floor((which(mat_ind)-1)/dim(loc_df)[1]) + 1
+ycoord <- (which(mat_ind)-1) %% dim(loc_df)[1] + 1
+small_df <- data.frame(xcoord, ycoord, mat[mat_ind])
+colnames(small_df) = c('ind1', 'ind2', 'dist')
+small_df$type1 <- loc_df[small_df$ind1,"cell_type"]
+small_df$type2 <- loc_df[small_df$ind2,"cell_type"]
+neighbors <- as.data.frame((small_df %>% group_by(ind1, type2) %>% summarise(count = n())) %>% pivot_wider(id_cols = ind1, names_from = type2, values_from=count))
+neighbors[is.na(neighbors)] <- 0
+my_map <- c(which(results_df[non_reject,]$spot_class == "doublet_certain"),tail((1:dim(loc_df)[1]),sum(results_df$spot_class == "doublet_certain")),which(results_df[non_reject,]$spot_class == "singlet"))
+my_neigh <- neighbors[my_map,]
+rownames(my_neigh) <- colnames(puck_d@counts)
+my_neigh$ind1 <- NULL
+hist(my_neigh[puck_d@cell_labels=="Astrocyte","Astrocyte"]/rowSums(my_neigh[puck_d@cell_labels=="Astrocyte",]))
+ast_neigh <- my_neigh[puck_d@cell_labels=="Astrocyte",]
+ast_prop <- sweep(ast_neigh, 1, rowSums(ast_neigh),'/')
+cutoff <- 0.25
+max_type <- apply(ast_prop,1, function(x) colnames(ast_prop)[which.max(x[2:17])+1])
+for(cell_type in cell_type_names) {
+  print(cell_type)
+  print(sum(ast_prop[,cell_type] > 0.25 & max_type == cell_type))
+}
 
+plot_puck_continuous(puck_d,rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8], 1,title="Astrocyte")
+cell_type_list <- c("CA1","CA3","Astrocyte","Oligodendrocyte","Denate","Interneuron")
+cell_type="Oligodendrocyte"
+gene_mean_mat <- Matrix(0,nrow = length(ast_gene_list), ncol = length(cell_type_list))
+gene_sd_mat <- Matrix(0,nrow = length(ast_gene_list), ncol = length(cell_type_list))
+rownames(gene_mean_mat) = ast_gene_list; colnames(gene_mean_mat) = cell_type_list
+rownames(gene_sd_mat) = ast_gene_list; colnames(gene_sd_mat) = cell_type_list
+for(cell_type in cell_type_list) {
+  if(cell_type == "Astrocyte")
+    my_ind <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+  else
+    my_ind <- rownames(ast_prop)[ast_prop[,cell_type] > 0.25 & max_type == cell_type]
+  gene_mean_mat[,cell_type] <- rowMeans(puck_d@counts[ast_gene_list,my_ind])
+  gene_sd_mat[,cell_type] <- apply(puck_d@counts[ast_gene_list,my_ind],1,sd)/sqrt(length(my_ind))
+  #plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,],title=cell_type,ylimit = c(0,1e-2))
+  #plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,]*puck_d@nUMI,title=cell_type,ylimit = c(0,1))
+}
+Z = abs(gene_mean_mat - gene_mean_mat[,"Astrocyte"])/(sqrt(gene_sd_mat^2 + gene_sd_mat[,"Astrocyte"]^2))
+log_fc <- log(apply(gene_mean_mat,1,max)/apply(gene_mean_mat,1,mean),2)
+log_fc <- log_fc[order(-log_fc)]
+save(log_fc, gene_mean_mat, ast_gene_list, cell_type_list, ast_prop, puck_d, max_type, file = 'Plotting/Results/Astrocytes.RData')
+save(log_fc, gene_mean_mat, gene_sd_mat, ast_gene_list, cell_type_list, ast_prop, puck_d, max_type, res_df, pos_genes, neg_genes, file = 'Plotting/Results/AstrocytesFull.RData')
+
+res_df <- data.frame(log_fc, apply(gene_mean_mat,1,max)[names(log_fc)],apply(Z,1,max)[names(log_fc)])
+colnames(res_df) <- c('log_fc', 'expr','Z')
+pos_genes <- rownames(res_df[res_df$Z > 3,])[1:8]
+neg_genes <- rownames(res_df)[(res_df$log_fc < 0.39 & res_df$expr > .0008)]
+int_genes <- c('Pantr1','Slc6a11','Eci1','Plxnb1','Lgi4','Phkg1','Tril','Aldh6a1','S100a13','Slc7a10','Mt3',
+               'Ddah1','Dtna','Htra1','Gstm1','Ppap2b')
+int_genes <- c('Pantr1','Slc6a11','Kcnj16','Entpd2')
+gene_mean_mat[int_genes,]
+hist(log(gene_mean_mat[,"Interneuron"]) - log(gene_mean_mat[,"Astrocyte"]))
+which(((log(gene_mean_mat[,"Interneuron"]) - log(gene_mean_mat[,"Astrocyte"]))) > 2)
+
+gene = "Entpd2"
+aggregate(puck_d@counts[gene,]*puck_d@nUMI, list(puck_d@cell_labels),sum)
+ast_counts <- (puck_d@counts[gene,]*puck_d@nUMI)[which(puck_d@cell_labels=="Astrocyte")]
+aggregate(ast_counts, list(max_type),sum)
+
+#cerebellum analysis
 plot_puck_gene(puck_d, "Sparcl1", cell_type = "Purkinje", min_val = 0, max_val = .03)
 plot_puck_gene(puck_d, "Sparcl1", cell_type = "Bergmann", min_val = 0, max_val = .03)
 mean(puck_d@counts["Sparcl1", puck_d@cell_labels == "Purkinje"])
@@ -189,13 +290,8 @@ metadir <- file.path(iv$slideseqdir,"MetaData")
 meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
 meta_df <- meta_data$meta_df
 UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
-class_df <- get_class_df(cell_type_names)
+class_df <- get_class_df(cell_type_names, use_classes = T)
 
-if(DropViz) {
-  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
-} else {
-  common_cell_types <- iv$cell_type_info[[2]]
-}
 resultsdir = file.path(iv$slideseqdir, "results")
 square_results <- plot_doublet_identification(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
 plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy.png'), save.file = T, normalize = F)
@@ -203,6 +299,7 @@ write.csv(as.matrix(square_results), file.path(resultsdir,'doublet_avg_accuracy.
 square_results <- plot_doublet_identification_certain(meta_data, common_cell_types, resultsdir, meta_df, results_df, class_df, UMI_list)
 plot_heat_map(as.matrix(square_results), file_loc = file.path(resultsdir,'doublet_avg_accuracy_certain.png'), save.file = T, normalize = F)
 write.csv(as.matrix(square_results), file.path(resultsdir,'doublet_avg_accuracy_certain.csv'))
+square_results <- as.matrix(square_results)
 #next make the confusion matrix
 true_types = unlist(list(meta_df[meta_df$first_UMI == 0,"second_type"], meta_df[meta_df$first_UMI == UMI_tot,"first_type"]))
 pred_types = unlist(list(results_df[meta_df$first_UMI == 0, "first_type"], results_df[meta_df$first_UMI == UMI_tot, "first_type"]))
@@ -252,10 +349,13 @@ for(nUMI in UMI_list[1:N_UMI_cond]) {
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')
+df$std <- sqrt(df$value*(1 - df$value)/(table(meta_df$first_UMI)*2)[1])
+df$std[df$nUMI == 500] <- df$std[df$nUMI == 500]*sqrt(2)
 pdf(file.path(resultsdir, "doublet_detection.pdf"))
 ggplot(df, aes(nUMI,value)) + geom_line(aes(colour = series)) + ggplot2::ylim(c(0,1))
 dev.off()
-
+doublet_df <- df
+save(iv, meta_data, common_cell_types, meta_df, results_df, class_df, UMI_list, square_results, doublet_df,file = "Plotting/Results/doublet_ref.RData")
 if(DropViz) {
   #platform effect analysis
   true_proportions <- proportions * 0
@@ -268,10 +368,10 @@ if(DropViz) {
   pdf(file.path(resultsdir,'platform_histogram.pdf'))
   hist(true_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
   dev.off()
-  gene_means_pred <- as.matrix(iv$cell_type_info[[1]][iv$gene_list,]) %*% true_proportions
-  res_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_pred,2)
-  hist(res_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
-  gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% proportions
+  #gene_means_pred <- as.matrix(iv$cell_type_info[[1]][iv$gene_list,]) %*% true_proportions
+  #res_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_pred,2)
+  #hist(res_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+  gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% proportions / sum(proportions)
   pred_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_unnorm_pred,2)
   hist(pred_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
   R2 = cor(true_platform_effect, pred_platform_effect)^2
@@ -279,6 +379,7 @@ if(DropViz) {
   pdf(file.path(resultsdir,'platform_estimation.pdf'))
   ggplot(df,aes(x=estimated_platform_effect,y=true_platform_effect)) + geom_point(alpha = 0.2) + geom_line(aes(x=estimated_platform_effect,y=estimated_platform_effect)) + ggplot2::ggtitle(paste('R2=',R2))
   dev.off()
+  saveRDS(df, file.path(resultsdir,'platform_estimation_df.RDS'))
   sig_pe <- c(sd(pred_platform_effect)*log(2), sd(true_platform_effect)*log(2))
   names(sig_pe) <- c('sigma_pe_est','sigma_pe_true')
   write.csv(sig_pe, file.path(resultsdir,'sig_pe.csv'))

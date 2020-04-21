@@ -37,6 +37,12 @@ read.slideseq <- function(datadir, count_file = NULL) {
   Slideseq(coords, as(as(counts,"matrix"),"dgCMatrix"))
 }
 
+save.slideseq <- function(puck, save.folder) {
+  dir.create(save.folder)
+  write.csv(puck@coords, file.path(save.folder,'coords.csv'))
+  white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
+}
+
 fake_coords <- function(counts) {
   coords <- data.frame(Matrix(0,nrow=dim(counts)[2],ncol=2))
   colnames(coords) <- c('x','y')

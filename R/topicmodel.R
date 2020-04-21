@@ -2,7 +2,7 @@ test_single_beads <- function(puck, gene_list, cell_type_info, trust_model = FAL
   cell_type_names = cell_type_info[[2]]; n_cell_types = cell_type_info[[3]]
   beads = t(as.matrix(puck@counts[gene_list,]))
   weights = decompose_batch(puck@nUMI, cell_type_info[[1]], beads, gene_list, constrain = constrain, OLS = OLS)
-  pred_labels = unlist(lapply(weights,function(x) which.max(x)))
+  pred_labels = unlist(lapply(weights,function(x) which.max(x$weights)))
   cell_type_lev = factor(1:n_cell_types)
   cell_type_map = data.frame(cindex = 1:n_cell_types, row.names = cell_type_names)
   if(trust_model)

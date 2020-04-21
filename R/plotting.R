@@ -40,6 +40,23 @@ plot_doublets <- function(doublets, results_dir, cell_type_info) {
   dev.off()
 }
 
+plot_all_cell_types <- function(results_df, coords, cell_type_info) {
+  barcodes = rownames(results_df[results_df$spot_class != "reject",])
+  my_table = coords[barcodes,]
+  my_table$class = results_df[barcodes,]$first_type
+  n_levels = cell_type_info[[3]]
+  my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+  pres = unique(as.integer(my_table$class))
+  pres = pres[order(pres)]
+  if(n_levels > 21)
+    my_pal = pals::polychrome(n_levels)
+  if(n_levels > 36)
+    stop("Plotting currently supports at most 36 cell types as colors")
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
+    ggplot2::scale_color_manual(values = my_pal[pres])+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+  plot
+}
+
 plot_doublets_type <- function(doublets_base, results_dir, cell_type_info) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   i = 1
@@ -97,29 +114,41 @@ plot_cell_types_ind <- function(puck, results_dir, counter_stain = NULL) {
 }
 
 #plots a continuous value over the puck
-plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit = NULL, counter_barcodes = NULL, label = F, my_pal = NULL) {
+plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit = NULL, counter_barcodes = NULL, label = F, my_pal = NULL, xlim = NULL, ylim = NULL, size=0.15, alpha = 1, small_point = F) {
   if(is.null(my_pal))
     my_pal = pals::kovesi.rainbow(20)
   my_table = puck@coords[barcodes,]
+  plot_val <- pmax(pmin(plot_val, ylimit[2] -1e-8),ylimit[1] +1e-8)
   my_table$value = plot_val[barcodes]
   if(!is.null(ylimit))
     sc <- ggplot2::scale_colour_gradientn(colors = my_pal, limits = ylimit)
   else
     sc <- ggplot2::scale_colour_gradientn(colors = my_pal)
-  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=value)) +
-     sc + ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y))
+  if(small_point)
+    plot <- plot + ggplot2::geom_point(ggplot2::aes(size = size, shape=16,color=value, stroke = 0),alpha = alpha)
+  else
+    plot <- plot + ggplot2::geom_point(ggplot2::aes(size = size, shape=19,color=value),alpha = alpha)
+  plot <- plot + sc + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity()
   if(label)
     plot <- plot + aes(label = which(rownames(puck@coords) %in% inter_barcodes[my_class==i])) + geom_text()
   if(!is.null(counter_barcodes)) {
     my_table = puck@coords[counter_barcodes,]
     plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
   }
+  if(is.null(xlim))
+    xlim <- c(900,5600)
+  if(is.null(ylim))
+    ylim <- c(1000,4900)
+  plot <- plot + coord_fixed() + ggplot2::xlim(xlim) + ggplot2::ylim(ylim)
   if(!is.null(title))
-    plot <- plot + ggplot2::ggtitle(title) + coord_fixed() #+ ggplot2::xlim(c(2800,5000)) + ggplot2::ylim(c(2800,6500)) +
-  plot
+    plot <- plot + ggplot2::ggtitle(title)
+  #visium: ggplot2::xlim(c(500,6000)) + ggplot2::ylim(c(500,5500))
+  #hippo: ggplot2::xlim(c(1400,6000)) + ggplot2::ylim(c(1500,5000))
   #pdf(file.path(results_dir,"all_cell_types.pdf"))
   #invisible(print(plot))
   #dev.off()
+  plot
 }
 
 #plots a continunous value over certain beads in the puck
@@ -391,4 +420,28 @@ plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   plot <- ggplot2::ggplot(data, aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + theme(axis.text.x = element_text(hjust = 1, angle = 45))
   invisible(print(plot))
   dev.off()
+}
+
+#plots a class
+plot_class <- function(puck, barcodes_cur, my_class, counter_barcodes = NULL, title = NULL) {
+  my_table = puck@coords[barcodes_cur,]
+  my_table$class = my_class[barcodes_cur]
+  n_levels <- length(unique(my_class))
+  if(n_levels > 36)
+    cols = rainbow(n_levels)[sample(1:n_levels, n_levels, replace = F)]
+  else {
+    if(n_levels > 21)
+      cols = unname(pals::polychrome(n_levels+2))[3:(n_levels+2)]
+    else
+      cols = pals::kelly(n_levels+2)[3:(n_levels+2)]
+  }
+  plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 0.5, shape=19,color=class)) +
+    ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + scale_color_manual(values = cols)
+  if(!is.null(counter_barcodes)) {
+    my_table = puck@coords[counter_barcodes,]
+    plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
+  }
+  if(!is.null(title))
+    plot <- plot + ggplot2::ggtitle(title)
+  plot
 }
