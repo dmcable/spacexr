@@ -1,35 +1,4 @@
 library(RCTD)
 library(Matrix)
-#scratch
 iv <- init_RCTD(gene_list_reg = F, get_proportions = F, load_info=F) #initial variables
-split_puck(iv$puck, iv$slideseqdir, iv$n_puck_folds)
-bulkData <- prepareBulkData(iv$bulkdir, iv$cell_type_info[[1]], iv$puck, iv$gene_list)
-resultsdir <- paste0(iv$slideseqdir,"/results")
-use_Q = F
-ABS_MAX = 30000 #prevent numerical issues
-X_vals = c(min(max(bulkData$X+1),ABS_MAX))
-K_val = min(ABS_MAX,max(bulkData$b + 1))
-sigma = 1
-print('fitBulk: decomposing bulk')
-decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK*10, n.iter = 100)
-prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
-sigma <- sqrt(mean((log(prediction) - log(bulkData$b))^2))
-sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk1")
-decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
-prediction <- as.matrix(bulkData$X) %*% decompose_results$weights
-sigma_prev <- sigma
-sigma <- chooseSigma(prediction, bulkData$b, resultsdir, sigma_init = sigma, N_epoch = iv$config$N_epoch_bulk, folder_id = "Bulk2")
-if(abs(sigma - sigma_prev)/(max(0.1,sigma)) > 0.02)
-  decompose_results <- decompose_full(iv$cell_type_info[[1]], iv$gene_list, sum(iv$puck@nUMI), bulkData$b, verbose = T, constrain = F, MIN_CHANGE = iv$config$MIN_CHANGE_BULK, n.iter = 100)
-proportions = decompose_results$weights
-saveRDS(proportions, paste0(resultsdir,'/Bulk/weights.RDS'))
-#split_puck(puck, slideseqdir, config$n_puck_folds)
-
-gene_list = get_de_genes(iv$cell_type_info, iv$puck, fc_thresh = iv$config$fc_cutoff_reg, expr_thresh = iv$config$gene_cutoff_reg, MIN_OBS = 0)
-metadir <- file.path(iv$slideseqdir,"MetaData")
-if(!dir.exists(metadir))
-  dir.create(metadir)
-#generate the celltypeinfo-renorm
-cell_type_info_renorm = iv$cell_type_info
-cell_type_info_renorm[[1]] = get_norm_ref(iv$puck, iv$cell_type_info[[1]], gene_list, proportions)
-saveRDS(cell_type_info_renorm, file.path(metadir, "cell_type_info_renorm.RDS"))
+bulkResults <- fitBulk(iv)

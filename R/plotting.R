@@ -40,7 +40,7 @@ plot_doublets <- function(doublets, results_dir, cell_type_info) {
   dev.off()
 }
 
-plot_all_cell_types <- function(results_df, coords, cell_type_info) {
+plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) {
   barcodes = rownames(results_df[results_df$spot_class != "reject",])
   my_table = coords[barcodes,]
   my_table$class = results_df[barcodes,]$first_type
@@ -54,7 +54,9 @@ plot_all_cell_types <- function(results_df, coords, cell_type_info) {
     stop("Plotting currently supports at most 36 cell types as colors")
   plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .15, shape=19,color=class)) +
     ggplot2::scale_color_manual(values = my_pal[pres])+ ggplot2::scale_shape_identity() + ggplot2::theme_bw() + ggplot2::scale_size_identity()
-  plot
+  pdf(file.path(resultsdir,"all_cell_types.pdf"))
+  invisible(print(plot))
+  dev.off()
 }
 
 plot_doublets_type <- function(doublets_base, results_dir, cell_type_info) {
@@ -137,17 +139,12 @@ plot_puck_continuous <- function(puck, barcodes, plot_val, title = NULL, ylimit 
     plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
   }
   if(is.null(xlim))
-    xlim <- c(900,5600)
+    xlim <- c(min(puck@coords$x) - 1,max(puck@coords$x) + 1)
   if(is.null(ylim))
-    ylim <- c(1000,4900)
+    ylim <- c(min(puck@coords$y) - 1,max(puck@coords$y) + 1)
   plot <- plot + coord_fixed() + ggplot2::xlim(xlim) + ggplot2::ylim(ylim)
   if(!is.null(title))
     plot <- plot + ggplot2::ggtitle(title)
-  #visium: ggplot2::xlim(c(500,6000)) + ggplot2::ylim(c(500,5500))
-  #hippo: ggplot2::xlim(c(1400,6000)) + ggplot2::ylim(c(1500,5000))
-  #pdf(file.path(results_dir,"all_cell_types.pdf"))
-  #invisible(print(plot))
-  #dev.off()
   plot
 }
 

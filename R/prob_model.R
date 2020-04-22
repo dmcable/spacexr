@@ -1,3 +1,12 @@
+set_likelihood_vars <- function(Q_mat_loc) {
+  Q_mat <<- Q_mat_loc
+  N_X <<- dim(Q_mat)[2]
+  delta <<- 1e-5
+  X_vals <<- (1:N_X)^1.5*delta
+  K_val <<- dim(Q_mat)[1] - 3;
+  use_Q <<- T
+}
+
 ht_pdf <- function(z, sigma) {
   x = z/sigma
   p = ht_pdf_norm(x)

@@ -1,6 +1,6 @@
 
-#Slideseq data object to contain the counts and coords information.
-setClass("Slideseq",
+#SpatialRNA data object to contain the counts and coords information.
+setClass("SpatialRNA",
    slots = c(
      coords = "data.frame",
      counts = "dgCMatrix",
@@ -19,8 +19,8 @@ setClass("Slideseq",
    )
 )
 
-#reads counts and coords from a data director and returns a slideseq object
-read.slideseq <- function(datadir, count_file = NULL) {
+#reads counts and coords from a data director and returns a SpatialRNA object
+read.SpatialRNA <- function(datadir, count_file = NULL) {
   coords <- readr::read_csv(file = paste(datadir,"BeadLocationsForR.csv",sep="/"))
   if(is.null(count_file))
     counts <- readr::read_csv(file = paste(datadir,"MappedDGEForR.csv",sep="/"))
@@ -34,10 +34,10 @@ read.slideseq <- function(datadir, count_file = NULL) {
   #rownames(coords) <- coords$barcodes
   coords$barcodes <- NULL
   counts = counts[,2:dim(counts)[2]]
-  Slideseq(coords, as(as(counts,"matrix"),"dgCMatrix"))
+  SpatialRNA(coords, as(as(counts,"matrix"),"dgCMatrix"))
 }
 
-save.slideseq <- function(puck, save.folder) {
+save.SpatialRNA <- function(puck, save.folder) {
   dir.create(save.folder)
   write.csv(puck@coords, file.path(save.folder,'coords.csv'))
   white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
@@ -50,8 +50,8 @@ fake_coords <- function(counts) {
   return(coords)
 }
 
-#constructor of slideseq object
-Slideseq <- function(coords = NULL, counts, nUMI = NULL) {
+#constructor of SpatialRNA object
+SpatialRNA <- function(coords = NULL, counts, nUMI = NULL) {
   if(is.null(coords)) {
     coords <- fake_coords(counts)
   }
@@ -59,11 +59,11 @@ Slideseq <- function(coords = NULL, counts, nUMI = NULL) {
     nUMI = colSums(counts)
   }
   names(nUMI) <- colnames(counts)
-  new("Slideseq", coords = coords, counts = counts, nUMI = nUMI)
+  new("SpatialRNA", coords = coords, counts = counts, nUMI = nUMI)
 }
 
-#Use the seurat object to create a 'fake' slideseq object
-seurat.to.slideseq <- function(reference, cell_type_info) {
+#Use the seurat object to create a 'fake' SpatialRNA object
+seurat.to.SpatialRNA <- function(reference, cell_type_info) {
   cell_labels = reference@meta.data$liger_ident_coarse
   nUMI = reference@meta.data$nUMI
   counts = reference@assays$RNA@counts
@@ -72,7 +72,7 @@ seurat.to.slideseq <- function(reference, cell_type_info) {
   cell_type_names = cell_type_info[[2]]
   n_cell_type = cell_type_info[[3]]
   coords <- fake_coords(counts)
-  new("Slideseq", coords = coords, counts = counts, cell_labels = cell_labels,
+  new("SpatialRNA", coords = coords, counts = counts, cell_labels = cell_labels,
       cell_type_names = cell_type_names, nUMI = nUMI, n_cell_type = n_cell_type)
 }
 
@@ -112,11 +112,11 @@ crop_puck_line <- function(puck, line_dat) {
 }
 
 
-split_puck <- function(puck, slideseqdir, n_folds) {
-  splitdir <- file.path(slideseqdir, "SplitPuck")
+split_puck <- function(puck, SpatialRNAdir, n_folds) {
+  splitdir <- file.path(SpatialRNAdir, "SplitPuck")
   if(!dir.exists(splitdir))
     dir.create(splitdir)
-  splitresdir <- file.path(slideseqdir, "SplitPuckResults")
+  splitresdir <- file.path(SpatialRNAdir, "SplitPuckResults")
   if(!dir.exists(splitresdir))
     dir.create(splitresdir)
   do.call(file.remove, list(list.files(splitdir, full.names = TRUE)))

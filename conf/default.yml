@@ -1,7 +1,7 @@
 default:
-  #cutoff value for the genes used for the Platform Effect Estimation
+  #cutoff value for the genes used for the Platform Effect Normalization
   gene_cutoff: .000125 #.000125
-  #log fold change cutoff for the genes used for the Platform Effect Estimation
+  #log fold change cutoff for the genes used for the Platform Effect Normalization
   fc_cutoff: .5
   #cutoff value for the genes used in RCTD
   gene_cutoff_reg: .0002 # .00015
