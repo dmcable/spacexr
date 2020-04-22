@@ -140,7 +140,7 @@ calc_Q <- function(x, k) {
     return(prop*Q_mat[k+1,l] + (1-prop)*Q_mat[k+1,l+1])
   }
   else {
-    return(calc_Q_mat_one(sigma, x, k, batch = 100, big_params = F))
+    return(calc_Q_mat_one(sigmavar, x, k, batch = 100, big_params = F))
   }
 }
 
