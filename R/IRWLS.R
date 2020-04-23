@@ -1,6 +1,4 @@
 
-#return cell number, not proportion
-#do not print output
 solveOLS<-function(S,B, constrain = T){
   D<-t(S)%*%S
   d<-t(S)%*%B
