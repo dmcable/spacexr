@@ -1,6 +1,19 @@
-
-#Slideseq data object to contain the counts and coords information.
-setClass("Slideseq",
+#' An S4 class to represent Spatial Transcriptomic data
+#'
+#' @slot coords a dataframe with x and y coordinates of each pixel
+#' @slot counts a dataframe of raw counts for each gene (rowname)
+#' and each pixel (colnames or barcodes)
+#' @slot n_cell_type the number of cell types
+#' @slot cell_type_names a list of cell type names
+#' @slot nUMI a named list (by barcode) of total UMIs per pixel
+#' @slot cell_labels a factor of cell type labels for each pixel
+#' @export
+#' @import Matrix
+#' @import doParallel
+#' @import foreach
+#' @importClassesFrom Seurat Seurat
+#' @importClassesFrom Matrix Matrix dgCMatrix
+setClass("SpatialRNA",
    slots = c(
      coords = "data.frame",
      counts = "dgCMatrix",
@@ -19,13 +32,26 @@ setClass("Slideseq",
    )
 )
 
-#reads counts and coords from a data director and returns a slideseq object
-read.slideseq <- function(datadir, count_file = NULL) {
+#' Creates a SpatialRNA object from a directory
+#'
+#' Given a SpatialRNA directory folder with 2 files: \code{BeadLocationsForR.csv} and \code{MappedDGEForR.csv}.
+#' and returns a SpatialRNA object.
+#'
+#' @section Input file format (contained in datadir):
+#' \enumerate{
+#' \item \code{BeadLocationsForR.csv} # a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations
+#' of the pixels.
+#' \item \code{MappedDGEForR.csv} # a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel.
+#' }
+#'
+#' @param datadir (string) the directory of the SpatialRNA dataset
+#' @param count_file (optional, string) the file location for the DGE
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
+#' from the input files
+#' @export
+read.SpatialRNA <- function(datadir, count_file = "MappedDGEForR.csv") {
   coords <- readr::read_csv(file = paste(datadir,"BeadLocationsForR.csv",sep="/"))
-  if(is.null(count_file))
-    counts <- readr::read_csv(file = paste(datadir,"MappedDGEForR.csv",sep="/"))
-  else
-    counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
+  counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
   colnames(coords)[2] = 'x' #renaming xcoord -> x
   colnames(coords)[3] = 'y' #renaming ycoord -> y
   counts = tibble::column_to_rownames(counts, var = colnames(counts)[1])
@@ -34,7 +60,14 @@ read.slideseq <- function(datadir, count_file = NULL) {
   #rownames(coords) <- coords$barcodes
   coords$barcodes <- NULL
   counts = counts[,2:dim(counts)[2]]
-  Slideseq(coords, as(as(counts,"matrix"),"dgCMatrix"))
+  puck = SpatialRNA(coords, as(as(counts,"matrix"),"dgCMatrix"))
+  restrict_puck(puck, colnames(puck@counts))
+}
+
+save.SpatialRNA <- function(puck, save.folder) {
+  dir.create(save.folder)
+  write.csv(puck@coords, file.path(save.folder,'coords.csv'))
+  white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
 }
 
 fake_coords <- function(counts) {
@@ -44,8 +77,8 @@ fake_coords <- function(counts) {
   return(coords)
 }
 
-#constructor of slideseq object
-Slideseq <- function(coords = NULL, counts, nUMI = NULL) {
+#constructor of SpatialRNA object
+SpatialRNA <- function(coords = NULL, counts, nUMI = NULL) {
   if(is.null(coords)) {
     coords <- fake_coords(counts)
   }
@@ -53,11 +86,11 @@ Slideseq <- function(coords = NULL, counts, nUMI = NULL) {
     nUMI = colSums(counts)
   }
   names(nUMI) <- colnames(counts)
-  new("Slideseq", coords = coords, counts = counts, nUMI = nUMI)
+  new("SpatialRNA", coords = coords, counts = counts, nUMI = nUMI)
 }
 
-#Use the seurat object to create a 'fake' slideseq object
-seurat.to.slideseq <- function(reference, cell_type_info) {
+#Use the seurat object to create a 'fake' SpatialRNA object
+seurat.to.SpatialRNA <- function(reference, cell_type_info) {
   cell_labels = reference@meta.data$liger_ident_coarse
   nUMI = reference@meta.data$nUMI
   counts = reference@assays$RNA@counts
@@ -66,7 +99,7 @@ seurat.to.slideseq <- function(reference, cell_type_info) {
   cell_type_names = cell_type_info[[2]]
   n_cell_type = cell_type_info[[3]]
   coords <- fake_coords(counts)
-  new("Slideseq", coords = coords, counts = counts, cell_labels = cell_labels,
+  new("SpatialRNA", coords = coords, counts = counts, cell_labels = cell_labels,
       cell_type_names = cell_type_names, nUMI = nUMI, n_cell_type = n_cell_type)
 }
 
@@ -81,7 +114,15 @@ restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
   return(puck)
 }
 
-#restricts a puck by barcodes
+#' Restricts a SpatialRNA object to a subset of pixels
+#'
+#' Given a \code{\linkS4class{SpatialRNA}} object and a list of barcodes (pixels), will return a
+#' \code{\linkS4class{SpatialRNA}} object restricted to the barcodes.
+#'
+#' @param puck a \code{\linkS4class{SpatialRNA}} object
+#' @param barcodes a list of barcode names, a subset of \code{rownames(puck@coords)}
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object subsampled to the barcodes
+#' @export
 restrict_puck <- function(puck, barcodes) {
   barcodes = intersect(colnames(puck@counts), barcodes)
   puck@counts = puck@counts[,barcodes]
@@ -106,11 +147,11 @@ crop_puck_line <- function(puck, line_dat) {
 }
 
 
-split_puck <- function(puck, slideseqdir, n_folds) {
-  splitdir <- file.path(slideseqdir, "SplitPuck")
+split_puck <- function(puck, SpatialRNAdir, n_folds) {
+  splitdir <- file.path(SpatialRNAdir, "SplitPuck")
   if(!dir.exists(splitdir))
     dir.create(splitdir)
-  splitresdir <- file.path(slideseqdir, "SplitPuckResults")
+  splitresdir <- file.path(SpatialRNAdir, "SplitPuckResults")
   if(!dir.exists(splitresdir))
     dir.create(splitresdir)
   do.call(file.remove, list(list.files(splitdir, full.names = TRUE)))
@@ -122,3 +163,11 @@ split_puck <- function(puck, slideseqdir, n_folds) {
     saveRDS(puck_fold, file.path(splitdir, paste0("puck",i,".RDS")))
   }
 }
+
+#coerces an old SpatialRNA object
+coerce_old <- function(puck) {
+  new("SpatialRNA", coords = puck@coords, counts = puck@counts, cell_labels = puck@cell_labels,
+      cell_type_names = puck@cell_type_names, nUMI = puck@nUMI, n_cell_type = puck@n_cell_type)
+}
+
+

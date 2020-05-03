@@ -1,3 +1,19 @@
+#' Sets Precomputed Probabiliites as Global Variable
+#'
+#' Given a matrix, \code{Q_mat}, of P(y|x), under the Poisson-Lognormal model.
+#' Sets this as a global variable for fast computations in the future.
+#'
+#' @param Q_mat_loc Matrix of precomputed probabiliites, as previously computed by \code{\link{get_Q_mat}}
+#' @export
+set_likelihood_vars <- function(Q_mat_loc) {
+  Q_mat <<- Q_mat_loc
+  N_X <<- dim(Q_mat)[2]
+  delta <<- 1e-5
+  X_vals <<- (1:N_X)^1.5*delta
+  K_val <<- dim(Q_mat)[1] - 3;
+  use_Q <<- T
+}
+
 ht_pdf <- function(z, sigma) {
   x = z/sigma
   p = ht_pdf_norm(x)
@@ -27,7 +43,8 @@ ht_pdf_ds <- function(z, sigma) {
 
 get_Q <- function(X_vals, k, sigma, big_params = T) {
   if(big_params) {
-    N_Y = 20000;  gamma = 1e-3
+    #N_Y = 20000;  gamma = 1e-3
+    N_Y = 5000;  gamma = 4e-3
   }
   else {
     N_Y = 5000;  gamma = 4e-3
@@ -44,7 +61,8 @@ get_Q <- function(X_vals, k, sigma, big_params = T) {
 
 get_Q_d <- function(X_vals, k, sigma, big_params = T) {
   if(big_params) {
-    N_Y = 20000;  gamma = 1e-3
+    #N_Y = 20000;  gamma = 1e-3
+    N_Y = 5000;  gamma = 4e-3
   }
   else {
     N_Y = 5000;  gamma = 4e-3
@@ -119,6 +137,22 @@ calc_Q_par <- function(K, X_vals, sigma, big_params = T) {
   return(results)
 }
 
+#' Calculates Poisson-lognormal Likelihood
+#'
+#' For a given value of sigma, calculates P(y|x) under the Poisson-Lognormal model
+#' for each possible value of y and x.
+#'
+#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @param sigma a numeric representing estimated sigma_c from \code{\link{choose_sigma_c}}
+#' @return Returns \code{Q_mat}, a matrix containing pre-computed values for the log likelihood.
+#' @export
+get_Q_mat <- function(iv, sigma, big_params = T) {
+  delta <<- 1e-5
+  results <- calc_Q_par(iv$config$K_val, (1:iv$config$N_X)^1.5*delta, sigma, big_params = T)
+  Q_mat <-t(as.data.frame(matrix(unlist(results), nrow=length(unlist(results[1])))))
+  return(Q_mat)
+}
+
 #not using Q also uses small params
 calc_Q <- function(x, k) {
   epsilon = 1e-4; X_max = max(X_vals); K = K_val+2; delta = 1e-5
@@ -129,7 +163,7 @@ calc_Q <- function(x, k) {
     return(prop*Q_mat[k+1,l] + (1-prop)*Q_mat[k+1,l+1])
   }
   else {
-    return(calc_Q_mat_one(sigma, x, k, batch = 100, big_params = F))
+    return(calc_Q_mat_one(sigmavar, x, k, batch = 100, big_params = F))
   }
 }
 

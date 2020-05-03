@@ -1,6 +1,6 @@
 default:
   #folder constaining the puck
-  slideseqfolder: "NewCerPuck_190926_08"
+  SpatialRNAfolder: "NewCerPuck_190926_08"
   #folder of the single cell reference
   reffolder: "10xCer" #10xCer
   #name of the puck counts file

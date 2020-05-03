@@ -1,12 +1,11 @@
 Package: RCTD
 Type: Package
-Title: What the Package Does (Title Case)
-Version: 0.1.0
-Author: Who wrote it
-Maintainer: The package maintainer <yourself@somewhere.net>
-Description: More about what it does (maybe more than one line)
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Title: Robust Cell Type Decomposition: decomposing RNA-seq mixtures into single cell types for spatial transcriptomics
+Version: 1.0.0
+Author: Dylan Cable
+Maintainer: <dcable@mit.edu>
+Description: decomposing RNA-seq mixtures into single cell types for spatial transcriptomics
+License: 
 Encoding: UTF-8
 LazyData: true
 Imports: 
@@ -20,4 +19,10 @@ Imports:
 	caret, 
 	quadprog,
 	tibble,
-	dplyr
+	dplyr,
+	reshape2
+RoxygenNote: 7.0.0
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr

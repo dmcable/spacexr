@@ -1,18 +1,20 @@
 
-#return cell number, not proportion
-#do not print output
-solveOLS<-function(S,B){
+solveOLS<-function(S,B, constrain = T){
   D<-t(S)%*%S
   d<-t(S)%*%B
-  A<-cbind(diag(dim(S)[2]))
-  bzero<-c(rep(0,dim(S)[2]))
-  Ap = t(rbind(1,A))
-  bp <-c(1,rep(0,dim(S)[2]))
   norm_factor <- norm(D,"2")
   D <- D / norm_factor
   d <- d / norm_factor
   epsilon <- 1e-7; D <- D + epsilon * diag(length(d))
-  solution<-quadprog::solve.QP(D,d,Ap,bp,meq=1)$solution
+  A<-cbind(diag(dim(S)[2]))
+  bzero<-c(rep(0,dim(S)[2]))
+  if(constrain) {
+    A_const = t(rbind(1,A))
+    b_const <-c(1 - sum(solution),bzero)
+    solution <- quadprog::solve.QP(D,d,A_const,b_const,meq=1)$solution
+  } else {
+    solution <- quadprog::solve.QP(D,d,A,bzero,meq=0)$solution
+  }
   names(solution)<-colnames(S)
   return(solution)
 }
@@ -21,9 +23,9 @@ solveOLS<-function(S,B){
 #if constrain, constrain the weights to sum up to 1
 #eta is alpha in the sparsity paper
 solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50, MIN_CHANGE = .001){
-  solution<-solveOLS(S,B) #first solve OLS, use this solution to find a starting point for the weights
+  solution<-solveOLS(S,B, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
   if(OLS)
-    return(solution)
+    return(list(weights = solution, converged = T))
   solution<- (solution*0) + 1/length(solution) #actually, just ignore the OLS solution
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
