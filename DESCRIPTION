@@ -22,3 +22,7 @@ Imports:
 	dplyr,
 	reshape2
 RoxygenNote: 7.0.0
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
