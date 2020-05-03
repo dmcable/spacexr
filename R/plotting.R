@@ -5,7 +5,8 @@
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param doublets a dataframe of RCTD results restricted to doublets
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
   barcodes = rownames(doublets)
   my_table = puck@coords[barcodes,]
@@ -35,9 +36,10 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
 #' Plots the first cell type in doublet mode. Saves as 'all_cell_types.pdf'
 #'
 #' @param coords a dataframe of coordinates of each pixel
-#' @param results a dataframe of RCTD results
+#' @param results_df a dataframe of RCTD results (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) {
   barcodes = rownames(results_df[results_df$spot_class != "reject",])
   my_table = coords[barcodes,]
@@ -64,7 +66,8 @@ plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) 
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param doublets_base a dataframe of RCTD results restricted to doublets
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_doublets_type <- function(puck, doublets_base, resultsdir, cell_type_info) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   i = 1
@@ -108,9 +111,10 @@ plot_doublets_type <- function(puck, doublets_base, resultsdir, cell_type_info) 
 #' @param ylim (optional) minimum and maximum value for y coordinate as a numeric list
 #' @param xlim (optional) minimum and maximum value for x coordinate as a numeric list
 #' @param size numeric size of points
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
 #'
 #' @return Returns a \link{ggplot} object
+#' @export
 plot_puck_continuous <- function(puck, barcodes, plot_val, ylimit = c(0,1),title = NULL, counter_barcodes = NULL, label = F, my_pal = NULL, xlim = NULL, ylim = NULL, size=0.15, alpha = 1, small_point = F) {
   if(is.null(my_pal))
     my_pal = pals::kovesi.rainbow(20)
@@ -128,16 +132,16 @@ plot_puck_continuous <- function(puck, barcodes, plot_val, ylimit = c(0,1),title
     plot <- plot + ggplot2::geom_point(ggplot2::aes(size = size, shape=19,color=value),alpha = alpha)
   plot <- plot + sc + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity()
   if(label)
-    plot <- plot + aes(label = which(rownames(puck@coords) %in% inter_barcodes[my_class==i])) + geom_text()
+    plot <- plot + ggplot2::aes(label = which(rownames(puck@coords) %in% inter_barcodes[my_class==i])) + ggplot2::geom_text()
   if(!is.null(counter_barcodes)) {
     my_table = puck@coords[counter_barcodes,]
-    plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
+    plot <- plot + ggplot2::geom_point(data=my_table,ggplot2::aes(x=x, y=y,size=0.15),alpha = 0.1)
   }
   if(is.null(xlim))
     xlim <- c(min(puck@coords$x) - 1,max(puck@coords$x) + 1)
   if(is.null(ylim))
     ylim <- c(min(puck@coords$y) - 1,max(puck@coords$y) + 1)
-  plot <- plot + coord_fixed() + ggplot2::xlim(xlim) + ggplot2::ylim(ylim)
+  plot <- plot + ggplot2::coord_fixed() + ggplot2::xlim(xlim) + ggplot2::ylim(ylim)
   if(!is.null(title))
     plot <- plot + ggplot2::ggtitle(title)
   plot
@@ -154,9 +158,10 @@ plot_puck_continuous <- function(puck, barcodes, plot_val, ylimit = c(0,1),title
 #' @param max_val numeric, maximum value for the range of plot as a numeric list
 #' @param minUMI numeric, minimum value for total UMIs to filter pixels
 #' @param maxUMI numeric, maximum value for total UMIs to filter pixels
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
 #'
 #' @return Returns a \link{ggplot} object
+#' @export
 plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxUMI = 200000, min_val = NULL, max_val = NULL, title = NULL, my_cond = NULL) {
   UMI_filter = (puck@nUMI > minUMI) & (puck@nUMI < maxUMI)
   ylimit = NULL
@@ -183,9 +188,10 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
 #' Plots the confident weights for each cell type as in full_mode. Saves as 'cell_type_weights.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights a dataframe of RCTD output weights
+#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
@@ -205,9 +211,10 @@ plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
 #' Plots all weights for each cell type as in full_mode. Saves as 'cell_type_weights_unthreshold.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights a dataframe of RCTD output weights
+#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
@@ -225,9 +232,10 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
 #'
 #' Plots the number of confident labels in 'full_mode'. Saves as 'cell_type_occur.pdf'
 #'
-#' @param weights a dataframe of RCTD output weights
+#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
   occur <- numeric(cell_type_info[[3]])
   names(occur) = cell_type_info[[2]]
@@ -238,8 +246,8 @@ plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
   }
   df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
   pdf(file.path(resultsdir,"cell_type_occur.pdf"))
-  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
-    geom_bar(stat="identity")+theme_minimal()
+  plot<-ggplot2::ggplot(df, ggplot2::aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    ggplot2::geom_bar(stat="identity")+ggplot2::theme_minimal()
   invisible(print(plot))
   dev.off()
 }
@@ -248,16 +256,17 @@ plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
 #'
 #' Plots the number of (including unconfident) labels in 'full_mode'. Saves as 'cell_type_occur_unthreshold.pdf'
 #'
-#' @param weights a dataframe of RCTD output weights
+#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @export
 plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
   occur <- table(apply(weights, 1, which.max))[as.character(1:cell_type_info[[3]])]
   names(occur) = cell_type_info[[2]]
   df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
   pdf(file.path(resultsdir,"cell_type_occur_unthreshold.pdf"))
-  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
-    geom_bar(stat="identity")+theme_minimal()
+  plot<-ggplot2::ggplot(df, ggplot2::aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    ggplot2::geom_bar(stat="identity")+ggplot2::theme_minimal()
   invisible(print(plot))
   dev.off()
 }
@@ -267,10 +276,11 @@ plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
 #' Plots the weights for each cell type as in doublet_mode. Saves as 'cell_type_weights_doublet.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights_doublet a dataframe of RCTD output weights for doublets
+#' @param weights_doublet a dataframe of RCTD output weights for doublets (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles
-#' @param results_df dataframe of RCTD results
+#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param results_df dataframe of RCTD results (see \code{\link{gather_results}})
+#' @export
 plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doublet, results_df) {
   plots <- vector(mode = "list", length = cell_type_info[[3]])
   for (i in 1:cell_type_info[[3]]) {
@@ -296,6 +306,7 @@ plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doubl
 #' @param doub_occur a table of occurances of doublets
 #' @param resultsdir output directory
 #' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @export
 plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   data <- reshape2::melt(doub_occur)
   colnames(data) = c('second_type','first_type','count')
@@ -305,7 +316,7 @@ plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   pres = iv$cell_type_info[[2]]
   pres = pres[order(pres)]
   pdf(file.path(resultsdir,'doublet_stacked_bar.pdf'))
-  plot <- ggplot2::ggplot(data, aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + theme(axis.text.x = element_text(hjust = 1, angle = 45))
+  plot <- ggplot2::ggplot(data, ggplot2::aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + ggplot2::theme(axis.text.x = ggplot2::element_text(hjust = 1, angle = 45))
   invisible(print(plot))
   dev.off()
 }
@@ -319,6 +330,7 @@ plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
 #' @param my_class a named (by barcode) factor list for the coloring
 #'
 #' @return Returns a \link{ggplot} object
+#' @export
 plot_class <- function(puck, barcodes_cur, my_class, counter_barcodes = NULL, title = NULL) {
   my_table = puck@coords[barcodes_cur,]
   my_table$class = my_class[barcodes_cur]
@@ -332,10 +344,10 @@ plot_class <- function(puck, barcodes_cur, my_class, counter_barcodes = NULL, ti
       cols = pals::kelly(n_levels+2)[3:(n_levels+2)]
   }
   plot <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = 0.5, shape=19,color=class)) +
-    ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + scale_color_manual(values = cols)
+    ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + ggplot2::scale_color_manual(values = cols)
   if(!is.null(counter_barcodes)) {
     my_table = puck@coords[counter_barcodes,]
-    plot <- plot + ggplot2::geom_point(data=my_table,aes(x=x, y=y,size=0.15),alpha = 0.1)
+    plot <- plot + ggplot2::geom_point(data=my_table,ggplot2::aes(x=x, y=y,size=0.15),alpha = 0.1)
   }
   if(!is.null(title))
     plot <- plot + ggplot2::ggtitle(title)

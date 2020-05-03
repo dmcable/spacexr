@@ -1,0 +1,464 @@
+---
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F, cache = T)
+```
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(dplyr)
+```
+
+```{r fig-1, fig.height = 4, fig.width = 6, fig.align = 'center'}
+load(file = "Results/GlobalLocal.RData")
+
+fc_df$score <- apply(fc_df, 1, function(x) sd(as.numeric(x[1:5]))/mean(as.numeric(x[1:5])))
+p1 <- ggplot(fc_df, aes(x = class, y = score)) +
+  geom_jitter(alpha = 0.3) +
+  geom_boxplot(fill = NA, width = 0.25, outlier.alpha = 0) +
+  theme_classic() + ylim(c(0,2.2)) + ylab('Coefficient of Variation Within CA3')  + scale_x_discrete(labels = c('Locally Variable Genes','Globally Variable Genes')) +  theme(axis.title.x=element_blank())
+
+plot_df <- data.frame((rank(all_gini) / length(all_gini))[colnames(spatial_genes)]) 
+colnames(plot_df) <- 'quant'
+plot_df$cat <- 1
+p2 <- ggplot(plot_df, aes(x = cat, y = quant)) +
+  geom_jitter(alpha = 0.75) +
+  geom_boxplot(fill = NA, width = 0.4, outlier.alpha = 0) +
+  theme_classic() + scale_y_continuous(breaks = c(0,0.5,1), limits = c(0,1)) +xlab('Globally Variable Genes') + ylab('Gini Coefficient Quantile')+ theme(axis.text.x=element_blank(),axis.ticks.x=element_blank())
+#p2 <- ggplot(plot_df, aes(x=quant)) + geom_histogram() + xlim(c(0,1.01))
+
+ggarrange(p2,p1,nrow = 1, widths = c(1.1,1.9))
+```
+
+```{r fig-2, fig.height = 4, fig.width = 8, fig.align = 'center'}
+lim = c(4200,10100)
+#lim = c(-3000, 10500) #CA1
+#lim = c(-8000, 12000) #Dentate
+
+my_pal = pals::kovesi.rainbow(20)
+my_pal = pals::brewer.ylorrd(20)[2:20]
+
+
+my_mod <- function(p) {
+  p + xlim(c(3800,5700)) + ylim(c(2100,3500)) + geom_segment(aes(x = 4000, y = 2400, xend = 4154, yend = 2400), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+load(file = "Results/CA3.RData")
+#int_genes <- c("Rgs14","Spink8",'Cpne9','Kcnf1')
+int_genes <- c("Rgs14",'Cpne9')
+MULT <- 500
+p1 <- list()
+p2 <- list()
+for(ind in 1:length(int_genes)) {
+  gene <- int_genes[ind]
+  max_val <- 20*mean((puck_d@counts[gene,]/puck_d@nUMI)[cell_barc])
+  cur_range <- c(0, MULT*.00087)
+  if(ind == 2)
+    cur_range <- c(0,MULT*.00025)
+  barcodes <- rownames(gene_df)[gene_df$z >= lim[1] & gene_df$z <= lim[2]]
+  raw_df <- puck_d@coords[barcodes,]
+  raw_df$val <- as.integer((puck_d@counts[gene,]/puck_d@nUMI)[barcodes] > 0.0002)
+  raw_df <- raw_df[raw_df$val > 0,]
+  raw_df$val <- factor(raw_df$val)
+  p1[[ind]] <- plot_puck_continuous(puck_d, rownames(gene_df)[gene_df$z >= lim[1] & gene_df$z <= lim[2]],MULT*puck_d@counts[gene,]/puck_d@nUMI, ylimit = cur_range)
+  p1[[ind]] <- my_mod(p1[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::viridis(20)[2:20], limits = cur_range, breaks = cur_range)
+  
+  
+  gene_df$gene <- puck_d@counts[gene,cell_barc]/puck_d@nUMI[cell_barc]
+  gene.lo <- loess(gene ~ z, data = gene_df)
+  gene_df$fitted <- gene.lo$fitted
+  plot_val <- gene_df$fitted
+  names(plot_val) <- as.character(which(cell_barc))
+  min_val = MULT*min(plot_val[gene_df$z > lim[1] & gene_df$z < lim[2]]);max_val = MULT*max(plot_val[gene_df$z > lim[1] & gene_df$z < lim[2]])
+  plot_val[gene_df$z < lim[1] | gene_df$z > lim[2]] <- -1
+  p2[[ind]]<- plot_puck_continuous(puck_d,barcodes,MULT*plot_val[names(puck_d@cell_labels)], ylimit = c(min_val,max_val), size = 1.25, alpha = 0.2)
+  cur_range <- c(-.00001*MULT, signif(max_val,2))
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Smoothed"), colors = pals::parula(20),limits = cur_range, breaks = c(0,signif(max_val,2)), labels = c(0,signif(max_val,2)))
+  p2[[ind]] <- p2[[ind]] + geom_point(data=raw_df, aes(fill=val),,size = 0.1) + scale_fill_manual("Raw",values = c("#000000"),labels = c("")) + guides(fill = guide_legend(override.aes = list(size=2)))
+}
+#ggarrange(p1[[1]], p2[[1]], p1[[2]], p2[[2]],p1[[3]], p2[[3]],p1[[4]], p2[[4]], nrow = 4,ncol=2)
+#ggarrange(p1[[1]], p2[[1]],p1[[2]], p2[[2]], nrow = 2,ncol=2)
+ggarrange(p2[[1]], p2[[2]],nrow = 1,ncol=2)
+```
+
+```{r fig-3, fig.height = 8, fig.width = 8, fig.align = 'center'}
+load(file = "Results/CA3.RData")
+#write.csv(data.frame(names(gene_class)), file = "Results/CA3.csv")
+#p_val <- fc_df[names(gene_class),'p_val']
+#names(p_val) <- names(gene_class)
+#write.csv(data.frame(p_val), file = "Results/CA3.csv")
+MULT = 500
+p <- list()
+plot_dfs <- list()
+for(ind in 1:K) {
+  cur_genes = names(which(gene_class==ind))
+  plot_dfs[[ind]] <- data.frame(gene_df[restr_ind,"z"],colMeans(quantiles[cur_genes,]),ind)
+  colnames(plot_dfs[[ind]]) <- c('z','quantile','cluster')
+  max_val <- quantile((colSums(puck_d@counts[cur_genes,])/puck_d@nUMI)[cell_barc],0.9)*MULT
+  p[[ind]] <- plot_puck_wrapper(puck_d,MULT*colSums(puck_d@counts[cur_genes,])/puck_d@nUMI,cell_type = cell_type, minUMI = 300,min_val = -0.0000001*MULT, max_val = max_val)
+  cur_range <- c(0,max_val)
+  p[[ind]] <- my_mod(p[[ind]])+ ggplot2::scale_colour_gradientn(paste("Cluster", ind, "Expression"), colors = pals::parula(20), limits = cur_range, breaks = cur_range, labels = c(0,signif(max_val,2)))
+}
+plot_df <- bind_rows(plot_dfs)
+plot_df$cluster <- factor(plot_df$cluster)
+p1 <- ggplot(plot_df) + geom_line(aes(x=z,y=quantile,group=cluster,color=cluster)) +ylim(c(0,1))  + scale_color_manual(values=c("#D55E00","#EFCB00", "#0072B2"), name = "Cluster") + theme_classic() + scale_x_continuous(breaks = c(min(plot_df$z), max(plot_df$z)), limits = c(min(plot_df$z), max(plot_df$z)), labels = c(0,1)) + xlab('Spatial Position') + ylab('Average Quantile') + theme(legend.position = "top") 
+#ggarrange(p1, p[[1]], p[[2]], p[[3]], nrow = 2, ncol = 2) 
+ggarrange(p[[1]], p[[2]], p[[3]], nrow = 2, ncol = 2) 
+```
+```{r fig-4, fig.height = 4, fig.width = 4, fig.align = 'center'}
+load(file = "Results/CA1.RData")
+#write.csv(data.frame(names(gene_class)), file = "Results/CA1.csv")
+p <- list()
+plot_dfs <- list()
+for(ind in 1:K) {
+  cur_genes = names(which(gene_class==ind))
+  plot_dfs[[ind]] <- data.frame(gene_df[restr_ind,"z"],colMeans(quantiles[cur_genes,]),ind)
+  colnames(plot_dfs[[ind]]) <- c('z','quantile','cluster')
+  max_val <- quantile((colSums(puck_d@counts[cur_genes,])/puck_d@nUMI)[cell_barc],0.9)
+  p[[ind]] <- plot_puck_wrapper(puck_d,colSums(puck_d@counts[cur_genes,])/puck_d@nUMI,cell_type = cell_type, minUMI = 300,min_val = -0.0000001, max_val = max_val)
+  cur_range <- c(0,max_val)
+  p[[ind]] <- my_mod(p[[ind]])+ ggplot2::scale_colour_gradientn(paste("Cluster", ind, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range, labels = c(0,signif(max_val,1)))
+}
+plot_df <- bind_rows(plot_dfs)
+plot_df$cluster <- factor(plot_df$cluster)
+p1 <- ggplot(plot_df) + geom_line(aes(x=z,y=quantile,group=cluster,color=cluster)) +ylim(c(0,1)) +scale_color_manual(values=c("#D55E00","#EFCB00", "#0072B2"), name = "Cluster") + theme_classic() + scale_x_continuous(breaks = c(min(plot_df$z), max(plot_df$z)), limits = c(min(plot_df$z), max(plot_df$z)), labels = c(0,1)) + xlab('Spatial Position') + ylab('Average Quantile') + theme(legend.position = "top") 
+#ggarrange(p1)
+#ggarrange(p1, p[[1]], p[[2]], p[[3]], nrow = 2, ncol = 2)
+```
+
+```{r fig-5, fig.height = 4, fig.width = 4, fig.align = 'center'}
+load(file = "Results/Dentate.RData")
+#write.csv(data.frame(names(gene_class)), file = "Results/Dentate.csv")
+p <- list()
+plot_dfs <- list()
+for(ind in 1:K) {
+  cur_genes = names(which(gene_class==ind))
+  plot_dfs[[ind]] <- data.frame(gene_df[restr_ind,"z"],colMeans(quantiles[cur_genes,]),ind)
+  colnames(plot_dfs[[ind]]) <- c('z','quantile','cluster')
+  max_val <- quantile((colSums(puck_d@counts[cur_genes,])/puck_d@nUMI)[cell_barc],0.9)
+  p[[ind]] <- plot_puck_wrapper(puck_d,colSums(puck_d@counts[cur_genes,])/puck_d@nUMI,cell_type = cell_type, minUMI = 300,min_val = -0.0000001, max_val = max_val)
+  cur_range <- c(0,max_val)
+  p[[ind]] <- my_mod(p[[ind]])+ ggplot2::scale_colour_gradientn(paste("Cluster", ind, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range, labels = c(0,signif(max_val,1)))
+}
+plot_df <- bind_rows(plot_dfs)
+plot_df$cluster <- factor(plot_df$cluster)
+p1 <- ggplot(plot_df) + geom_line(aes(x=z,y=quantile,group=cluster,color=cluster)) +ylim(c(0,1)) + scale_color_manual(values=c("#D55E00","#EFCB00", "#0072B2", '#009E73'), name = "Cluster") + theme_classic() + scale_x_continuous(breaks = c(min(plot_df$z), max(plot_df$z)), limits = c(min(plot_df$z), max(plot_df$z)), labels = c(0,1)) + xlab('Spatial Position') + ylab('Average Quantile') + theme(legend.position = "top") 
+#ggarrange(p1)
+#ggarrange(p1, p[[1]], p[[2]], p[[3]], p[[4]], nrow = 3, ncol = 2)
+```
+
+
+```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+load(file = "Results/SlideseqHippo.RData")
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+n_levels = iv$cell_type_info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = iv$cell_type_info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Ependymal"] <- "#D55E00"
+my_pal_curr["Interneuron"] <- "#E69F00"
+my_pal_curr["CA1"] <- "#56B4E9"
+my_pal_curr["Denate"] <- "#009E73"
+my_pal_curr["Oligodendrocyte"] <- "#EFCB00"
+my_pal_curr["CA3"] <- "#0072B2"
+my_pal_curr["Microglia_Macrophages"] <- "#000000"
+my_pal_curr["Astrocyte"] <- "#CC79A7"
+my_pal_curr["Choroid"] <- my_pal["Oligodendrocyte"]
+my_pal_curr["Entorihinal"] <- my_pal["CA3"]
+cell_type = "Astrocyte"
+doublets_type = doublets[doublets$first_type == cell_type | doublets$second_type == cell_type,]
+barcodes = rownames(doublets_type)
+my_table = puck@coords[barcodes,]
+my_table$class = doublets_type$first_type
+my_table2 = puck@coords[barcodes,]
+my_table2$class = doublets_type$second_type
+my_table = rbind(my_table, my_table2)
+my_table = my_table[my_table$class != cell_type,]
+n_levels = iv$cell_type_info[[3]]
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .05, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres],breaks = c('Endothelial_Tip','Denate','Interneuron','Oligodendrocyte','Microglia_Macrophages','Endothelial_Stalk','CA1','CA3'), labels = c('Endo_Tip','Dentate','Interneuron','Oligo','Microglia','Endo_Stalk','CA1','CA3'))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position="top") +theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm'))
+
+p2 <- my_mod(p2)
+
+ggarrange(p2)
+```
+
+```{r fig-6, fig.height = 4, fig.width = 4, fig.align = 'center'}
+load(file = 'Results/AstrocytesFull.RData')
+#Z = abs(gene_mean_mat - gene_mean_mat[,"Astrocyte"])/(sqrt(gene_sd_mat^2 + gene_sd_mat[,"Astrocyte"]^2))
+#log_fc <- log(apply(gene_mean_mat,1,max)/apply(gene_mean_mat,1,mean),2)
+#inds <- apply(gene_mean_mat,1,which.max)
+#Z_val <- numeric(length(log_fc))
+#names(Z_val) <- names(log_fc)
+#for(gene in names(log_fc))
+#  Z_val[gene] <- Z[gene,inds[gene]]
+#genes_found <- names(which((log_fc >= 0.6) & (Z_val > 1.96)))
+#write.csv(data.frame(c(p_val[-17],p_calc)), file = "Results/Astrocytes.csv")
+#p_val <- 2 - 2*pnorm(Z_val[genes_found])
+ast_gene_list <- c('Slc7a10') 
+
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+cur_cell_types = list('Slc7a10' = c('CA1','CA3','Denate'))
+results <- Matrix(0, nrow = length(ast_gene_list), ncol = 4)
+rownames(results) = ast_gene_list
+colnames(results) = c('m1','s1', 'm2', 's2')
+for(gene in ast_gene_list) {
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind_2 <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  results[gene,'m1'] = mean(puck_d@counts[gene,my_ind_1])
+  results[gene,'s1'] = sd(puck_d@counts[gene,my_ind_1]) / sqrt(length(my_ind_1))
+  results[gene,'m2'] = mean(puck_d@counts[gene,my_ind_2])
+  results[gene,'s2'] = sd(puck_d@counts[gene,my_ind_2]) / sqrt(length(my_ind_2))
+}
+results <- data.frame(results)
+results_old <- results
+load(file = 'Results/Astrocytes.RData')
+
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+cur_cell_types = list('Pantr1' = 'CA1', 'Slc6a11' = c('CA1','CA3','Denate'), 'Kcnj16' = c('CA1','CA3','Denate'), 'Entpd2' = 'Denate')
+results <- Matrix(0, nrow = length(ast_gene_list), ncol = 4)
+rownames(results) = ast_gene_list
+colnames(results) = c('m1','s1', 'm2', 's2')
+for(gene in ast_gene_list) {
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind_2 <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  results[gene,'m1'] = mean(puck_d@counts[gene,my_ind_1])
+  results[gene,'s1'] = sd(puck_d@counts[gene,my_ind_1]) / sqrt(length(my_ind_1))
+  results[gene,'m2'] = mean(puck_d@counts[gene,my_ind_2])
+  results[gene,'s2'] = sd(puck_d@counts[gene,my_ind_2]) / sqrt(length(my_ind_2))
+}
+results <- data.frame(results)
+results["Pantr1",] <- results["Pantr1",] / 5
+results <- rbind(results,results_old)
+plot_df <- rbind(results[,1:2],setNames(results[,3:4], names(results[,1:2])))
+plot_df$class = c(rep(1,5), rep(2,5))
+gene_fact <- factor(c(ast_gene_list,'Slc7a10'))
+new_levels = levels(gene_fact)
+new_levels[3] = levels(gene_fact)[5]
+new_levels[5] = levels(gene_fact)[3]
+gene_fact <- factor(c(ast_gene_list,'Slc7a10'),new_levels)
+plot_df$gene <- unlist(list(gene_fact,gene_fact))
+plot_df$env <- c("Other Astrocytes","Other Astrocytes","Other Astrocytes","Other Astrocytes","Other Astrocytes","CA1",'Excitatory Neurons', 'Excitatory Neurons','Dentate','Excitatory Neurons')
+MULT <- 500
+plot_df$m1 <- plot_df$m1 * MULT
+plot_df$s1 <- plot_df$s1 * MULT
+results <- data.frame(results)
+Z_calc <- (results$m2 - results$m1) / (sqrt(results$s1^2 + results$s2^2))
+p_calc <- 2 - 2*pnorm(Z_calc)
+names(p_calc) <- ast_gene_list
+Z_ent = (0.076356658 - 0.003452844) / sqrt(0.002424443^2 + 0.032493644^2)
+p_ent = 2 - 2*pnorm(Z_ent)
+Z_slc = (0.179903882 - 0.028702184) / sqrt(0.027229853^2 + 0.007213023^2)
+p_slc = 2 - 2*pnorm(Z_slc)
+p1 <- ggplot(plot_df, aes(x=gene,y=m1, group = class, color = env)) + geom_point()+geom_errorbar(aes(ymin=m1-s1, ymax=m1 + s1), width=.02,position=position_dodge(.001))+scale_y_continuous("Normalized Expression",sec.axis = sec_axis(~.*5, name="Pantr1 Expression")) +theme_classic()+ scale_color_manual(values=c("#0072B2","#D55E00","#009E73",'#000000' ), name = "Cellular Environment") + 
+   xlab("Gene") + ylab("Normalized Expression") +  theme(legend.position = "top") + geom_vline(xintercept=4.5, linetype="dashed", color = "black", size=0.5) + guides(color=guide_legend(nrow=2))
+
+#gene_mean_mat1 <- gene_mean_mat
+#load(file = 'Results/AstrocytesFull.RData')
+#pos_genes <- pos_genes[-2]
+#var_gmm <- rbind(gene_mean_mat1, gene_mean_mat[pos_genes,])
+#var_gmm <- var_gmm[order(apply(var_gmm,1,which.max)),]
+#gmm <- rbind(var_gmm, gene_mean_mat[neg_genes,])
+#l_gmm <- log(gmm)/log(2) - log(gmm[,"Astrocyte"],2)
+#l_gmm <- pmax(l_gmm,-2.5)
+#l_gmm <- pmin(l_gmm,2.5)
+#data <- melt(as.matrix(l_gmm))
+#colnames(data) = c('Prediction','Reference','value')
+#data$Prediction <- factor(data$Prediction,levels(data$Prediction)[c(1,2,5,7,9,10,14:19,3:4,6,8,11:13)])
+#p3 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::coolwarm(20),name = "Classification Proportion")
+#+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('True Cell Type')+ ylab('Predicted Cell Type')
+
+ggarrange(p1,nrow=1)
+```
+
+```{r fig-7, fig.height = 4, fig.width = 4, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks =c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+p1 <- list()
+p2 <- list()
+p3 <- list()
+load(file = 'Results/AstrocytesFull.RData')
+cur_cell_types = list('Slc7a10' = c('CA1','CA3','Denate'))
+gene <- 'Slc7a10'; ind = 5
+max_col = ast_prop[,cur_cell_types[[gene]]]
+max_col = apply(max_col,1,max)
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+my_ind <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+cur_range <- c(0,.001)
+p2[[ind]] <- plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,],ylimit = cur_range)
+p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+p1[[ind]] <- plot_puck_continuous(puck_d,my_ind_1,puck_d@counts[gene,],ylimit = cur_range)
+p1[[ind]] <- my_mod(p1[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+
+
+load(file = 'Results/Astrocytes.RData')
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+cur_cell_types = list('Pantr1' = 'CA1', 'Slc6a11' = c('CA1','CA3','Denate'), 'Kcnj16' = c('CA1','CA3','Denate'), 'Entpd2' = 'Denate')
+for(ind in 1:2) {
+  gene <- ast_gene_list[ind]
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  
+  my_class <- rep(0,length(rownames(ast_prop)))
+  names(my_class) <- rownames(ast_prop)
+  my_class[names(which(puck_d@counts[gene,my_ind] < .001))] <- 1
+  my_class[names(which(puck_d@counts[gene,my_ind] >= .001))] <- 3
+  my_class[names(which(puck_d@counts[gene,my_ind_1] < .001))] <- 2
+  my_class[names(which(puck_d@counts[gene,my_ind_1] >= .001))] <- 4
+  my_barc <- names(my_class[my_class > 0])
+  p3[[ind]] <- plot_class(puck_d, my_barc[order(my_class[my_barc])], factor(my_class)) 
+  p3[[ind]] <- my_mod(p3[[ind]]) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))
+  #p3[[ind]] <- my_mod(p3[[ind]]) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#009E73","#009E73"))
+  cur_range <- c(0,.001)
+  p2[[ind]] <- plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,],ylimit = cur_range)
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+  p1[[ind]] <- plot_puck_continuous(puck_d,my_ind_1,puck_d@counts[gene,],ylimit = cur_range)
+  p1[[ind]] <- my_mod(p1[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+}
+ggarrange(p3[[2]])
+#ggarrange(p1[[2]], p2[[2]],nrow = 1,ncol = 2)
+#ggarrange(p1[[1]], p2[[1]],p1[[2]], p2[[2]],p1[[5]],p2[[5]],nrow = 3,ncol = 2)
+```
+
+```{r fig-8, fig.height = 4, fig.width = 4, fig.align = 'center'}
+load(file = 'Results/Astrocytes.RData')
+p1 <- list()
+p2 <- list()
+p3 <- list()
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+for(ind in 3:4) {
+  gene <- ast_gene_list[ind]
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  
+  my_class <- rep(0,length(rownames(ast_prop)))
+  names(my_class) <- rownames(ast_prop)
+  my_class[names(which(puck_d@counts[gene,my_ind] < .001))] <- 1
+  my_class[names(which(puck_d@counts[gene,my_ind] >= .001))] <- 3
+  my_class[names(which(puck_d@counts[gene,my_ind_1] < .001))] <- 2
+  my_class[names(which(puck_d@counts[gene,my_ind_1] >= .001))] <- 4
+  my_barc <- names(my_class[my_class > 0])
+  p3[[ind]] <- plot_class(puck_d, my_barc[order(my_class[my_barc])], factor(my_class)) 
+  p3[[ind]] <- my_mod(p3[[ind]]) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))
+  
+  cur_range <- c(0,1e-3)
+  p2[[ind]] <- plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,],ylimit = cur_range,size=0.5, alpha = 0.75)
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+  p1[[ind]] <- plot_puck_continuous(puck_d,my_ind_1,puck_d@counts[gene,],ylimit = cur_range,size=0.5, alpha = 0.75)
+  p1[[ind]] <- my_mod(p1[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+}
+ggarrange(p3[[4]])
+#ggarrange(p1[[4]], p2[[4]],nrow = 1,ncol = 2)
+#ggarrange(p1[[3]], p2[[3]],p1[[4]], p2[[4]],nrow = 2,ncol = 2)
+```
+
+```{r fig.height = 4, fig.width = 4, fig.align = 'center'}
+load(file = "Results/SlideseqHippo.RData")
+
+gene = "Ptk2b"
+my_class <- rep(0,length(colnames(puck@counts)))
+names(my_class) <- colnames(puck@counts)
+type_list <- c("CA1","CA3","Denate")
+my_ind <- (results_df$spot_class != "reject" & results_df$first_type %in% type_list) | (results_df$spot_class == "doublet_certain" & results_df$second_type %in% type_list) 
+my_ind2 <- (results_df$spot_class %in% c("singlet", "doublet_certain")) & !my_ind
+my_class[names(which(puck@counts[gene,my_ind] < 0.1))] <- 1
+my_class[names(which(puck@counts[gene,my_ind] >= 0.1))] <- 3
+my_class[names(which(puck@counts[gene,my_ind2] < 0.1))] <- 2
+my_class[names(which(puck@counts[gene,my_ind2] >= 0.1))] <- 4
+my_barc <- names(my_class[my_class > 0])
+p <- plot_class(puck, my_barc[order(my_class[my_barc])], factor(my_class)) 
+p <- my_mod(p) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))
+ggarrange(p)
+```
+
+```{r fig-2fgddg, fig.height = 4, fig.width = 8, fig.align = 'center'}
+load(file = "Results/2dloess.RData")
+lim = c(4200,10100)
+#lim = c(-3000, 10500) #CA1
+#lim = c(-8000, 12000) #Dentate
+my_pal = pals::kovesi.rainbow(20)
+my_pal = pals::brewer.ylorrd(20)[2:20]
+
+
+my_mod <- function(p) {
+  p + xlim(c(3800,5700)) + ylim(c(2100,3500)) + geom_segment(aes(x = 4000, y = 2400, xend = 4154, yend = 2400), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+#int_genes <- c("Rgs14","Spink8",'Cpne9','Kcnf1')
+int_genes <- c("Rgs14",'Cpne9')
+MULT <- 500
+p1 <- list()
+p2 <- list()
+for(ind in 1:length(int_genes)) {
+  gene <- int_genes[ind]
+  max_val <- 20*mean((puck_d@counts[gene,]/puck_d@nUMI)[cell_barc])
+  cur_range <- c(0, MULT*.00087)
+  if(ind == 2)
+    cur_range <- c(0,MULT*.00025)
+  barcodes <- rownames(gene_df)
+  raw_df <- puck_d@coords[barcodes,]
+  raw_df$val <- as.integer((puck_d@counts[gene,]/puck_d@nUMI)[barcodes] > 0.0002)
+  raw_df <- raw_df[raw_df$val > 0,]
+  raw_df$val <- factor(raw_df$val)
+
+  
+  
+  gene_df$gene <- puck_d@counts[gene,cell_barc]/puck_d@nUMI[cell_barc]
+  fit <- loess(gene ~ x*y, span = 0.8, data = gene_df, degree = 1)
+  gene_df$fitted <- fitted(fit)
+  plot_val <- pmax(0,gene_df$fitted)
+  names(plot_val) <- as.character(which(cell_barc))
+  min_val = MULT*min(plot_val);max_val = MULT*quantile(plot_val[gene_df$x  >= 3800 & gene_df$x < 5700 & gene_df$y > 2100 & gene_df$y < 3500],0.95)
+  p2[[ind]]<- plot_puck_continuous(puck_d,barcodes,MULT*plot_val[names(puck_d@cell_labels)], ylimit = c(min_val,max_val), size = 1.25, alpha = 0.2)
+  cur_range <- c(-.00001*MULT, signif(max_val,2))
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Smoothed"), colors = pals::brewer.orrd(20)[2:20],limits = cur_range, breaks = c(0,signif(max_val,2)), labels = c(0,signif(max_val,2)))
+  p2[[ind]] <- p2[[ind]] + geom_point(data=raw_df, aes(fill=val),,size = 0.1) + scale_fill_manual("Raw",values = c("#000000"),labels = c("")) + guides(fill = guide_legend(override.aes = list(size=2)))
+}
+#ggarrange(p1[[1]], p2[[1]], p1[[2]], p2[[2]],p1[[3]], p2[[3]],p1[[4]], p2[[4]], nrow = 4,ncol=2)
+#ggarrange(p1[[1]], p2[[1]],p1[[2]], p2[[2]], nrow = 2,ncol=2)
+ggarrange(p2[[1]], p2[[2]],nrow = 1,ncol=2)
+```
+
+```{r fig-1x, fig.height = 4, fig.width = 8, fig.align = 'center'}
+load(file = "Results/global_cv.RData")
+
+plot_df <- data.frame(c(all_cv[colnames(spatial_genes)],sample(all_cv,50)), c(rep('glob',length(colnames(spatial_genes))),rep('null',50))) 
+colnames(plot_df) <- c('quant','colr')
+plot_df$cat <- 1
+p2 <- ggplot(plot_df, aes(x = colr, y = quant)) +
+  geom_jitter(alpha = 0.75) +
+  geom_boxplot(fill = NA, width = 0.4, outlier.alpha = 0) +
+  theme_classic() + scale_y_continuous(breaks = c(0,2,4), limits = c(0,4.2)) +xlab('Globally Variable Genes') + ylab('Coefficient of Variation Across Cell Types') +  scale_x_discrete(labels = c('Genes Detected Ignoring Cell Type','Randomly Selected Genes')) +  theme(axis.title.x=element_blank(),axis.text=element_text(size=8)) 
+
+load(file = "Results/2dloess.RData")
+fc_df <- data.frame(means_df_CA3[int_genes_CA3,]$cvs, 'Local')
+fc_df2 <- data.frame(means_df_CA3[globallyvar,]$cvs,'Global')
+colnames(fc_df) <- c('score','class'); colnames(fc_df2) <- c('score','class')
+fc_df <- rbind(fc_df2,fc_df)
+p1 <- ggplot(fc_df, aes(x = class, y = score)) +
+  geom_jitter(alpha = .75) +
+  geom_boxplot(fill = NA, width = 0.4, outlier.alpha = 0) +
+  theme_classic() + ylim(c(0,1.7)) + ylab('Coefficient of Variation Within CA3')  + scale_x_discrete(labels = c('Genes Detected Ignoring Cell Type','Genes Detected within Cell Type')) +  theme(axis.title.x=element_blank(),axis.text=element_text(size=7))
+
+
+ggarrange(p2,p1,nrow = 1)
+```

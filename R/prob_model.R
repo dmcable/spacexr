@@ -1,3 +1,10 @@
+#' Sets Precomputed Probabiliites as Global Variable
+#'
+#' Given a matrix, \code{Q_mat}, of P(y|x), under the Poisson-Lognormal model.
+#' Sets this as a global variable for fast computations in the future.
+#'
+#' @param Q_mat_loc Matrix of precomputed probabiliites, as previously computed by \code{\link{get_Q_mat}}
+#' @export
 set_likelihood_vars <- function(Q_mat_loc) {
   Q_mat <<- Q_mat_loc
   N_X <<- dim(Q_mat)[2]
@@ -128,6 +135,22 @@ calc_Q_par <- function(K, X_vals, sigma, big_params = T) {
   }
   parallel::stopCluster(cl)
   return(results)
+}
+
+#' Calculates Poisson-lognormal Likelihood
+#'
+#' For a given value of sigma, calculates P(y|x) under the Poisson-Lognormal model
+#' for each possible value of y and x.
+#'
+#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @param sigma a numeric representing estimated sigma_c from \code{\link{choose_sigma_c}}
+#' @return Returns \code{Q_mat}, a matrix containing pre-computed values for the log likelihood.
+#' @export
+get_Q_mat <- function(iv, sigma, big_params = T) {
+  delta <<- 1e-5
+  results <- calc_Q_par(iv$config$K_val, (1:iv$config$N_X)^1.5*delta, sigma, big_params = T)
+  Q_mat <-t(as.data.frame(matrix(unlist(results), nrow=length(unlist(results[1])))))
+  return(Q_mat)
 }
 
 #not using Q also uses small params
