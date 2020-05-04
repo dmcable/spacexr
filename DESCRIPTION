@@ -9,6 +9,7 @@ License:
 Encoding: UTF-8
 LazyData: true
 Imports: 
+	caret, 
 	readr, 
 	config, 
 	Seurat, 
@@ -16,7 +17,6 @@ Imports:
 	Matrix, 
 	doParallel, 
 	foreach, 
-	caret, 
 	quadprog,
 	tibble,
 	dplyr,
