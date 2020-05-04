@@ -26,51 +26,96 @@ different rates.
 ## Installation
 
 You can install the current version of RCTD from
-[GitHub](https://github.com/) with:
+[GitHub](https://github.com/dmcable/RCTD) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("dmcable/RCTD")
 ```
 
+### Downloading RCTD Folder
+
+We reccommend downloading the ‘RCTD\_base’ folder, and adapting it to be
+your working directory for RCTD. ‘RCTD\_base’ can be downloaded as
+follows:
+
+``` bash
+#!/bin/bash
+wget https://raw.githubusercontent.com/dmcable/RCTD/dev/RCTD_base.zip 
+unzip RCTD_base.zip
+```
+
+For the rest of this document, we assume that you are working in
+‘RCTD\_base’ as a base directory. This folder contains several
+important subfolders/files:
+
+  - conf: Configuration files required for running RCTD.
+      - This folder must be placed in the directory where you are
+        running RCTD.
+      - Data locations are entered into the ‘conf/dataset.yml’ file, and
+        RCTD parameters in ‘conf/default.yml’.
+      - For selecting a different RCTD parameter configuration file, you
+        can change the `config_mode` field in ‘conf/dataset.yml’ to
+        point to e.g. ‘conf/default.yml’, ‘conf/test.yml’, or another
+        file.
+      - Set `n_puck_folds` for number of folds to split the dataset
+        (RCTD runs on batches/folds of the dataset).
+  - data: A recommended folder to contain the data. Contains two
+    subfolders ‘Reference’ for containing the scRNA-seq data, and
+    ‘SpatialRNA’ for containing the spatial transcriptomics data.
+    Examples are included with the ‘Vignette’ subfolders. RCTD will
+    place its results in the ‘SpatialRNA’ subdirectory.
+  - R\_scripts: R scripts for running RCTD
+      - See the following ‘Workflow’ and ‘Recommended Guidelines’
+        sections for explanation of how to use these scripts.
+  - bash\_scripts: bash scripts for submitting RCTD jobs to the computer
+    cluster.
+      - These sample scripts were configured for the Broad Institute’s
+        PBS cluster, but they are not likely to directly work without
+        modification on other clusters.
+      - See the section ‘Running on a Cluster’ for more details.
+  - ‘spatial-transcriptomics.Rmd’ a vignette for RCTD, which you can run
+    after downloading the ‘RCTD\_base’ folder
+      - This vignette explains most of the features of RCTD.
+
 ## Workflow
 
-The basic workflow for RCTD is:
+The basic workflow for RCTD consists of the following steps:
 
-Step 1. Data Preprocessing. Representing the spatial transcriptomics
-data as a `SpatialRNA` object, and the scRNA-seq reference as a `Seurat`
-object. + Save these objects as ‘RDS’ files, as shown in the ‘Data
-Preprocessing’ section of the ‘spatial-transcriptomics’ vignette. Step
-2. Setup. Edit the configuration files (e.g. ‘conf/dataset.yml’ and
-‘conf/default.yml’) to point to the data files and e.g. determine
-parameters for selecting differentially expressed genes. + Follow the
-‘Setup’ section of the ‘spatial-transcriptomics’ vignette. Data
-locations are entered into the ‘conf/dataset.yml’ file, and RCTD
-parameters in ‘conf/default.yml’. The ‘conf’ folder should be placed in
-the directory where you are running RCTD. For RCTD parameters, you can
-change the `config_mode` field in ‘conf/dataset.yml’ to point to
-e.g. ‘conf/default.yml’, ‘conf/test.yml’, or another file. Set
-`n_puck_folds` for number of folds to split the dataset (RCTD runs on
-batches/fold of the dataset). Step 3. Platform Effect Normalization.
-Estimates platform effects between scRNA-seq dataset and spatial
-transcriptomics dataset. Uses this to normalize cell type profiles. +
-Run the ‘R\_scripts/fitBulk.R’ script or, equivalently, follow the
-‘Platform Effect Normalization’ section of the
-‘spatial-transcriptomics’ vignette. Step 4. Hyperparameter
-optimization (choosing sigma). Handles overdispersion by determining the
-maximum likelihood variance for RCTD’s lognormal random effects.
-Precomputes likelihood function. + Run the ‘R\_scripts/chooseSigma.R’
-script or, equivalently, follow the ‘Hyperparameter optimization
-(choosing sigma)’ section of the ‘spatial-transcriptomics’ vignette.
-Step 5. Robust Cell Type Decomposition. Assigns cell types to each
-spatial transcriptomics pixel, and estimates the cell type proportions.
-+ Run the ‘R\_scripts/callDoublets.R’ for each data fold. An example of
-how this works is outlined in the ‘Robust Cell Type Decomposition’
-section of the ‘spatial-transcriptomics’ vignette. Step 6. Collecting
-RCTD results. Obtain results objects and make summary plots. + Run the
-‘R\_scripts/gather\_results.R’ script or, equivalently, follow the
-‘Collecting RCTD results’ section of the ‘spatial-transcriptomics’
-vignette.
+1.  Data Preprocessing. Representing the spatial transcriptomics data as
+    a `SpatialRNA` object, and the scRNA-seq reference as a `Seurat`
+    object.
+      - Save these objects as ‘RDS’ files, as shown in the ‘Data
+        Preprocessing’ section of the ‘spatial-transcriptomics’
+        vignette.
+2.  Setup. Edit the configuration files (e.g. ‘conf/dataset.yml’ and
+    ‘conf/default.yml’) to point to the data files and e.g. determine
+    parameters for selecting differentially expressed genes.
+      - Follow the ‘Setup’ section of the ‘spatial-transcriptomics’
+        vignette.
+3.  Platform Effect Normalization. Estimates platform effects between
+    scRNA-seq dataset and spatial transcriptomics dataset. Uses this to
+    normalize cell type profiles.
+      - Run the ‘R\_scripts/fitBulk.R’ script or, equivalently, follow
+        the ‘Platform Effect Normalization’ section of the
+        ‘spatial-transcriptomics’ vignette.
+4.  Hyperparameter optimization (choosing sigma). Handles overdispersion
+    by determining the maximum likelihood variance for RCTD’s lognormal
+    random effects. Precomputes likelihood function.
+      - Run the ‘R\_scripts/chooseSigma.R’ script or, equivalently,
+        follow the ‘Hyperparameter optimization (choosing sigma)’
+        section of the ‘spatial-transcriptomics’ vignette.
+5.  Robust Cell Type Decomposition. Assigns cell types to each spatial
+    transcriptomics pixel, and estimates the cell type proportions.
+      - Run the ‘R\_scripts/callDoublets.R’ for each data fold. An
+        example of how this works is outlined in the ‘Robust Cell Type
+        Decomposition’ section of the ‘spatial-transcriptomics’
+        vignette.
+6.  Collecting RCTD results. Obtain results objects and make summary
+    plots.
+      - Run the ‘R\_scripts/gather\_results.R’ script or, equivalently,
+        follow the ‘Collecting RCTD results’ section of the
+        ‘spatial-transcriptomics’ vignette.
 
 ### Recommended Guidelines
 
