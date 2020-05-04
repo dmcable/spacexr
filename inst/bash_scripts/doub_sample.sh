@@ -5,4 +5,4 @@ cd /YOUR_PATH/RCTD/
 set -e
 mkdir -p logs
 mkdir -p logs/callDoublets/
-Rscript callDoublets.R ${SGE_TASK_ID} > logs/callDoublets/chunk-${SGE_TASK_ID}.txt
+Rscript R_scripts/callDoublets.R ${SGE_TASK_ID} > logs/callDoublets/chunk-${SGE_TASK_ID}.txt

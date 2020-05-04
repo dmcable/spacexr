@@ -1,13 +1,14 @@
 ---
 title: "Applying RCTD to Spatial Transcriptomics Data"
 author: "Dylan Cable"
-date: "April 23rd, 2020"
+date: "May 4th, 2020"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{spatial-transcriptomics}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
 ```{r setup}
 library(RCTD)
 library(Matrix)
@@ -17,12 +18,13 @@ library(Matrix)
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  cache = T
+  cache = T,
+  out.width = "100%"
 )
 ```
 ## Introduction
 Robust Cell Type Decomposition, or RCTD, is an R package for learning cell types from spatial transcriptomics data. In this Vignette, we 
-will assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles an annotated single nucleus RNA-sequencing (snucRNA-seq) cerebellum dataset.
+will assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset.
 
 ## Data Preprocessing
 Let's begin by loading in the data to be usable for RCTD. <br/>
@@ -43,54 +45,65 @@ Our reference has now been saved as 'Data/Reference/Vignette/SCRef.RDS'. From no
 Next, put the SpatialRNA data (in this case Slide-seq) in your 'Data/SpatialRNA' directory (here '../Data/SpatialRNA/Vignette'). This needs to contain: <br/>
 1. BeadLocationsForR.csv: a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations of the pixels. <br/>
 2. MappedDGEForR.csv: a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel. <br/>
-```{r SpatialRNA, results = 'hide'}
+```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 datadir <- '../extdata/SpatialRNA/Vignette' # directory for sample Slide-seq dataset
 puck <- read.SpatialRNA(datadir) # read in the SpatialRNA object
 barcodes <- colnames(puck@counts) #pixels to be used (a list of barcode names). 
-# This list can be restricted if you want to crop the puck e.g. puck <- restrict_puck(puck, barcodes)
-#provides a basic plot of the nUMI of each pixel on the plot:
-plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), title ='plot of nUMI') 
+# This list can be restricted if you want to crop the puck e.g. 
+# puck <- restrict_puck(puck, barcodes) provides a basic plot of the nUMI of each pixel
+# on the plot:
+plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
+                     title ='plot of nUMI') 
 saveRDS(puck, file = file.path(datadir, 'puck.RDS')) # save the SpatialRNA object
 ```
 The RDS file 'puck.RDS' saves the 'SpatialRNA' file we have created, and from now on it can be loaded in by the init_RCTD function. 
+## Setup
 
 ### Configuration files
 From now on, we can load in the 'SpatialRNA' object and that scRNA-seq Seurat object by pointing RCTD to these files. This can be done by editing the 'conf/dataset.yml' configuration file. An example is provided for this vignette. This file needs to point to the 'SpatialRNA' and scRNA-seq reference files. Furthermore, this file specifies the 'config_mode' field, which points to a second configuration file. In this case, we have set config_mode = 'test', which means that RCTD will use the 'conf/test.yml' file. The logic of having two configuration files is to separate the dataset file from the RCTD parameters file. Further parameters are explained in the comments of these files. In general, we recommend using config_mode = 'test' for initial testing of RCTD, and using (or modifying) 'conf/default.yml' for proper runs of RCTD. We explain a few important parameters here (except for 'n_puck_folds', they are located in the second configuration file, in this case 'conf/test.yml'): 
 
-* `n_puck_folds: 1` (in 'dataset.yml'). RCTD run on independent batches of the SpatialRNA data, enabling parallel processing. This is the number of batches for RCTD to split the data. We reccomend splitting in e.g. 10-40 batches. Typical batch size could be 500-1000 pixels per batch. 
+* `n_puck_folds: 1` (in 'dataset.yml'). RCTD run on independent batches of the SpatialRNA data, enabling parallel processing. This is the number of batches for RCTD to split the data. We recommend splitting in e.g. 10-40 batches. Typical batch size could be 500-1000 pixels per batch. 
 * `gene_cutoff, fc_cutoff, gene_cutoff_reg, fc_cutoff_reg: ` are used for differentially expressed gene selection, as explained in the next section.
 * `UMI_min, UMI_max: ` are the minimum and maximum read depth for pixels in the SpatialRNA dataset.
 * `N_epoch, N_X, K_val, N_fit, N_epoch_bulk, MIN_CHANGE_BULK: ` are technical specifications that can be left as in 'default.yml'.
 
 ### Differentially expressed gene selection
-Now, we show an important aspect of how the configuration parameters are used: to select differentially expressed genes. In this example, we use the 'default.yml' configuration file, which would typically be used for RCTD. The default parameters should work well, but you can also play around with the parameters. Typically, we reccommend selecting at most 5000 genes for Platform Effect Normalization, and at most 3000 genes for RCTD. It is also good to make sure that each cell type has at least a few differntially expressed genes that will be useful for identifying that cell type. For each cell type, `get_de_genes` chooses genes that have a minimum average normalized expression in that cell type (of `gene_cutoff`), and whose expression is larger in that cell type than the average of all cell types by a log-fold-change of `fc_cutoff`. 
+Now, we show an important aspect of how the configuration parameters are used: to select differentially expressed genes. In this example, we use the 'default.yml' configuration file, which would typically be used for RCTD. The default parameters should work well, but you can also play around with the parameters. Typically, we recommend selecting at most 5000 genes for Platform Effect Normalization, and at most 3000 genes for RCTD. It is also good to make sure that each cell type has at least a few differntially expressed genes that will be useful for identifying that cell type. For each cell type, `get_de_genes` chooses genes that have a minimum average normalized expression in that cell type (of `gene_cutoff`), and whose expression is larger in that cell type than the average of all cell types by a log-fold-change of `fc_cutoff`. 
 ```{r DEgenes}
 config <- config::get(file = paste0("conf/default.yml"), use_parent = FALSE)
-cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse,
+cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, 
+                                     reference@meta.data$liger_ident_coarse,
                                      reference@meta.data$nUMI)
 print('For Platform Effect Normalization Step:')
-gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff)
+gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff, 
+                         expr_thresh = config$gene_cutoff)
 
 print('For RCTD Step:')
-gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg)
+gene_list = get_de_genes(cell_type_info, puck, fc_thresh = config$fc_cutoff_reg, 
+                         expr_thresh = config$gene_cutoff_reg)
 ```
+## Platform Effect Normalization
+
 ### Preprocessing
 
 Having set the configuration files, we can now initialize RCTD using the `init_RCTD` function. This function uses the configuration files to locate the `SpatialRNA` dataset and the scRNA-seq reference. It does some basic preprocessing, and returns a number of variables, relevant for RCTD, in the `iv` object. For example, `iv$gene_list` gives a list of genes selected by RCTD. In order to see a full explanation of fields in `iv`, use `?init_RCTD`.
 ```{r Preprocessing}
 iv <- init_RCTD(gene_list_reg = F, get_proportions = F, load_info=F) #initial variables
 ```
-### Platform Effect Normalization
+### Running Platform Effect Normalization
 
-The first step in running RCTD is the Platform Effect Normalization step. This is accomplished simply by feeding `iv` into the `fitBulk` function. Platform Effect Normalization simultaneously estimates bulk cell type proportion in the SpatialRNA dataset, and the platform effects (changes in gene expression from scRNA-seq to spatial transcriptomics). It uses the platform effects to renormalize the scRNA-seq cell type profiles, which is returned as `bulkResults$cell_type_info_renorm`. You can examine the predicted bulk cell type proportion (`bulkResults$proportions`). If this drastically does not fit your expectations of the cell type proportions, something may have gone wrong. 
+The first step in running RCTD is the Platform Effect Normalization step. This is accomplished simply by feeding `iv` into the `fitBulk` function. Platform Effect Normalization simultaneously estimates bulk cell type proportion in the SpatialRNA dataset, and the platform effects (changes in gene expression from scRNA-seq to spatial transcriptomics). It uses the platform effects to normalize the scRNA-seq cell type profiles, which is returned as `bulkResults$cell_type_info_renorm`. You can examine the predicted bulk cell type proportion (`bulkResults$proportions`). If this drastically does not fit your expectations of the cell type proportions, something may have gone wrong. The normalized cell type profiles are saved in '../extdata/SpatialRNA/Vignette/MetaData/cell_type_info_renorm.RDS'. 
 
 ```{r Bulk, results = 'hide'}
 bulkResults <- fitBulk(iv)
+```
+```{r BulkResults}
 print('Bulk Cell Type Proportion:')
 print(bulkResults$proportions / sum(bulkResults$proportions))
 ```
 
-### Hyperparameter optimization: choosing sigma
+
+## Hyperparameter optimization: choosing sigma
 
 After running platform effect estimation, we can determine `sigma_c`, a hyperparameter that represents the variance of the random effects (note, this is also called $\sigma_\varepsilon$ in the paper). Note, that we reload in `init_RCTD` to include the normalized `cell_type_info` after platform effect normalization (it is now loading from 'MetaData/cell_type_info_renorm.RDS' in the SpatialRNA directory). The trace files for optimizing sigma can be found in the `resultsdir` directory. In fact, this results directory contains all the main results of RCTD. After selecting sigma, we calculate the quadrature, `Q_mat`, which is saved in `resultsdir` as `Q_mat.RDS`.
 
@@ -103,25 +116,28 @@ Q_mat <- get_Q_mat(iv, sigma) # calculate the quadrature
 saveRDS(Q_mat, file.path(resultsdir,'Q_mat.RDS')) # save the quadrature file.
 ```
 
-### Running RCTD
+## Running RCTD
 
 After computing the quadrature, we can run RCTD in parallel on the `SpatialRNA` dataset. Because RCTD runs over batches, or folds, of the data, we must provide a `fold_index` to run on. In this case, we are analyzing the first (and only) fold. RCTD requires the function `set_likelihood_vars` to be run, which sets the quadrature as a global variable. RCTD runs with the `process_beads_batch` function, which uses parallel processing to estimate cell type proportions on each pixel in the `SpatialRNA` dataset. The results are returned and saved for future interpretation. 
 
 ```{r call, results = 'hide'}
 fold_index = 1
- #initialize RCTD to load in the SpatialRNA object of only the fold at fold_index
-iv <- init_RCTD(puck_file = paste0("SplitPuck/puck",fold_index,".RDS"), MIN_OBS=0, load_info_renorm = T)
+# initialize RCTD to load in the SpatialRNA object of only the fold at fold_index
+iv <- init_RCTD(puck_file = paste0("SplitPuck/puck",fold_index,".RDS"), MIN_OBS=0, 
+                load_info_renorm = T)
 Q_mat_loc <- readRDS(file.path(resultsdir,'Q_mat.RDS')) # load in the quadrature.
 set_likelihood_vars(Q_mat_loc) # set the quadrature as a global variable.
- #a dataframe that maps cell types to classes. It can be left by default as here.
-class_df <- data.frame(iv$cell_type_info[[2]], row.names = iv$cell_type_info[[2]]); colnames(class_df)[1] = "class"
-results = process_beads_batch(iv$cell_type_info, iv$gene_list, iv$puck, class_df = class_df, constrain = F)
- #save the results
+# a dataframe that maps cell types to classes. It can be left by default as here.
+class_df <- data.frame(iv$cell_type_info[[2]], 
+                       row.names = iv$cell_type_info[[2]]); colnames(class_df)[1] = "class"
+results = process_beads_batch(iv$cell_type_info, iv$gene_list, iv$puck, class_df = class_df, 
+                              constrain = F)
+# save the results
 saveRDS(results, paste0(iv$SpatialRNAdir,"/SplitPuckResults/results",fold_index,".RDS"))
 ```
-### Collecting RCTD results
+## Collecting RCTD results
 
-The function `gather_results` will load in all the results (for each fold), concatenate them, and return them as interpretable objects. Of particular interest is `results$weights`, a dataframe of cell type weights for each pixel (for full mode). This section will generate various plots which can be found in `resultsdir`. The results of 'doublet_mode' are stored in `results$results_df` and `results$weights_doublet`, the weights of each cell type. 
+The function `gather_results` will load in all the results (for each fold), concatenate them, and return them as interpretable objects. Of particular interest is `results$weights`, a data frame of cell type weights for each pixel (for full mode). This section will generate various plots which can be found in `resultsdir`. The results of 'doublet_mode' are stored in `results$results_df` and `results$weights_doublet`, the weights of each cell type. 
 More specifically, the `results_df` object contains one column per pixel (barcodes as rownames). Important columns are:
 
 * `spot_class`, a factor variable representing RCTD's classification in doublet mode: "singlet" (1 cell type on pixel), "doublet_certain" (2 cell types on pixel), "doublet_uncertain" (2 cell types on pixel, but only confident of 1), "reject" (no prediction given for pixel). 
@@ -133,19 +149,20 @@ iv <- init_RCTD(load_info_renorm = T) #initial variables
 puck = iv$puck
 resultsdir <- paste0(iv$SpatialRNAdir,"/results")
 results <- gather_results(puck,iv)
-#normalize the cell type proportions to sum to 1.
+# normalize the cell type proportions to sum to 1.
 norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/') 
 
-#make the plots
-#Plots the confident weights for each cell type as in full_mode. 
+# make the plots
+# Plots the confident weights for each cell type as in full_mode. 
 plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights) 
-#Plots all weights for each cell type as in full_mode. 
+# Plots all weights for each cell type as in full_mode. 
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights) 
-#Plots the weights for each cell type as in doublet_mode. 
-plot_weights_doublet(iv$cell_type_info, puck, resultsdir, results$weights_doublet, results$results_df) 
- # Plots the number of confident pixels of each cell type in 'full_mode'. 
+# Plots the weights for each cell type as in doublet_mode. 
+plot_weights_doublet(iv$cell_type_info, puck, resultsdir, results$weights_doublet, 
+                     results$results_df) 
+# Plots the number of confident pixels of each cell type in 'full_mode'. 
 plot_cond_occur(iv$cell_type_info, resultsdir, norm_weights)
-#makes a map of all cell types
+# makes a map of all cell types
 plot_all_cell_types(results$results_df, puck@coords, iv$cell_type_info, resultsdir) 
 
 #doublets
@@ -162,6 +179,8 @@ doub_occur <- table(doublets$second_type, doublets$first_type)
 # Plots a stacked bar plot of doublet ocurrences
 plot_doub_occur_stack(doub_occur, resultsdir, iv) 
 
-#get a SpatialRNA object that has single cell types, each with a spatial coordinate and RNA counts.
-puck_d <- get_decomposed_data(results$results_df, iv$gene_list, puck, results$weights_doublet, iv$cell_type_info)
+# get a SpatialRNA object that has single cell types, each with a spatial coordinate and RNA 
+# counts.
+puck_d <- get_decomposed_data(results$results_df, iv$gene_list, puck, results$weights_doublet, 
+                              iv$cell_type_info)
 ```
