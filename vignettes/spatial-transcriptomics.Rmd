@@ -30,7 +30,7 @@ will assign cell types to a cerebellum Slide-seq dataset. We will define cell ty
 Let's begin by loading in the data to be usable for RCTD. <br/>
 
 ### Single-Cell Reference
-In order to run RCTD, the first step is to process the single cell reference. Create a folder in 'Data/Reference' e.g. 'Data/Reference/Vignette' containing the following three files:<br/>
+In order to run RCTD, the first step is to process the single cell reference. Create a folder in 'data/Reference' e.g. 'data/Reference/Vignette' containing the following three files:<br/>
 1. meta_data.csv: a CSV file (with 3 columns, with headers "barcode", "cluster", and "nUMI") containing the numeric cluster assignment for each cell.<br/>
 2. cell_type_dict.csv: a CSV file (with 2 columns, with headers "Cluster" and "Name") containing the mapping between numeric cluster ID and cluster name. If you want a cluster to be filtered out of the single cell reference, you can leave the cluster name blank. The cell types must not contain the character '/' or '-'. <br/>
 3. dge.csv: a Digital Gene Expression (DGE) (barcodes by gene counts) CSV file in the standard 10x format. <br/>
@@ -42,7 +42,7 @@ reference <- dgeToSeurat(refdir)
 Our reference has now been saved as 'Data/Reference/Vignette/SCRef.RDS'. From now on, it will be loaded in by the 'init_RCTD' function.
 
 ### Slide-seq data
-Next, put the SpatialRNA data (in this case Slide-seq) in your 'Data/SpatialRNA' directory (here '../Data/SpatialRNA/Vignette'). This needs to contain: <br/>
+Next, put the SpatialRNA data (in this case Slide-seq) in your 'data/SpatialRNA' directory (here '../data/SpatialRNA/Vignette'). This needs to contain: <br/>
 1. BeadLocationsForR.csv: a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations of the pixels. <br/>
 2. MappedDGEForR.csv: a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel. <br/>
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
@@ -144,39 +144,52 @@ More specifically, the `results_df` object contains one column per pixel (barcod
 * Next, the first_type column gives the first cell type predicted on the bead (for all spot_class conditions except "reject"). * The second_type column gives the second cell type predicted on the bead for doublet spot_class conditions (not a confident prediction for "doublet_uncertain").
 
 Finally, the function `get_decomposed_data` can be used to get expected counts of each gene in each cell type, for both doublets and singlets. We note that this only provides the expectation, but the variance may be fairly high. Also, this function makes the assumption that the ratio of gene expression within cell types is approximately the same as the scRNA-seq reference. It should be used as a tool for exploratory data analysis. 
-```{r results, results = 'hide'}
+
+Note, some of the plots are not displayed here, but rather saved as pdf files.
+
+```{r results, results = 'hide',  fig.width = 8, fig.height=8}
 iv <- init_RCTD(load_info_renorm = T) #initial variables
 puck = iv$puck
-resultsdir <- paste0(iv$SpatialRNAdir,"/results")
+resultsdir <- file.path(iv$SpatialRNAdir,"results")
 results <- gather_results(puck,iv)
 # normalize the cell type proportions to sum to 1.
 norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/') 
 
 # make the plots
-# Plots the confident weights for each cell type as in full_mode. 
+# Plots the confident weights for each cell type as in full_mode (saved as 
+# 'results/cell_type_weights_unthreshold.pdf')
 plot_weights(iv$cell_type_info, puck, resultsdir, norm_weights) 
-# Plots all weights for each cell type as in full_mode. 
+# Plots all weights for each cell type as in full_mode. (saved as 
+# 'results/cell_type_weights.pdf')
 plot_weights_unthreshold(iv$cell_type_info, puck, resultsdir, norm_weights) 
-# Plots the weights for each cell type as in doublet_mode. 
+# Plots the weights for each cell type as in doublet_mode. (saved as 
+# 'results/cell_type_weights_doublets.pdf')
 plot_weights_doublet(iv$cell_type_info, puck, resultsdir, results$weights_doublet, 
                      results$results_df) 
-# Plots the number of confident pixels of each cell type in 'full_mode'. 
+# Plots the number of confident pixels of each cell type in 'full_mode'. (saved as 
+# 'results/cell_type_occur.pdf')
 plot_cond_occur(iv$cell_type_info, resultsdir, norm_weights)
-# makes a map of all cell types
+# makes a map of all cell types, (saved as 
+# 'results/all_cell_types.pdf')
 plot_all_cell_types(results$results_df, puck@coords, iv$cell_type_info, resultsdir) 
 
-#doublets
- # for illustrative purposes only, we change the results of some pixels to be doublets.
+
+
+# doublets
+# for illustrative purposes only, we change the results of some pixels to be doublets.
 results$results_df$spot_class[c(12,44,1:3)] <- "doublet_certain"
 #obtain a dataframe of only doublets
 doublets <- results$results_df[results$results_df$spot_class == "doublet_certain",] 
-# Plots all doublets in space
+# Plots all doublets in space (saved as 
+# 'results/all_doublets.pdf')
 plot_doublets(puck, doublets, resultsdir, iv$cell_type_info) 
-# Plots all doublets in space for each cell type
+# Plots all doublets in space for each cell type (saved as 
+# 'results/all_doublets_type.pdf')
 plot_doublets_type(puck, doublets, resultsdir, iv$cell_type_info) 
-# a table of frequency of doublet pairs
+# a table of frequency of doublet pairs 
 doub_occur <- table(doublets$second_type, doublets$first_type) 
-# Plots a stacked bar plot of doublet ocurrences
+# Plots a stacked bar plot of doublet ocurrences (saved as 
+# 'results/doublet_stacked_bar.pdf')
 plot_doub_occur_stack(doub_occur, resultsdir, iv) 
 
 # get a SpatialRNA object that has single cell types, each with a spatial coordinate and RNA 

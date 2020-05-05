@@ -13,6 +13,9 @@ plot_doub_occur_stack(doub_occur, resultsdir, iv)
 
 \item{iv}{Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function}
 }
+\value{
+returns \code{\link{ggplot2}} object
+}
 \description{
 Plots the doublet co-occurances. Saves as 'doublet_stacked_bar.pdf'
 }

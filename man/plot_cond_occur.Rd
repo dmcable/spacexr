@@ -13,6 +13,9 @@ plot_cond_occur(cell_type_info, resultsdir, weights)
 
 \item{weights}{a dataframe of RCTD output weights (see \code{\link{gather_results}})}
 }
+\value{
+returns \code{\link{ggplot2}} object
+}
 \description{
 Plots the number of confident labels in 'full_mode'. Saves as 'cell_type_occur.pdf'
 }

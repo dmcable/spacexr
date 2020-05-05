@@ -45,6 +45,8 @@ wget https://raw.githubusercontent.com/dmcable/RCTD/dev/RCTD_base.zip
 unzip RCTD_base.zip
 ```
 
+### Details of RCTD Folder Contents
+
 For the rest of this document, we assume that you are working in
 ‘RCTD\_base’ as a base directory. This folder contains several
 important subfolders/files:
@@ -73,12 +75,70 @@ important subfolders/files:
       - These sample scripts were configured for the Broad Institute’s
         PBS cluster, but they are not likely to directly work without
         modification on other clusters.
-      - See the section ‘Running on a Cluster’ for more details.
+      - See the section ‘Running RCTD on a Cluster’ for more details.
   - ‘spatial-transcriptomics.Rmd’ a vignette for RCTD, which you can run
     after downloading the ‘RCTD\_base’ folder
       - This vignette explains most of the features of RCTD.
 
-## Workflow
+## Quick Guide to Getting Started with RCTD
+
+Here, we assume that you have installed the RCTD R package and
+downloaded the ‘RCTD\_base’ folder as above. In this section, we aim to
+explain how to use RCTD as quickly as possible on your data:
+
+1.  Within the ‘RCTD\_base’ folder, open the
+    ‘spatial-transcriptomics.Rmd’ vignette in ‘RStudio.’ Run it for a
+    complete explanation of the RCTD workflow.
+2.  As described in the ‘Data Preprocessing’ step of the vignette, place
+    your raw data in the ‘RCTD\_base/data/Reference/YOUR\_DATA’ and
+    ‘RCTD\_base/data/SpatialRNA/YOUR\_DATA’ folders, where
+    ‘YOUR\_DATA’ is the name of your current dataset. Next, also
+    described in the vignette, convert and save this data as ‘RDS’
+    objects.
+3.  Set configuration files within the ‘RCTD\_base/conf’ folder. As
+    described in the ‘Setup’ step of the vignette, you need to edit the
+    `dataset.yml` file to point to your dataset. You should be able to
+    build off of the `dataset_sample.yml` as follows:
+
+<!-- end list -->
+
+``` bash
+#!/bin/bash
+cd RCTD_base/conf
+cp dataset_sample.yml my_dataset.yml # make a copy for your config file
+# edit the my_dataset.yml config file to have your dataset file locations
+cp my_dataset.yml dataset.yml # set your config file to be active
+# now, when you run RCTD, it will run on your dataset
+```
+
+You should make sure that the `SpatialRNAfolder`,`puckrds`,`reffolder`,
+and `reffile` fields are updated for your dataset. If you would like,
+you can leave the `puckrds` and `reffile` fields fixed and just change
+the folders. You can optionally set `config_mode` to ‘test’ to quickly
+test RCTD, but you should set it to ‘default’ for the official run. For
+Slide-seq datasets (for example), we reccommend setting `n_puck_folds
+= 20,` which will split your `SpatialRNA` dataset into 20 batches.
+
+4.  Run RCTD
+      - Option 1: Run RCTD on the cluster. If you have access to Broad
+        Institute’s PBS cluster, run the
+        ‘RCTD\_base/bash\_scripts/pipeline\_sample.sh’ (you must
+        change the ‘YOUR\_PATH’ fields to your ‘RCTD\_base’ location).
+        Otherwise, you may modify this script for working on your
+        particular cluster. For more details on how to do so, see the
+        ‘Running RCTD from Command Line’ and ‘Running on a Cluster’
+        sections below.
+      - Option 2: Run RCTD within a single R session. Set `n_puck_folds
+        = 1` within your ‘RCTD\_base/dataset.yml’ file, and follow the
+        ‘spatial-transcriptomics.Rmd’ vignette.
+      - Option 3: Run RCTD from command line. See the ‘Running RCTD from
+        Command Line’ section below.
+5.  Process RCTD results. Obtain results objects and make summary plots.
+      - Run the ‘RCTD\_base/R\_scripts/gather\_results.R’ script or,
+        equivalently, follow the ‘Collecting RCTD results’ section of
+        the ‘spatial-transcriptomics’ vignette.
+
+## Detailed Guide to RCTD
 
 The basic workflow for RCTD consists of the following steps:
 
@@ -117,7 +177,7 @@ The basic workflow for RCTD consists of the following steps:
         follow the ‘Collecting RCTD results’ section of the
         ‘spatial-transcriptomics’ vignette.
 
-### Recommended Guidelines
+### Running RCTD from Command Line
 
 We recommend running steps 1-2 in the R console (e.g. in RStudio), as
 demonstrated in the ‘spatial-transcriptomics’ vignette. After setting
@@ -135,10 +195,12 @@ Rscript R_scripts/callDoublets.R 3 # third fold of data
 Rscript R_scripts/gather_results.R
 ```
 
-Step 6 (gathering RCTD results) can be optionally run from command line
-as above or in the R console.
+Note that, for Slide-seq, we typically reccommend setting `n_puck_folds
+= 20,` in which case the ‘callDoublets.R’ script would need to be run 20
+separate times. Step 6 (gathering RCTD results) can be optionally run
+from command line as above or in the R console.
 
-### Running on a Cluster
+### Running RCTD on a Cluster
 
 One (recommended) option is to automate this workflow on a computer
 cluster for steps 3-5. Each of steps 3-5 must be run sequentially, but

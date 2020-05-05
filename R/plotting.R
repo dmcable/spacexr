@@ -6,6 +6,7 @@
 #' @param doublets a dataframe of RCTD results restricted to doublets
 #' @param resultsdir output directory
 #' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
   barcodes = rownames(doublets)
@@ -29,6 +30,7 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
   pdf(file.path(resultsdir,"all_doublets.pdf"))
   invisible(print(plot))
   dev.off()
+  return(plot)
 }
 
 
@@ -40,6 +42,7 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
 #' @param results_df a dataframe of RCTD results (see \code{\link{gather_results}})
 #' @param resultsdir output directory
 #' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) {
   barcodes = rownames(results_df[results_df$spot_class != "reject",])
@@ -58,6 +61,7 @@ plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) 
   pdf(file.path(resultsdir,"all_cell_types.pdf"))
   invisible(print(plot))
   dev.off()
+  return(plot)
 }
 
 
@@ -238,6 +242,7 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
 #' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
 #' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
   occur <- numeric(cell_type_info[[3]])
@@ -253,6 +258,7 @@ plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
     ggplot2::geom_bar(stat="identity")+ggplot2::theme_minimal()
   invisible(print(plot))
   dev.off()
+  return(plot)
 }
 
 #' Barplot of the counts for each cell type
@@ -309,6 +315,7 @@ plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doubl
 #' @param doub_occur a table of occurances of doublets
 #' @param resultsdir output directory
 #' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   data <- reshape2::melt(doub_occur)
@@ -322,6 +329,7 @@ plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
   plot <- ggplot2::ggplot(data, ggplot2::aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + ggplot2::theme(axis.text.x = ggplot2::element_text(hjust = 1, angle = 45))
   invisible(print(plot))
   dev.off()
+  return(plot)
 }
 
 #' Plots a factor variable in space on the puck

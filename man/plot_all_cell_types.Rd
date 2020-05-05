@@ -15,6 +15,9 @@ plot_all_cell_types(results_df, coords, cell_type_info, resultsdir)
 
 \item{resultsdir}{output directory}
 }
+\value{
+returns \code{\link{ggplot2}} object
+}
 \description{
 Plots the first cell type in doublet mode. Saves as 'all_cell_types.pdf'
 }

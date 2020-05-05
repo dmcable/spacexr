@@ -15,6 +15,9 @@ plot_doublets(puck, doublets, resultsdir, cell_type_info)
 
 \item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
 }
+\value{
+returns \code{\link{ggplot2}} object
+}
 \description{
 saves as 'all_doublets.pdf'
 }
