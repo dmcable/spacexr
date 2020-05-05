@@ -41,7 +41,7 @@ follows:
 
 ``` bash
 #!/bin/bash
-wget https://raw.githubusercontent.com/dmcable/RCTD/dev/RCTD_base.zip 
+wget https://raw.githubusercontent.com/dmcable/RCTD/master/RCTD_base.zip 
 unzip RCTD_base.zip
 ```
 
