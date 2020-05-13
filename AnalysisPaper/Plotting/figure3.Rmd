@@ -104,3 +104,47 @@ ggarrange(p2,p3,p1, nrow = 3, ncol= 1, common.legend = T)
 
 ```
 
+```{r fig.height = 3.75, fig.width = 4, fig.align = 'center'}
+
+conf_mat <- read.csv(file.path("Results",'confusion_matrix.csv'))
+conf_mat <- conf_mat[,2:20]
+all_cell_types = c("Astrocytes", "Bergmann", "Candelabrum", "Choroid", "Endothelial", "Ependymal", "Fibroblast", "Globular","Golgi", "Granule", "Lugaro","Macrophages" ,"Microglia" ,"MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+rownames(conf_mat) <- all_cell_types; colnames(conf_mat) <- all_cell_types
+norm_conf = sweep(conf_mat, 2, colSums(conf_mat), '/')
+my_diag <- diag(as.matrix(norm_conf))[common_cell_types]
+my_diag["Bergmann"] <- my_diag["Bergmann"] + norm_conf["Astrocytes","Bergmann"]
+my_diag["Astrocytes"] <- my_diag["Astrocytes"] + norm_conf["Bergmann","Astrocytes"]
+my_diag["MLI1"] <- my_diag["MLI1"] + norm_conf["MLI2","MLI1"]
+my_diag["MLI2"] <- my_diag["MLI2"] + norm_conf["MLI1","MLI2"]
+my_diag["Endothelial"] <- my_diag["Endothelial"] + norm_conf["Fibroblast","Endothelial"]
+my_diag["Fibroblast"] <- my_diag["Fibroblast"] + norm_conf["Endothelial","Fibroblast"]
+my_diag["Oligodendrocytes"] <- my_diag["Oligodendrocytes"] + norm_conf["Polydendrocytes","Oligodendrocytes"]
+my_diag["Polydendrocytes"] <- my_diag["Polydendrocytes"] + norm_conf["Oligodendrocytes","Polydendrocytes"]
+
+diag(square_results) <- my_diag
+rownames(square_results)[9] = "Oligoden."
+rownames(square_results)[10] = "Polyden."
+colnames(square_results)[9] = "Oligoden."
+colnames(square_results)[10] = "Polyden."
+square_results[1,] <- (square_results[1,] + square_results[2,])/2
+square_results[3,] <- (square_results[3,] + square_results[4,])/2
+square_results[7,] <- (square_results[7,] + square_results[8,])/2
+square_results[9,] <- (square_results[9,] + square_results[10,])/2
+square_results <- square_results[c(1,3,5,6,7,9,11,12),]
+rownames(square_results)[1] <- "Astrocytes/Bergmann"
+rownames(square_results)[2] <- "Endo./Fibroblast"
+rownames(square_results)[5] <- "MLI"
+rownames(square_results)[6] <- "Oligoden./Polyden."
+data <- melt(as.matrix(square_results))
+colnames(data) = c('Prediction','Reference','value')
+#p2 <- ggplot(data, aes(Prediction, Reference, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.reds(20)[1:20], limits= c(0,1),name = "Identification Rate")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('First Cell Type')+ ylab('Second Cell Type')
+diverse_pal <- pals::kelly(13)[2:(13)]
+p2 <- ggplot(data, aes(Prediction, value, group=Reference, color = Reference))  +  geom_jitter(width = 0.3, size = 1) +theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Class 1')+ ylab('Cell Class Identification Rate') + scale_color_manual(values = diverse_pal, name = "Cell Type 2") + theme(axis.text=element_text(size=8)) + theme(axis.title=element_text(size=10))+ theme(legend.text=element_text(size=8),legend.spacing.x = unit(-0.1, 'cm'),legend.spacing.y = unit(-0.1, 'cm')) + guides(guide_legend(nrow=6,byrow=TRUE)) + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.0001,1.0001))+ theme(legend.position="top")
+#mean(square_results[row(square_results) != col(square_results)]) #mean: .919
+#sd(square_results[row(square_results) != col(square_results)]) # sd: .094
+
+
+
+ggarrange(p2)
+
+```
