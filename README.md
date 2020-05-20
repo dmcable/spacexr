@@ -93,7 +93,8 @@ explain how to use RCTD as quickly as possible on your data:
 1.  Within the ‘RCTD\_base’ folder, open the
     ‘spatial-transcriptomics.Rmd’ vignette in ‘RStudio.’ Run it for a
     complete explanation of the RCTD workflow. Expected output of the
-    vignette is provided [here]().
+    vignette is provided
+    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html).
 2.  As described in the ‘Data Preprocessing’ step of the vignette, place
     your raw data in the ‘RCTD\_base/data/Reference/YOUR\_DATA’ and
     ‘RCTD\_base/data/SpatialRNA/YOUR\_DATA’ folders, where
