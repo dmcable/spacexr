@@ -80,7 +80,7 @@ with the 'Vignette' subfolders. RCTD will place its results in the 'SpatialRNA' 
 
 Here, we assume that you have installed the RCTD R package and downloaded the 'RCTD_base' folder as above. In this section, we aim to explain how to use RCTD as quickly as possible on your data:
 
-1. Within the 'RCTD_base' folder, open the 'spatial-transcriptomics.Rmd' vignette in 'RStudio.' Run it for a complete explanation of the RCTD workflow.
+1. Within the 'RCTD_base' folder, open the 'spatial-transcriptomics.Rmd' vignette in 'RStudio.' Run it for a complete explanation of the RCTD workflow. Expected output of the vignette is provided [here](). 
 2. As described in the 'Data Preprocessing' step of the vignette, place your raw data in the 'RCTD_base/data/Reference/YOUR_DATA' and 'RCTD_base/data/SpatialRNA/YOUR_DATA' folders, where 'YOUR_DATA' is the name of your current dataset. Next, also described in the vignette, convert and save this data as 'RDS' objects.
 3. Set configuration files within the 'RCTD_base/conf' folder. As described in the 'Setup' step of the vignette, you need to edit the `dataset.yml` file to point to your dataset. You should be able to build off of the `dataset_sample.yml` as follows:
 ```{bash eval=FALSE}
