@@ -228,10 +228,23 @@ bash ./bash_scripts/pipeline_sample.sh
   - R packages: caret, readr, config, Seurat, pals, ggplot2, Matrix,
     doParallel, foreach, quadprog, tibble, dplyr, reshape2.
 
-Runtime: Approximately 16 hours for each Slide-seq dataset (tested on
+For optimal performance, we recommend at least 4 GB of RAM, and multiple
+cores may be used to speed up runtime.
+
+Installation time: Less than two minutes, after installing dependent
+packages.
+
+Runtime: The example dataset provided (Vignette) can be run in less than
+10 minutes on a normal desktop computer. Approximately 16 hours (on
+Broad Institute computer cluster) for each Slide-seq dataset (tested on
 cerebellum and hippocampus datasets with 10,000 - 25,000 pixels).
 
-Operating systems tested on:
+Operating systems (version 1 RCTD) tested on:
 
   - macOS Mojave 10.14.6
   - GNU/Linux (GNU coreutils) 8.22
+
+### License
+
+RCTD is [licensed](https://github.com/dmcable/RCTD/blob/master/LICENSE)
+under the GNU General Public License v3.0.
