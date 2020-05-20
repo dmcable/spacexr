@@ -23,6 +23,10 @@ effects* of the spatial transcriptomics dataset. A platform effect is
 the tendency of a sequencing technology to capture individual genes at
 different rates.
 
+Code for generating the figures of our paper, Robust decomposition of
+cell type mixtures in spatial transcriptomics, is located
+[here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper).
+
 ## Installation
 
 You can install the current version of RCTD from
@@ -217,3 +221,17 @@ command:
 #!/bin/bash
 bash ./bash_scripts/pipeline_sample.sh
 ```
+
+### Dependencies
+
+  - R version \>= 3.5.
+  - R packages: caret, readr, config, Seurat, pals, ggplot2, Matrix,
+    doParallel, foreach, quadprog, tibble, dplyr, reshape2.
+
+Runtime: Approximately 16 hours for each Slide-seq dataset (tested on
+cerebellum and hippocampus datasets with 10,000 - 25,000 pixels).
+
+Operating systems tested on:
+
+  - macOS Mojave 10.14.6
+  - GNU/Linux (GNU coreutils) 8.22
