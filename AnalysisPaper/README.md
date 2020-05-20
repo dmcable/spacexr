@@ -61,31 +61,31 @@ was used to evaluate RCTD’s ability to predict cell type proportion.
 We provide R Markdown files that were used to create the main figures:
 
   - [Unsupervised clustering on the Slide-seq
-    cerebellum](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure1.html)
+    cerebellum](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure1.html)
     (Figure 1)
   - [Platform Effect
-    Prediction](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure2-platform-effect.html)
+    Prediction](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure2-platform-effect.html)
     (Figure 1,2)
   - [Comparison of Ordinary Least Squares and
-    RCTD](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure2.html)
+    RCTD](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure2.html)
     (Figure 1,2)
   - [Validation of RCTD on decomposition of simulated
-    doublets](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure3.html)
+    doublets](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure3.html)
     (Figure 3)
   - [RCTD on the Slide-seq
-    cerebellum](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure4.html)
+    cerebellum](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure4.html)
     (Figure 4)
   - [Spatially localizing 27 interneuron
-    subtypes](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure5-all.html)
+    subtypes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure5-all.html)
     (Figure 5)
   - [RCTD on the Hippocampus and spatially localizing three interneuron
-    subclasses](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure5-interneurons.html)
+    subclasses](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure5-interneurons.html)
     (Figure 5)
   - [Finding Astrocyte Genes Dependent on Cellular
-    Colocalization](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure6-astrocytes.html)
+    Colocalization](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-astrocytes.html)
     (Figure 6)
   - [Finding Spatially Variable
-    Genes](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html)
+    Genes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html)
     (Figure 6)
 
 ### Supplemental Figures
