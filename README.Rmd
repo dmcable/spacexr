@@ -28,7 +28,9 @@ multiple cell types. RCTD identifies the cell types on each pixel, and estimates
 each of these cell types. Additionally, RCTD has a platform effect normalization step, which
 normalizes the scRNA-seq cell type profiles to match the *platform effects* of the spatial 
 transcriptomics dataset. A platform effect is the tendency of a sequencing technology to capture
-individual genes at different rates. 
+individual genes at different rates.
+
+Code for generating the figures of our paper, Robust decomposition of cell type mixtures in spatial transcriptomics, is located [here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper).
 
 ## Installation
 
@@ -46,7 +48,7 @@ RCTD. 'RCTD_base' can be downloaded as follows:
 
 ```{bash eval=FALSE}
 #!/bin/bash
-wget https://raw.githubusercontent.com/dmcable/RCTD/dev/RCTD_base.zip 
+wget https://raw.githubusercontent.com/dmcable/RCTD/master/RCTD_base.zip 
 unzip RCTD_base.zip
 ```
 
@@ -78,7 +80,7 @@ with the 'Vignette' subfolders. RCTD will place its results in the 'SpatialRNA' 
 
 Here, we assume that you have installed the RCTD R package and downloaded the 'RCTD_base' folder as above. In this section, we aim to explain how to use RCTD as quickly as possible on your data:
 
-1. Within the 'RCTD_base' folder, open the 'spatial-transcriptomics.Rmd' vignette in 'RStudio.' Run it for a complete explanation of the RCTD workflow.
+1. Within the 'RCTD_base' folder, open the 'spatial-transcriptomics.Rmd' vignette in 'RStudio.' Run it for a complete explanation of the RCTD workflow. Expected output of the vignette is provided [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html). 
 2. As described in the 'Data Preprocessing' step of the vignette, place your raw data in the 'RCTD_base/data/Reference/YOUR_DATA' and 'RCTD_base/data/SpatialRNA/YOUR_DATA' folders, where 'YOUR_DATA' is the name of your current dataset. Next, also described in the vignette, convert and save this data as 'RDS' objects.
 3. Set configuration files within the 'RCTD_base/conf' folder. As described in the 'Setup' step of the vignette, you need to edit the `dataset.yml` file to point to your dataset. You should be able to build off of the `dataset_sample.yml` as follows:
 ```{bash eval=FALSE}
@@ -150,3 +152,24 @@ One (recommended) option is to automate this workflow on a computer cluster for 
 #!/bin/bash
 bash ./bash_scripts/pipeline_sample.sh
 ```
+
+### Dependencies
+
+* R version >= 3.5.
+* R packages: caret, readr, config, Seurat, pals, ggplot2, Matrix, doParallel, foreach, quadprog, tibble, dplyr, reshape2.
+
+For optimal performance, we recommend at least 4 GB of RAM, and multiple cores may be used to speed up runtime. 
+
+Installation time: Less than two minutes, after installing dependent packages.
+
+Runtime: The example dataset provided (Vignette) can be run in less than 10 minutes on a normal desktop computer. Approximately 16 hours (on Broad Institute computer cluster) for each Slide-seq dataset (tested on cerebellum and hippocampus datasets with 10,000 - 25,000 pixels). 
+
+Operating systems (version 1 RCTD) tested on:
+
+* macOS Mojave 10.14.6
+* GNU/Linux (GNU coreutils) 8.22
+
+### License
+
+RCTD is [licensed](https://github.com/dmcable/RCTD/blob/master/LICENSE) under the GNU General Public License v3.0.
+

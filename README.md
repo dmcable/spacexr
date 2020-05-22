@@ -23,6 +23,10 @@ effects* of the spatial transcriptomics dataset. A platform effect is
 the tendency of a sequencing technology to capture individual genes at
 different rates.
 
+Code for generating the figures of our paper, Robust decomposition of
+cell type mixtures in spatial transcriptomics, is located
+[here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper).
+
 ## Installation
 
 You can install the current version of RCTD from
@@ -41,7 +45,7 @@ follows:
 
 ``` bash
 #!/bin/bash
-wget https://raw.githubusercontent.com/dmcable/RCTD/dev/RCTD_base.zip 
+wget https://raw.githubusercontent.com/dmcable/RCTD/master/RCTD_base.zip 
 unzip RCTD_base.zip
 ```
 
@@ -88,7 +92,9 @@ explain how to use RCTD as quickly as possible on your data:
 
 1.  Within the ‘RCTD\_base’ folder, open the
     ‘spatial-transcriptomics.Rmd’ vignette in ‘RStudio.’ Run it for a
-    complete explanation of the RCTD workflow.
+    complete explanation of the RCTD workflow. Expected output of the
+    vignette is provided
+    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html).
 2.  As described in the ‘Data Preprocessing’ step of the vignette, place
     your raw data in the ‘RCTD\_base/data/Reference/YOUR\_DATA’ and
     ‘RCTD\_base/data/SpatialRNA/YOUR\_DATA’ folders, where
@@ -217,3 +223,30 @@ command:
 #!/bin/bash
 bash ./bash_scripts/pipeline_sample.sh
 ```
+
+### Dependencies
+
+  - R version \>= 3.5.
+  - R packages: caret, readr, config, Seurat, pals, ggplot2, Matrix,
+    doParallel, foreach, quadprog, tibble, dplyr, reshape2.
+
+For optimal performance, we recommend at least 4 GB of RAM, and multiple
+cores may be used to speed up runtime.
+
+Installation time: Less than two minutes, after installing dependent
+packages.
+
+Runtime: The example dataset provided (Vignette) can be run in less than
+10 minutes on a normal desktop computer. Approximately 16 hours (on
+Broad Institute computer cluster) for each Slide-seq dataset (tested on
+cerebellum and hippocampus datasets with 10,000 - 25,000 pixels).
+
+Operating systems (version 1 RCTD) tested on:
+
+  - macOS Mojave 10.14.6
+  - GNU/Linux (GNU coreutils) 8.22
+
+### License
+
+RCTD is [licensed](https://github.com/dmcable/RCTD/blob/master/LICENSE)
+under the GNU General Public License v3.0.

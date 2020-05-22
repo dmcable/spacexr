@@ -15,6 +15,7 @@ Imports:
 	Seurat,
 	ggplot2, 
 	pals, 
+	ggplot2,
 	Matrix, 
 	doParallel, 
 	foreach, 
