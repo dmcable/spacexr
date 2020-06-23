@@ -23,10 +23,23 @@ solveOLS<-function(S,B, constrain = T){
 #if constrain, constrain the weights to sum up to 1
 #eta is alpha in the sparsity paper
 solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50, MIN_CHANGE = .001){
-  solution<-solveOLS(S,B, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
-  if(OLS)
+  B[B > K_val] <- K_val
+  if(OLS) {
+    solution<-solveOLS(S,B, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
     return(list(weights = solution, converged = T))
-  solution<- (solution*0) + 1/length(solution) #actually, just ignore the OLS solution
+  }
+  solution <- numeric(dim(S)[2])
+  solution[] <- 1/length(solution) #actually, just ignore the OLS solution
+  names(solution) <- colnames(S)
+
+  S_mat <<- matrix(0,nrow = dim(S)[1],ncol = dim(S)[2]*(dim(S)[2] + 1)/2)
+  counter = 1
+  for(i in 1:dim(S)[2])
+    for(j in i:dim(S)[2]) {
+      S_mat[,counter] <<- S[,i] * S[,j] # depends on n^2
+      counter <- counter + 1
+    }
+
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
   change<-1;
@@ -52,7 +65,7 @@ solveWLS<-function(S,B,initialSol, nUMI,bead_mode,...){
   solution<-pmax(initialSol,0)
   prediction = abs(S%*%solution)
   threshold = max(1e-4, nUMI * 1e-7)
-  prediction = pmax(prediction, threshold)
+  prediction[prediction < threshold] <- threshold
   gene_list = rownames(S)
   derivatives <- get_der_fast(S, B, gene_list, prediction)
   d_vec <- -derivatives$grad

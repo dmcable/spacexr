@@ -97,7 +97,7 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
       cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
     assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
     assign("K_val",K_val, envir = globalenv()); assign("use_Q",use_Q, envir = globalenv())
-    decompose_full(cell_type_means, gene_list, nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
+    decompose_full(data.matrix(cell_type_means[gene_list,]*nUMI[i]), nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
   }
   parallel::stopCluster(cl)
   return(weights)

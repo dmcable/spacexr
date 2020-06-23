@@ -168,12 +168,33 @@ calc_Q <- function(x, k) {
 }
 
 #all values of K
-calc_Q_all <- function(x) {
+calc_Q_all <- function(x, bead) {
   epsilon = 1e-4; X_max = max(X_vals); delta = 1e-5
   x = pmin(pmax(epsilon, x),X_max - epsilon)
   l = floor((x/delta)^(2/3))
   prop = (X_vals[l+1] - x)/(X_vals[l+1] - X_vals[l])
-  return(sweep(Q_mat[,l] - Q_mat[,l+1],2, prop,'*') + Q_mat[,l+1])
+  #N <- length(l)
+  #query <- matrix(0,nrow <- 6*N,ncol <- 2)
+  #query[1:N,1] <- bead + 1; query[(N+1):(2*N),1] <- bead + 2; query[(2*N+1):(3*N),1] <- bead + 3
+  #query[(3*N+1):(4*N),1] <- bead + 1; query[(4*N+1):(5*N),1] <- bead + 2; query[(5*N+1):(6*N),1] <- bead + 3
+  #query[1:(3*N),2] <- l; query[(3*N+1):(6*N),2] <- l + 1
+  #response <- Q_mat[query]
+
+  #v1 <- response[(3*N+1):(6*N)]
+  #k <- response[1:(3*N)] - v1
+  #r1 <- k * prop + v1
+
+  v1 <- Q_mat[cbind(bead+1,l+1)]
+  k <- Q_mat[cbind(bead+1,l)] - v1
+  r1 <- k * prop + v1
+  v1 <- Q_mat[cbind(bead+2,l+1)]
+  k <- Q_mat[cbind(bead+2,l)] - v1
+  r2 <- k * prop + v1
+  v1 <- Q_mat[cbind(bead+3,l+1)]
+  k <- Q_mat[cbind(bead+3,l)] - v1
+  r3 <- k * prop + v1
+  return(list(r1,r2,r3))
+  #return(list(r1[1:N],r1[(N+1):(2*N)],r1[(2*N+1):(3*N)]))
 }
 
 calc_Q_d1 <- function(x, k) {
@@ -256,15 +277,26 @@ get_der_fast <- function(S, B, gene_list, prediction) {
   if(use_Q) {
     bead = B; epsilon = 1e-4; X_max = max(X_vals); delta = 1e-5
     x = pmin(pmax(epsilon, prediction),X_max - epsilon);
-    Q_cur <- calc_Q_all(x) #need calc_log_d1 and calc_log_d2
+    Q_cur <- calc_Q_all(x, bead) #need calc_log_d1 and calc_log_d2
     bead[bead > K_val] = K_val
-    Q_k <- Q_cur[cbind(bead+1, seq_along(bead))]
-    Q_k1 <- Q_cur[cbind(bead+2, seq_along(bead))]; Q_k2 <- Q_cur[cbind(bead+3, seq_along(bead))]
+    Q_k <- Q_cur[[1]]
+    Q_k1 <- Q_cur[[2]]; Q_k2 <- Q_cur[[3]]
     Q_d1 = 1/x * (-(bead+1)*Q_k1 + bead*Q_k)
     Q_d2 = 1/(x^2)*((bead+1)*(bead+2)*Q_k2 - bead*(2*(bead+1)*Q_k1 - (bead-1)*Q_k))
     d1_vec = as.vector(Q_d1 / Q_k)
     d2_vec = as.vector(-Q_d1^2/(Q_k^2) + Q_d2/Q_k)
-    grad = -d1_vec %*% S; hess = -(t(S) %*% (diag(d2_vec) %*% S))
+    grad = -d1_vec %*% S;
+    hess_c <- -d2_vec %*% S_mat
+    #hess <- cbind(hess_c[1:2],hess_c[2:3])
+    hess <- matrix(0,nrow = dim(S)[2], ncol = dim(S)[2])
+    counter = 1
+    for(i in 1:dim(S)[2]) {
+      l <- dim(S)[2] - i
+      hess[i,i:dim(S)[2]] <- hess_c[counter:(counter+l)]
+      hess[i,i] <- hess[i,i] / 2
+      counter <- counter + l + 1
+    }
+    hess <- hess + t(hess)
   } else {
     grad = get_gradient(S, B, gene_list, prediction)
     hess = get_hessian(S, B, gene_list, prediction)
