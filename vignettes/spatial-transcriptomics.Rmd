@@ -1,0 +1,146 @@
+---
+title: "Applying RCTD to Spatial Transcriptomics Data"
+author: "Dylan Cable"
+date: "May 4th, 2020"
+output:  
+  html_document:
+    keep_md: yes
+  rmarkdown::html_vignette:
+    keep_md: yes
+vignette: >
+  %\VignetteIndexEntry{spatial-transcriptomics}
+  %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup}
+library(RCTD)
+library(Matrix)
+```
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache = TRUE,
+  out.width = "100%"
+)
+```
+## Introduction
+Robust Cell Type Decomposition, or RCTD, is an R package for learning cell types from spatial transcriptomics data. In this Vignette, we 
+will assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset.
+
+## Data Preprocessing
+Let's begin by loading in the data to be usable for RCTD. <br/>
+
+### Single-Cell Reference
+In order to run RCTD, the first step is to process the single cell reference. Create a folder in 'data/Reference' e.g. 'data/Reference/Vignette' containing the following three files:<br/>
+1. meta_data.csv: a CSV file (with 3 columns, with headers "barcode", "cluster", and "nUMI") containing the numeric cluster assignment for each cell.<br/>
+2. cell_type_dict.csv: a CSV file (with 2 columns, with headers "Cluster" and "Name") containing the mapping between numeric cluster ID and cluster name. If you want a cluster to be filtered out of the single cell reference, you can leave the cluster name blank. The cell types must not contain the character '/' or '-'. <br/>
+3. dge.csv: a Digital Gene Expression (DGE) (barcodes by gene counts) CSV file in the standard 10x format. <br/>
+We use the `dgeToSeurat` function:
+```{r scRNA}
+refdir <- system.file("extdata",'Reference/Vignette',package = 'RCTD') #directory for the reference
+reference <- dgeToSeurat(refdir)
+```
+Our reference has now been saved as 'Data/Reference/Vignette/SCRef.RDS'. From now on, it will be loaded in by the 'init_RCTD' function.
+
+### Slide-seq data
+Next, put the SpatialRNA data (in this case Slide-seq) in your 'data/SpatialRNA' directory (here 'data/SpatialRNA/Vignette'). This needs to contain: <br/>
+1. BeadLocationsForR.csv: a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations of the pixels. <br/>
+2. MappedDGEForR.csv: a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel. <br/>
+```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
+datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'RCTD') # directory for sample Slide-seq dataset
+puck <- read.SpatialRNA(datadir) # read in the SpatialRNA object
+barcodes <- colnames(puck@counts) #pixels to be used (a list of barcode names). 
+# This list can be restricted if you want to crop the puck e.g. 
+# puck <- restrict_puck(puck, barcodes) provides a basic plot of the nUMI of each pixel
+# on the plot:
+plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
+                     title ='plot of nUMI') 
+```
+The RDS file 'puck.RDS' saves the 'SpatialRNA' file we have created, and from now on it can be loaded in by the init_RCTD function. 
+## Running RCTD
+
+### Creating RCTD Object
+
+We are now ready to create an `RCTD` object using the `create.RCTD` function. We simply need to pass in the `SpatialRNA` and scRNA-seq objects. There are several configuration options that can be set with this function: 
+
+* `max_cores:` for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for number of available cores.
+* `gene_cutoff, fc_cutoff, gene_cutoff_reg, fc_cutoff_reg: ` are used for differentially expressed gene selection, with `gene_cutoff` filtering for average expression and `fc_cutoff` filtering for log-fold-change across cell types.
+* `UMI_min, UMI_max: ` are the minimum and maximum read depth for pixels in the `SpatialRNA` dataset.
+
+### Running RCTD
+
+Now, we are ready to run RCTD, using the `run.RCTD` function. This function is equivalent to sequentially running the functions `fitBulk`, `choose_sigma_c`, and `fitPixels`. The `doublet_mode` argument sets whether RCTD will be run in 'doublet mode' (at most 1-2 cell types per pixel) or 'full mode' (no restrictions on number of cell types).
+
+```{r DEgenes}
+myRCTD <- create.RCTD(puck, reference)
+myRCTD <- run.RCTD(myRCTD, doublet_mode = TRUE)
+```
+
+## RCTD results
+
+The results of RCTD are located in the `@results` field. Of particular interest is `@results$weights`, a data frame of cell type weights for each pixel (for full mode). This section will generate various plots which can be found in `resultsdir`. The results of 'doublet_mode' are stored in `@results$results_df` and `@results$weights_doublet`, the weights of each cell type. 
+More specifically, the `results_df` object contains one column per pixel (barcodes as rownames). Important columns are:
+
+* `spot_class`, a factor variable representing RCTD's classification in doublet mode: "singlet" (1 cell type on pixel), "doublet_certain" (2 cell types on pixel), "doublet_uncertain" (2 cell types on pixel, but only confident of 1), "reject" (no prediction given for pixel). 
+* Next, the `first_type` column gives the first cell type predicted on the bead (for all spot_class conditions except "reject"). 
+* The `second_type column` gives the second cell type predicted on the bead for doublet spot_class conditions (not a confident prediction for "doublet_uncertain").
+
+Finally, the function `get_decomposed_data` can be used to get expected counts of each gene in each cell type, for both doublets and singlets. We note that this only provides the expectation, but the variance may be fairly high. Also, this function makes the assumption that the ratio of gene expression within cell types is approximately the same as the scRNA-seq reference. It should be used as a tool for exploratory data analysis. 
+
+Note, some of the plots are not displayed here, but rather saved as pdf files in the 'RCTD_Plots' directory.
+
+```{r results, results = 'hide',  fig.width = 8, fig.height=8}
+results <- myRCTD@results
+# normalize the cell type proportions to sum to 1.
+norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/') 
+cell_type_names <- myRCTD@cell_type_info$info[[2]] #list of cell type names
+spatialRNA <- myRCTD@spatialRNA
+resultsdir <- 'RCTD_Plots' ## you may change this to a more accessible directory on your computer.
+dir.create(resultsdir)
+```
+
+
+```{r results2, results = 'hide',  fig.width = 8, fig.height=8}
+# make the plots
+# Plots the confident weights for each cell type as in full_mode (saved as 
+# 'results/cell_type_weights_unthreshold.pdf')
+plot_weights(cell_type_names, spatialRNA, resultsdir, norm_weights) 
+# Plots all weights for each cell type as in full_mode. (saved as 
+# 'results/cell_type_weights.pdf')
+plot_weights_unthreshold(cell_type_names, spatialRNA, resultsdir, norm_weights) 
+# Plots the weights for each cell type as in doublet_mode. (saved as 
+# 'results/cell_type_weights_doublets.pdf')
+plot_weights_doublet(cell_type_names, spatialRNA, resultsdir, results$weights_doublet, 
+                     results$results_df) 
+# Plots the number of confident pixels of each cell type in 'full_mode'. (saved as 
+# 'results/cell_type_occur.pdf')
+plot_cond_occur(cell_type_names, resultsdir, norm_weights, spatialRNA)
+# makes a map of all cell types, (saved as 
+# 'results/all_cell_types.pdf')
+plot_all_cell_types(results$results_df, spatialRNA@coords, cell_type_names, resultsdir) 
+
+
+
+# doublets
+#obtain a dataframe of only doublets
+doublets <- results$results_df[results$results_df$spot_class == "doublet_certain",] 
+# Plots all doublets in space (saved as 
+# 'results/all_doublets.pdf')
+plot_doublets(spatialRNA, doublets, resultsdir, cell_type_names) 
+# Plots all doublets in space for each cell type (saved as 
+# 'results/all_doublets_type.pdf')
+plot_doublets_type(spatialRNA, doublets, resultsdir, cell_type_names) 
+# a table of frequency of doublet pairs 
+doub_occur <- table(doublets$second_type, doublets$first_type) 
+# Plots a stacked bar plot of doublet ocurrences (saved as 
+# 'results/doublet_stacked_bar.pdf')
+plot_doub_occur_stack(doub_occur, resultsdir, cell_type_names) 
+
+# get a SpatialRNA object that has single cell types, each with a spatial coordinate and RNA 
+# counts.
+puck_d <- get_decomposed_data(results$results_df, myRCTD@internal_vars$gene_list_reg, spatialRNA, results$weights_doublet, 
+                              myRCTD@cell_type_info$renorm)
+```

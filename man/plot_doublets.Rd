@@ -4,7 +4,7 @@
 \alias{plot_doublets}
 \title{Plots all doublets in space}
 \usage{
-plot_doublets(puck, doublets, resultsdir, cell_type_info)
+plot_doublets(puck, doublets, resultsdir, cell_type_names)
 }
 \arguments{
 \item{puck}{an object of type \linkS4class{SpatialRNA}}
@@ -13,7 +13,7 @@ plot_doublets(puck, doublets, resultsdir, cell_type_info)
 
 \item{resultsdir}{output directory}
 
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 }
 \value{
 returns \code{\link{ggplot2}} object

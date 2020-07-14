@@ -4,23 +4,15 @@
 \alias{fitBulk}
 \title{Performs Platform Effect Normalization:}
 \usage{
-fitBulk(iv)
+fitBulk(RCTD)
 }
 \arguments{
-\item{iv}{Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function}
+\item{RCTD}{an \code{\linkS4class{RCTD}} object after running the \code{\link{create.RCTD}} function.}
 }
 \value{
-Returns a list of cell_type_info_renorm (the normalized cell type profiles) and proportions
-(the predicted bulk cell type proportions)
+Returns an \code{\linkS4class{RCTD}} object normalized for platform effects.
 }
 \description{
 Estimates bulk cell type composition and uses this
 to estimate platform effects and normalize cell type proportions
 }
-\section{Additional Output Files}{
-
-Saves proportions in results/Bulk/weights.RDS.
-Saves cell_type_info_renorm in MetaData/cell_type_info_renorm.RDS
-Additionally, creates trace files of sigma fitting in results/sigmaBulk
-}
-

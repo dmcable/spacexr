@@ -4,14 +4,14 @@
 \alias{plot_doub_occur_stack}
 \title{Plots doublet co-occurances}
 \usage{
-plot_doub_occur_stack(doub_occur, resultsdir, iv)
+plot_doub_occur_stack(doub_occur, resultsdir, cell_type_names)
 }
 \arguments{
 \item{doub_occur}{a table of occurances of doublets}
 
 \item{resultsdir}{output directory}
 
-\item{iv}{Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function}
+\item{cell_type_names}{list of cell type names}
 }
 \value{
 returns \code{\link{ggplot2}} object

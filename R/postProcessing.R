@@ -1,41 +1,15 @@
 #functions for processing data after RCTD is fit to the data
 
-#' Collects RCTD results
-#'
-#' Assumes that RCTD has saved results in /SplitPuckResults/results
-#' for each fold index. Collects and organizes these results.
-#'
-#' @section results_df output format:
-#' Contains one column per pixel (barcodes as rownames). Important columns
-#' are spot_class, a factor variable representing RCTD's classification in
-#' doublet mode: "singlet" (1 cell type on pixel), "doublet_certain" (2 cell types
-#' on pixel), "doublet_uncertain" (2 cell types on pixel, but only confident of 1),
-#' "reject" (no prediction given for pixel). Next, the first_type column gives the
-#' first cell type predicted on the bead (for all spot_class conditions except "reject").
-#' The second_type column gives the second cell type predicted on the bead for doublet
-#' spot_class conditions (not a confident prediction for "doublet_uncertain").
-#'
-#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
-#' @param puck an object of type \linkS4class{SpatialRNA}
-#' @return Returns a list of results_df (a dataframe of RCTD results in doublet mode),
-#' weights (a dataframe of RCTD predicted weights in full mode), and weights_doublet (a
-#' dataframe of predicted weights in doublet mode, with cell type information in results_df)
-#' @export
-gather_results <- function(puck, iv) {
-  cell_type_names = iv$cell_type_info[[2]]
-  results <- list()
-  for (fold_index in 1:iv$n_puck_folds) {
-    results <- append(results, readRDS(paste0(iv$SpatialRNAdir,"/SplitPuckResults/results",fold_index,".RDS")))
-  }
-  barcodes <- colnames(puck@counts)
+# Collects RCTD results
+gather_results <- function(RCTD, results) {
+  cell_type_names = RCTD@cell_type_info$renorm[[2]]
+  barcodes <- colnames(RCTD@spatialRNA@counts)
   N <- length(results)
-  weights = Matrix(0, nrow = N, ncol = iv$cell_type_info[[3]])
+  weights = Matrix(0, nrow = N, ncol = length(cell_type_names))
   weights_doublet = Matrix(0, nrow = N, ncol = 2)
   rownames(weights) = barcodes; rownames(weights_doublet) = barcodes
-  colnames(weights) = iv$cell_type_info[[2]]; colnames(weights_doublet) = c('first_type', 'second_type')
+  colnames(weights) = cell_type_names; colnames(weights_doublet) = c('first_type', 'second_type')
   empty_cell_types = factor(character(N),levels = cell_type_names)
-  spot_levels <- c("reject", "singlet", "doublet_certain", "doublet_certain_class", "doublet_uncertain")
-  doublet_mode <- T
   spot_levels <- c("reject", "singlet", "doublet_certain", "doublet_uncertain")
   results_df <- data.frame(spot_class = factor(character(N),levels=spot_levels),
                            first_type = empty_cell_types, second_type = empty_cell_types,
@@ -58,7 +32,8 @@ gather_results <- function(puck, iv) {
     results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
   }
   rownames(results_df) = barcodes
-  return(list(results_df = results_df, weights = weights, weights_doublet = weights_doublet))
+  RCTD@results <- list(results_df = results_df, weights = weights, weights_doublet = weights_doublet)
+  return(RCTD)
 }
 
 #' Decomposes SpatialRNA data into individual cells

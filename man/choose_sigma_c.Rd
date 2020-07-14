@@ -4,17 +4,14 @@
 \alias{choose_sigma_c}
 \title{Estimates sigma_c by maximum likelihood}
 \usage{
-choose_sigma_c(iv, resultsdir)
+choose_sigma_c(RCTD)
 }
 \arguments{
-\item{iv}{Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function}
-
-\item{resultsdir:}{directory of results folder}
+\item{RCTD}{an \code{\linkS4class{RCTD}} object after running the \code{\link{fitBulk}} function.}
 }
 \value{
-returns sigma, a numeric representing estimated sigma_c
-(the predicted bulk cell type proportions)
+Returns an \code{\linkS4class{RCTD}} with the estimated \code{sigma_c}.
 }
 \description{
-Estimates sigma_c by stochastic gradient descent
+Estimates sigma_c by maximum likelihood
 }

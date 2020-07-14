@@ -4,14 +4,14 @@
 \alias{plot_all_cell_types}
 \title{Plots all cell types in space}
 \usage{
-plot_all_cell_types(results_df, coords, cell_type_info, resultsdir)
+plot_all_cell_types(results_df, coords, cell_type_names, resultsdir)
 }
 \arguments{
 \item{results_df}{a dataframe of RCTD results (see \code{\link{gather_results}})}
 
 \item{coords}{a dataframe of coordinates of each pixel}
 
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 
 \item{resultsdir}{output directory}
 }

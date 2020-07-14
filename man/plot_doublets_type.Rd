@@ -4,7 +4,7 @@
 \alias{plot_doublets_type}
 \title{Plots doublets of each cell type individually}
 \usage{
-plot_doublets_type(puck, doublets_base, resultsdir, cell_type_info)
+plot_doublets_type(puck, doublets_base, resultsdir, cell_type_names)
 }
 \arguments{
 \item{puck}{an object of type \linkS4class{SpatialRNA}}
@@ -13,7 +13,7 @@ plot_doublets_type(puck, doublets_base, resultsdir, cell_type_info)
 
 \item{resultsdir}{output directory}
 
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 }
 \description{
 Plots the first cell type in doublet mode. Saves as 'all_doublets_type.pdf'

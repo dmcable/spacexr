@@ -17,14 +17,15 @@ decompose_sparse <- function(cell_type_profiles, nUMI, bead, type1=NULL, type2=N
     return(results)
   } else {
     prediction = reg_data %*% results$weights
-    total_score = calc_log_l_par(gene_list, prediction, bead)
+    total_score = calc_log_l_vec(prediction, bead)
     return (total_score)
   }
 }
 
 #decompose with all cell types
-decompose_full <- function(cell_type_profiles, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F, n.iter = 50, MIN_CHANGE = 0.001) {
-  results = solveIRWLS.weights(cell_type_profiles,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
+decompose_full <- function(cell_type_profiles, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F, n.iter = 50, MIN_CHANGE = 0.001, bulk_mode = F) {
+  results = solveIRWLS.weights(cell_type_profiles,bead,nUMI,OLS = OLS, constrain = constrain,
+                               verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, bulk_mode = bulk_mode)
   return(results)
 }
 
@@ -144,7 +145,7 @@ get_singlet_score <- function(cell_type_profiles, bead, UMI_tot, type, constrain
   if(dummy_type == type)
     dummy_type = cell_type_info[[2]][2]
   prediction <- get_prediction_sparse(cell_type_profiles, UMI_tot, 1, type, dummy_type)
-  log_l <- calc_log_l_par(gene_list, prediction, bead)
+  log_l <- calc_log_l_vec(prediction, bead)
   return(log_l)
 }
 
