@@ -1,36 +1,4 @@
-#' An S4 class to represent Spatial Transcriptomic data
-#'
-#' @slot coords a dataframe with x and y coordinates of each pixel
-#' @slot counts a dataframe of raw counts for each gene (rowname)
-#' and each pixel (colnames or barcodes)
-#' @slot n_cell_type the number of cell types
-#' @slot cell_type_names a list of cell type names
-#' @slot nUMI a named list (by barcode) of total UMIs per pixel
-#' @slot cell_labels a factor of cell type labels for each pixel
-#' @export
-#' @import Matrix
-#' @import doParallel
-#' @import foreach
-#' @importClassesFrom Seurat Seurat
-#' @importClassesFrom Matrix Matrix dgCMatrix
-setClass("SpatialRNA",
-   slots = c(
-     coords = "data.frame",
-     counts = "dgCMatrix",
-     n_cell_type = "integer",
-     cell_type_names = "character",
-     nUMI = "numeric",
-     cell_labels = "factor"
-   ),
-   prototype = list(
-     cell_type_names = NA_character_,
-     n_cell_type = NA_integer_,
-     coords = data.frame(NULL),
-     counts = NULL,
-     nUMI = NA_integer_,
-     cell_labels = factor(NULL)
-   )
-)
+
 
 #' Creates a SpatialRNA object from a directory
 #'
