@@ -25,7 +25,9 @@ different rates.
 
 Code for generating the figures of our paper, Robust decomposition of
 cell type mixtures in spatial transcriptomics, is located
-[here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper).
+[here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper). Our
+paper can be found
+[here](https://www.biorxiv.org/content/10.1101/2020.05.07.082750v1).
 
 ## Installation
 
