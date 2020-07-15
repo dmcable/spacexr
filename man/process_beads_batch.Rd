@@ -9,7 +9,8 @@ process_beads_batch(
   gene_list,
   puck,
   class_df = NULL,
-  constrain = T
+  constrain = T,
+  MAX_CORES = 8
 )
 }
 \arguments{
@@ -24,6 +25,8 @@ reference (see \code{\link{get_cell_type_info}})}
 classes}
 
 \item{constrain}{logical whether to constrain the weights to sum to one on each pixel}
+
+\item{max_cores}{number of cores to use (will use parallel processing if more than one).}
 }
 \value{
 Returns \code{results}, a list of RCTD results for each pixel, which can be organized by

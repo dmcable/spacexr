@@ -5,7 +5,7 @@
 \title{Spatially plot the weights for each cell type in doublet_mode}
 \usage{
 plot_weights_doublet(
-  cell_type_info,
+  cell_type_names,
   puck,
   resultsdir,
   weights_doublet,
@@ -13,7 +13,7 @@ plot_weights_doublet(
 )
 }
 \arguments{
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 
 \item{puck}{an object of type \linkS4class{SpatialRNA}}
 

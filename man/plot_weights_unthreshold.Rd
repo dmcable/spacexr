@@ -4,10 +4,10 @@
 \alias{plot_weights_unthreshold}
 \title{Spatially plot all weights for each cell type}
 \usage{
-plot_weights_unthreshold(cell_type_info, puck, resultsdir, weights)
+plot_weights_unthreshold(cell_type_names, puck, resultsdir, weights)
 }
 \arguments{
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 
 \item{puck}{an object of type \linkS4class{SpatialRNA}}
 

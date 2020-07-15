@@ -5,10 +5,10 @@
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param doublets a dataframe of RCTD results restricted to doublets
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @return returns \code{\link{ggplot2}} object
 #' @export
-plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
+plot_doublets <- function(puck, doublets, resultsdir, cell_type_names) {
   barcodes = rownames(doublets)
   my_table = puck@coords[barcodes,]
   my_table$class = doublets$first_type
@@ -17,7 +17,7 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
   my_table2$x = my_table2$x + jitter
   my_table2$class = doublets$second_type
   my_table = rbind(my_table, my_table2)
-  n_levels = cell_type_info[[3]]
+  n_levels = length(cell_type_names)
   my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
   pres = unique(as.integer(my_table$class))
   pres = pres[order(pres)]
@@ -41,14 +41,14 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_info) {
 #' @param coords a dataframe of coordinates of each pixel
 #' @param results_df a dataframe of RCTD results (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @return returns \code{\link{ggplot2}} object
 #' @export
-plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) {
+plot_all_cell_types <- function(results_df, coords, cell_type_names, resultsdir) {
   barcodes = rownames(results_df[results_df$spot_class != "reject",])
   my_table = coords[barcodes,]
   my_table$class = results_df[barcodes,]$first_type
-  n_levels = cell_type_info[[3]]
+  n_levels = length(cell_type_names)
   my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
   pres = unique(as.integer(my_table$class))
   pres = pres[order(pres)]
@@ -72,12 +72,12 @@ plot_all_cell_types <- function(results_df, coords, cell_type_info, resultsdir) 
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param doublets_base a dataframe of RCTD results restricted to doublets
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @export
-plot_doublets_type <- function(puck, doublets_base, resultsdir, cell_type_info) {
-  plots <- vector(mode = "list", length = cell_type_info[[3]])
+plot_doublets_type <- function(puck, doublets_base, resultsdir, cell_type_names) {
+  plots <- vector(mode = "list", length = length(cell_type_names))
   i = 1
-  for (cell_type in cell_type_info[[2]]) {
+  for (cell_type in cell_type_names) {
     doublets = doublets_base[doublets_base$first_type == cell_type | doublets_base$second_type == cell_type,]
     barcodes = rownames(doublets)
     if(length(barcodes) > 0) {
@@ -88,7 +88,7 @@ plot_doublets_type <- function(puck, doublets_base, resultsdir, cell_type_info) 
       my_table2$x = my_table2$x + jitter
       my_table2$class = doublets$second_type
       my_table = rbind(my_table, my_table2)
-      n_levels = cell_type_info[[3]]
+      n_levels = length(cell_type_names)
       my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
       pres = unique(as.integer(my_table$class))
       pres = pres[order(pres)]
@@ -196,12 +196,12 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @export
-plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
-  plots <- vector(mode = "list", length = cell_type_info[[3]])
-  for (i in 1:cell_type_info[[3]]) {
-    cell_type = cell_type_info[[2]][i]
+plot_weights <- function(cell_type_names, puck, resultsdir, weights) {
+  plots <- vector(mode = "list", length = length(cell_type_names))
+  for (i in 1:length(cell_type_names)) {
+    cell_type = cell_type_names[i]
     my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI) # pmax(0.25, 0.7 - puck@nUMI / 1000)
     plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
     if(sum(my_cond) > 0)
@@ -219,12 +219,12 @@ plot_weights <- function(cell_type_info, puck, resultsdir, weights) {
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @export
-plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) {
-  plots <- vector(mode = "list", length = cell_type_info[[3]])
-  for (i in 1:cell_type_info[[3]]) {
-    cell_type = cell_type_info[[2]][i]
+plot_weights_unthreshold <- function(cell_type_names, puck, resultsdir, weights) {
+  plots <- vector(mode = "list", length = length(cell_type_names))
+  for (i in 1:length(cell_type_names)) {
+    cell_type = cell_type_names[i]
     plot_var <- weights[,cell_type]; names(plot_var) = rownames(weights)
     if(sum(weights[,cell_type]) > 0)
       plots[[i]] <- plot_puck_wrapper(puck, plot_var, NULL, minUMI = 100,maxUMI = 200000,min_val = 0, max_val = 1, title = cell_type)
@@ -241,14 +241,15 @@ plot_weights_unthreshold <- function(cell_type_info, puck, resultsdir, weights) 
 #'
 #' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param puck an object of type \linkS4class{SpatialRNA}
+#' @param cell_type_names list of cell type names
 #' @return returns \code{\link{ggplot2}} object
 #' @export
-plot_cond_occur <- function(cell_type_info, resultsdir, weights) {
-  occur <- numeric(cell_type_info[[3]])
-  names(occur) = cell_type_info[[2]]
-  for (i in 1:cell_type_info[[3]]) {
-    cell_type = cell_type_info[[2]][i]
+plot_cond_occur <- function(cell_type_names, resultsdir, weights, puck) {
+  occur <- numeric(length(cell_type_names))
+  names(occur) = cell_type_names
+  for (i in 1:length(cell_type_names)) {
+    cell_type = cell_type_names[i]
     my_cond = weights[,cell_type] > UMI_cutoff(puck@nUMI)
     occur[cell_type] = sum(my_cond)
   }
@@ -287,13 +288,13 @@ plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param weights_doublet a dataframe of RCTD output weights for doublets (see \code{\link{gather_results}})
 #' @param resultsdir output directory
-#' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
+#' @param cell_type_names list of cell type names
 #' @param results_df dataframe of RCTD results (see \code{\link{gather_results}})
 #' @export
-plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doublet, results_df) {
-  plots <- vector(mode = "list", length = cell_type_info[[3]])
-  for (i in 1:cell_type_info[[3]]) {
-    cell_type = cell_type_info[[2]][i]
+plot_weights_doublet <- function(cell_type_names, puck, resultsdir, weights_doublet, results_df) {
+  plots <- vector(mode = "list", length = length(cell_type_names))
+  for (i in 1:length(cell_type_names)) {
+    cell_type = cell_type_names[i]
     all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
     all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
     all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
@@ -314,16 +315,16 @@ plot_weights_doublet <- function(cell_type_info, puck, resultsdir, weights_doubl
 #'
 #' @param doub_occur a table of occurances of doublets
 #' @param resultsdir output directory
-#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @param cell_type_names list of cell type names
 #' @return returns \code{\link{ggplot2}} object
 #' @export
-plot_doub_occur_stack <- function(doub_occur, resultsdir, iv) {
+plot_doub_occur_stack <- function(doub_occur, resultsdir, cell_type_names) {
   data <- reshape2::melt(doub_occur)
   colnames(data) = c('second_type','first_type','count')
-  n_levels = iv$cell_type_info[[3]]
+  n_levels = length(cell_type_names)
   my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
-  names(my_pal) = iv$cell_type_info[[2]]
-  pres = iv$cell_type_info[[2]]
+  names(my_pal) = cell_type_names
+  pres = cell_type_names
   pres = pres[order(pres)]
   pdf(file.path(resultsdir,'doublet_stacked_bar.pdf'))
   plot <- ggplot2::ggplot(data, ggplot2::aes(fill=second_type, y=count, x=first_type)) +ggplot2::geom_bar(position="stack", stat="identity") + ggplot2::scale_fill_manual(values = my_pal[pres]) + ggplot2::theme(axis.text.x = ggplot2::element_text(hjust = 1, angle = 45))

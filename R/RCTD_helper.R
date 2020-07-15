@@ -1,14 +1,12 @@
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
-decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, custom_list = NULL, verbose=F, constrain = T) {
+decompose_sparse <- function(cell_type_profiles, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, custom_list = NULL, verbose=F, constrain = T) {
   if(is.null(custom_list))
     cell_types = c(type1,type2)
   else
     cell_types = custom_list
-  reg_data = cell_type_means[gene_list,] * nUMI
-  reg_data = data.matrix(reg_data)
-  reg_data = data.matrix(reg_data[,cell_types])
+  reg_data = data.matrix(cell_type_profiles[,cell_types])
   if(score_mode)
     n.iter = 25
   else
@@ -19,22 +17,21 @@ decompose_sparse <- function(cell_type_means, gene_list, nUMI, bead, type1=NULL,
     return(results)
   } else {
     prediction = reg_data %*% results$weights
-    total_score = calc_log_l_par(gene_list, prediction, bead)
+    total_score = calc_log_l_vec(prediction, bead)
     return (total_score)
   }
 }
 
 #decompose with all cell types
-decompose_full <- function(cell_type_means, gene_list, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F, n.iter = 50, MIN_CHANGE = 0.001) {
-  reg_data = cell_type_means[gene_list,] * nUMI
-  reg_data = data.matrix(reg_data)
-  results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = OLS, constrain = constrain, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
+decompose_full <- function(cell_type_profiles, nUMI, bead, constrain = TRUE, OLS = FALSE, verbose = F, n.iter = 50, MIN_CHANGE = 0.001, bulk_mode = F) {
+  results = solveIRWLS.weights(cell_type_profiles,bead,nUMI,OLS = OLS, constrain = constrain,
+                               verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, bulk_mode = bulk_mode)
   return(results)
 }
 
-check_pairs_type <- function(cell_type_info, gene_list, bead, UMI_tot, score_mat, min_score, my_type, class_df, QL_score_cutoff, constrain) {
+check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_score, my_type, class_df, QL_score_cutoff, constrain) {
   candidates = rownames(score_mat)
-  singlet_score = get_singlet_score(cell_type_info, gene_list, bead, UMI_tot, my_type, constrain)
+  singlet_score = get_singlet_score(cell_type_profiles, bead, UMI_tot, my_type, constrain)
   all_pairs = T; all_pairs_class = !is.null(class_df)
   other_class = my_type #other types present from this class
   for(i in 1:(length(candidates)-1)) {
@@ -61,15 +58,18 @@ check_pairs_type <- function(cell_type_info, gene_list, bead, UMI_tot, score_mat
     all_pairs_class = all_class
   if(all_pairs_class && !all_pairs && length(other_class) > 1) {
     for (type in other_class[2:length(other_class)])
-      singlet_score = min(singlet_score, get_singlet_score(cell_type_info, gene_list, bead, UMI_tot, type, constrain))
+      singlet_score = min(singlet_score, get_singlet_score(cell_type_profiles, bead, UMI_tot, type, constrain))
   }
   return(list(all_pairs = all_pairs, all_pairs_class = all_pairs_class, singlet_score = singlet_score))
 }
 
 #Decomposing a single bead via doublet search
 process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F) {
+  cell_type_profiles <- cell_type_info[[1]][gene_list,]
+  cell_type_profiles = cell_type_profiles * UMI_tot
+  cell_type_profiles = data.matrix(cell_type_profiles)
   QL_score_cutoff = 10; doublet_like_cutoff = 25
-  results_all = decompose_full(cell_type_info[[1]], gene_list, UMI_tot, bead, constrain = constrain, verbose = verbose)
+  results_all = decompose_full(cell_type_profiles, UMI_tot, bead, constrain = constrain, verbose = verbose)
   all_weights <- results_all$weights
   conv_all <- results_all$converged
   initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
@@ -88,7 +88,7 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
     type1 = candidates[i]
     for(j in (i+1):length(candidates)) {
       type2 = candidates[j]
-      score = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type1, type2, score_mode = T, constrain = constrain, verbose = verbose)
+      score = decompose_sparse(cell_type_profiles, UMI_tot, bead, type1, type2, score_mode = T, constrain = constrain, verbose = verbose)
       score_mat[i,j] = score; score_mat[j,i] = score
       if(is.null(second_type) || score < min_score) {
         first_type <- type1; second_type <- type2
@@ -96,8 +96,8 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
       }
     }
   }
-  type1_pres = check_pairs_type(cell_type_info, gene_list, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain)
-  type2_pres = check_pairs_type(cell_type_info, gene_list, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain)
+  type1_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain)
+  type2_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain)
   if(!type1_pres$all_pairs_class && !type2_pres$all_pairs_class) {
     spot_class <- "reject"
     singlet_score = min_score + 2 * doublet_like_cutoff #arbitrary
@@ -122,7 +122,7 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
   }
   if(singlet_score - min_score < doublet_like_cutoff)
     spot_class = "singlet"
-  doublet_results = decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, first_type, second_type, constrain = constrain)
+  doublet_results = decompose_sparse(cell_type_profiles, UMI_tot, bead, first_type, second_type, constrain = constrain)
   doublet_weights = doublet_results$weights; conv_doublet = doublet_results$converged
   spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
   return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
@@ -131,31 +131,21 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
               first_class = first_class, second_class = second_class))
 }
 
-get_prediction_sparse <- function(cell_type_means, gene_list, UMI_tot, p, type1, type2) {
+get_prediction_sparse <- function(cell_type_profiles, UMI_tot, p, type1, type2) {
   cell_types = c(type1,type2)
-  reg_data = cell_type_means[gene_list,] * 1000
-  reg_data = data.matrix(reg_data)
-  reg_data = reg_data[,cell_types]
+  reg_data = cell_type_profiles[,cell_types]
   prediction = reg_data %*% c(p,1-p)
   return(prediction)
 }
 
-delta_likelihood <- function(type1, type2, p, bead, cell_type_means, gene_list, UMI_tot) {
-  prediction <- get_prediction_sparse(cell_type_means, gene_list, UMI_tot, 1, type1, type2)
-  log_l <- calc_log_l_par(gene_list, prediction, bead)
-  prediction_doub <- get_prediction_sparse(cell_type_means, gene_list, UMI_tot, p, type1, type2)
-  log_l_doub <- calc_log_l_par(gene_list, prediction_doub, bead)
-  return(-log_l_doub + log_l)
-}
-
-get_singlet_score <- function(cell_type_info, gene_list, bead, UMI_tot, type, constrain) {
+get_singlet_score <- function(cell_type_profiles, bead, UMI_tot, type, constrain) {
   if(!constrain)
-    return(decompose_sparse(cell_type_info[[1]], gene_list, UMI_tot, bead, type1=type, score_mode = T, constrain = constrain))
+    return(decompose_sparse(cell_type_profiles, UMI_tot, bead, type1=type, score_mode = T, constrain = constrain))
   dummy_type = cell_type_info[[2]][1]
   if(dummy_type == type)
     dummy_type = cell_type_info[[2]][2]
-  prediction <- get_prediction_sparse(cell_type_info[[1]], gene_list, UMI_tot, 1, type, dummy_type)
-  log_l <- calc_log_l_par(gene_list, prediction, bead)
+  prediction <- get_prediction_sparse(cell_type_profiles, UMI_tot, 1, type, dummy_type)
+  log_l <- calc_log_l_vec(prediction, bead)
   return(log_l)
 }
 

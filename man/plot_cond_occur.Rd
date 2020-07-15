@@ -4,14 +4,16 @@
 \alias{plot_cond_occur}
 \title{Barplot of the confident counts for each cell type}
 \usage{
-plot_cond_occur(cell_type_info, resultsdir, weights)
+plot_cond_occur(cell_type_names, resultsdir, weights, puck)
 }
 \arguments{
-\item{cell_type_info}{cell type information and profiles (see \code{\link{get_cell_type_info}})}
+\item{cell_type_names}{list of cell type names}
 
 \item{resultsdir}{output directory}
 
 \item{weights}{a dataframe of RCTD output weights (see \code{\link{gather_results}})}
+
+\item{puck}{an object of type \linkS4class{SpatialRNA}}
 }
 \value{
 returns \code{\link{ggplot2}} object
