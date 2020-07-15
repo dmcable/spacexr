@@ -66,7 +66,7 @@ The RDS file 'puck.RDS' saves the 'SpatialRNA' file we have created, and from no
 
 We are now ready to create an `RCTD` object using the `create.RCTD` function. We simply need to pass in the `SpatialRNA` and scRNA-seq objects. There are several configuration options that can be set with this function: 
 
-* `max_cores:` for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for number of available cores.
+* `max_cores:` for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for number of available cores. Note, that we recommend setting `max_cores` to at least `4` or `8` to improve efficiency.
 * `gene_cutoff, fc_cutoff, gene_cutoff_reg, fc_cutoff_reg: ` are used for differentially expressed gene selection, with `gene_cutoff` filtering for average expression and `fc_cutoff` filtering for log-fold-change across cell types.
 * `UMI_min, UMI_max: ` are the minimum and maximum read depth for pixels in the `SpatialRNA` dataset.
 
@@ -75,7 +75,7 @@ We are now ready to create an `RCTD` object using the `create.RCTD` function. We
 Now, we are ready to run RCTD, using the `run.RCTD` function. This function is equivalent to sequentially running the functions `fitBulk`, `choose_sigma_c`, and `fitPixels`. The `doublet_mode` argument sets whether RCTD will be run in 'doublet mode' (at most 1-2 cell types per pixel) or 'full mode' (no restrictions on number of cell types).
 
 ```{r DEgenes}
-myRCTD <- create.RCTD(puck, reference)
+myRCTD <- create.RCTD(puck, reference, max_cores = 1)
 myRCTD <- run.RCTD(myRCTD, doublet_mode = TRUE)
 ```
 

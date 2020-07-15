@@ -1,3 +1,19 @@
+#' RCTD: an R package for assigning cell types to spatial transcriptomics data.
+#'
+#' @section Running RCTD:
+#'
+#' To get started, create a \code{\linkS4class{SpatialRNA}} object (called \code{puck} here) for the
+#' spatial transcriptomics data and a \code{\linkS4class{Seurat}} object (called \code{reference} here) for the
+#' scRNA-seq data. Then simply run RCTD as:
+#'
+#' \code{myRCTD <- create.RCTD(puck, reference)}
+#'
+#' \code{myRCTD <- run.RCTD(myRCTD)}
+#'
+#' @docType package
+#' @name RCTD
+NULL
+
 #' An S4 class to represent Spatial Transcriptomic data
 #'
 #' @slot coords a dataframe with x and y coordinates of each pixel
