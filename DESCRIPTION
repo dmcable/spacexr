@@ -16,6 +16,7 @@ Imports:
 	pals, 
 	ggplot2,
 	Matrix, 
+	parallel,
 	doParallel, 
 	foreach, 
 	quadprog,
