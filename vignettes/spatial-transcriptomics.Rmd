@@ -1,7 +1,7 @@
 ---
 title: "Applying RCTD to Spatial Transcriptomics Data"
 author: "Dylan Cable"
-date: "May 4th, 2020"
+date: "July 15th, 2020"
 output:  
   html_document:
     keep_md: yes
