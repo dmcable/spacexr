@@ -6,7 +6,7 @@ Author: Dylan Cable
 Maintainer: <dcable@mit.edu>
 Description: decomposing RNA-seq mixtures into single cell types for spatial transcriptomics
 Depends: R (>= 3.5.0)
-License: 
+License: GNU General Public License v3.0.
 Encoding: UTF-8
 LazyData: true
 Imports: 
