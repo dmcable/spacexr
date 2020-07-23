@@ -1,5 +1,6 @@
 remap_celltypes <- function(cell_dict_file, cell_ident) {
   cell_type_dict <- read.csv(file=cell_dict_file, header=TRUE, sep=",")
+  cell_type_dict$Name <- factor(cell_type_dict$Name)
   rownames(cell_type_dict) = cell_type_dict[,'Cluster']
   true_type_names = lapply(cell_ident, function(x) cell_type_dict[as.character(x),"Name"])
   true_type_names = unlist(true_type_names)
