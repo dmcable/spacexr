@@ -1,13 +1,13 @@
 
-process_cell_type_info <- function(reference) {
+process_cell_type_info <- function(reference, CELL_MIN = 25) {
    print("Begin: process_cell_type_info")
    print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
    print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
    cell_counts = table(reference@meta.data$liger_ident_coarse)
    print(cell_counts)
-   CELL_MIN = 25 # need at least this for each cell type
-   if(min(cell_counts) < CELL_MIN)
-      stop(paste0("init_RCTD error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
+   if(min(cell_counts) < CELL_MIN)  # need at least this for each cell type
+      stop(paste0("process_cell_type_info error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference. Consider removing the cell type 
+or changing CELL_MIN_INSTANCE parameter in create.RCTD"))
    cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
    print("End: process_cell_type_info")
    return(cell_type_info)
@@ -26,16 +26,17 @@ process_cell_type_info <- function(reference) {
 #' @param max_cores for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for
 #' number of available cores.
 #' @param class_df (optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.
+#' @param CELL_MIN_INSTANCE minimum number of cells required per cell type. Default 25, can be lowered if desired.
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
 create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 200000,
-                         class_df = NULL) {
+                         class_df = NULL, CELL_MIN_INSTANCE = 25) {
    config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, max_cores = max_cores,
                  N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30, MIN_CHANGE_BULK = 0.0001, UMI_max = UMI_max, MIN_OBS = 3)
    if(test_mode)
      config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_curoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,
           N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1, UMI_max = 200000, MIN_OBS = 3, max_cores = 1)
-   cell_type_info <- list(info = process_cell_type_info(reference), renorm = NULL)
+   cell_type_info <- list(info = process_cell_type_info(reference, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
    puck = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    print('create.RCTD: getting regression differentially expressed genes: ')
    gene_list_reg = get_de_genes(cell_type_info$info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
