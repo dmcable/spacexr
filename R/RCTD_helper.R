@@ -74,6 +74,8 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
   conv_all <- results_all$converged
   initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
   candidates <- names(which(all_weights > initial_weight_thresh))
+  if(length(candidates) == 0)
+    candidates = cell_type_info[[2]][1:min(3,cell_type_info[[3]])]
   if(length(candidates) == 1)
     if(candidates[1] == cell_type_info[[2]][1])
       candidates = c(candidates, cell_type_info[[2]][2])
