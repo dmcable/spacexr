@@ -16,6 +16,7 @@ gather_results <- function(RCTD, results) {
                            first_class = logical(N), second_class = logical(N),
                            min_score = numeric(N), singlet_score = numeric(N),
                            conv_all = logical(N), conv_doublet = logical(N))
+  score_mat <- list()
   for(i in 1:N) {
     if(i %% 1000 == 0)
       print(paste("gather_results: finished",i))
@@ -30,9 +31,10 @@ gather_results <- function(RCTD, results) {
     results_df[i, "singlet_score"] = results[[i]]$singlet_score
     results_df[i, "conv_all"] = results[[i]]$conv_all
     results_df[i, "conv_doublet"] = results[[i]]$conv_doublet
+    score_mat[[i]] <- results[[i]]$score_mat
   }
   rownames(results_df) = barcodes
-  RCTD@results <- list(results_df = results_df, weights = weights, weights_doublet = weights_doublet)
+  RCTD@results <- list(results_df = results_df, weights = weights, weights_doublet = weights_doublet, score_mat = score_mat)
   return(RCTD)
 }
 

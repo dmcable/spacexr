@@ -138,7 +138,7 @@ plot_doublet_identification_certain <- function(meta_data, common_cell_types, re
         else
           plot_df[as.character(first_UMI), "second_type"] = 1
       }
-      if(type1 == "Bergmann" && type2 == "Granule") {
+      if(type1 == "Granule" && type2 == "UBCs") {
         ca = 1
       }
       if(is.null(plot_df_avg))

@@ -16,7 +16,7 @@ library(reshape2)
 ```
 
 
-```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+```{r fig.height = 16, fig.width = 12, fig.align = 'center', eval = F}
 load(file = "Results/SlideseqCerebellum.RData")
 my_pal = pals::brewer.blues(20)[2:20]
 my_mod <- function(p) {
@@ -36,7 +36,7 @@ for(i in 1:length(iv$cell_type_info[[2]])) {
 ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
 ```
 
-```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
 load(file = "Results/NMFreg")
 cur_range <- c(0,1)
 cell_type = "Granule"
@@ -61,7 +61,7 @@ p3 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
 p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
 ggarrange(p1,p1,p2,p2,p3,p3,nrow=3,ncol=2)
 ```
-```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
 load(file = "Results/NMFreg")
 thresh = 0.25
 cur_range <- c(0,1)
@@ -111,7 +111,7 @@ p6 <- my_mod(p6)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"
 ggarrange(p1,p4,p2,p5,p3,p6,nrow=3,ncol=2)
 ```
 
-```{r fig.height = 12, fig.width = 12, fig.align = 'center'}
+```{r fig.height = 12, fig.width = 12, fig.align = 'center', eval = F}
   occur <- numeric(iv$cell_type_info[[3]])
   names(occur) = iv$cell_type_info[[2]]
   for (i in 1:iv$cell_type_info[[3]]) {
@@ -156,7 +156,7 @@ ggarrange(p1,p4,p2,p5,p3,p6,nrow=3,ncol=2)
   ggarrange(plot4, plot,plot2,plot3,nrow=2,ncol=2)
 ```
 
-```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
 load(file = "Results/SlideseqCerebellum.RData")
 MULT = 500
 my_pal = pals::brewer.blues(20)[2:20]
@@ -207,28 +207,8 @@ ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
 ```
 
 
-```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
-load(file = "Results/SlideseqHippo.RData")
-my_pal = pals::brewer.blues(20)[2:20]
-my_mod <- function(p) {
-  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
-}
 
-plots <- list()
-for(i in 1:length(iv$cell_type_info[[2]])) {
-  cell_type = iv$cell_type_info[[2]][i]
-  cur_range <- c(0,1)
-  all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
-  all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
-  all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
-  plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range,title=cell_type)
-  plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
-}
-
-ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
-```
-
-```{r fig.height = 4, fig.width = 6, fig.align = 'center'}
+```{r fig.height = 4, fig.width = 6, fig.align = 'center', eval = F}
 conf_mat <- read.csv(file.path("../Data/Slideseq/CerRef/results",'confusion_matrix.csv'))
 conf_mat <- conf_mat[,2:20]
 all_cell_types = c("Astrocytes", "Bergmann", "Candelabrum", "Choroid", "Endothelial", "Ependymal", "Fibroblast", "Globular","Golgi", "Granule", "Lugaro","Macrophages" ,"Microglia" ,"MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
@@ -246,9 +226,9 @@ ggarrange(p3)
 ```
 
 
-```{r fig.height = 8, fig.width = 8, fig.align = 'center'}
-load(file = "Results/decompose_ref.RData")
-load("Results/doublet_ref.RData")
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
+load(file = "../Plotting/Results/decompose_ref.RData")
+load("../Plotting/Results/doublet_ref.RData")
 my_pal = pals::coolwarm(20)
 doublet_df$prop <- doublet_df$nUMI / 1000
 plot_df = doublet_df[doublet_df$series == "doublets",]
@@ -275,7 +255,7 @@ p3 <- ggplot2::ggplot(plot_df, ggplot2::aes(x=Gene,y=Value)) + geom_point(aes(co
 ggarrange(p1,p2, p3, nrow = 2, ncol = 2)
 ```
 
-```{r fig.height = 8, fig.width = 6, fig.align = 'center'}
+```{r fig.height = 8, fig.width = 6, fig.align = 'center', eval = F}
 
 conf_mat <- read.csv(file.path("../Data/Slideseq/Puck_Viz/results",'confusion_matrix.csv'))
 conf_mat <- conf_mat[,2:20]
@@ -322,7 +302,7 @@ ggarrange(p2,p3,p1, nrow = 3, ncol= 1, common.legend = T)
 ```
 
 
-```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+```{r fig.height = 16, fig.width = 12, fig.align = 'center', eval = F}
 load(file = "Results/VisiumHippo.RData")
 my_pal = pals::brewer.blues(20)[2:20]
 my_mod <- function(p) {
@@ -350,7 +330,7 @@ for(i in 1:length(iv$cell_type_info[[2]])) {
 ```
 
 ```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
-load(file = "Results/VisiumHippo.RData")
+load(file = "../Results/VisiumHippo.RData")
 my_pal = pals::brewer.blues(20)[2:20]
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(2900,5100)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(2800,6400)) + geom_segment(aes(x = 3000, y = 2900, xend = 3384.6, yend = 2900), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
@@ -368,9 +348,62 @@ for(i in 1:length(iv$cell_type_info[[2]])) {
 }
 
 ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+
 ```
 
-```{r fig.height = 8, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(4400,8000)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(-500,2000)) + geom_segment(aes(x = 4700, y = -400, xend = 5084.6, yend = -400), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+library(spdep)
+
+coerce_old <- function(puck) {
+  new("SpatialRNA", coords = puck@coords, counts = puck@counts, cell_labels = puck@cell_labels,
+      cell_type_names = puck@cell_type_names, nUMI = puck@nUMI, n_cell_type = puck@n_cell_type)
+}
+puck <- coerce_old(puck)
+puck_transf <- puck
+puck_transf@coords <- as.data.frame(Rotation(puck@coords, 125/180*pi))
+colnames(puck_transf@coords) <- c('x','y')
+puck_transf@coords[,'x'] <- -puck_transf@coords[,'x']
+new_plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+  new_plots[[i]] <- plot_puck_continuous(puck_transf, rownames(norm_weights), all_weights_vec, ylimit = cur_range,title=cell_type, size = 1)
+  new_plots[[i]] <- my_mod(new_plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+}
+#new_plot <- my_mod(new_plot)+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+#ggarrange(new_plot, plots[[16]])
+```
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+load(file = "../Results/SlideseqHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+  all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+  all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+  plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range,title=cell_type)
+  plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+}
+
+ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+```
+```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+ggarrange(plots[[2]], new_plots[[2]], plots[[6]], new_plots[[6]], plots[[16]], new_plots[[16]], nrow = 3, ncol = 2, common.legend = T)
+```
+
+
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
 MULT = 500
 load(file = "Results/VisiumHippo.RData")
 my_pal = pals::brewer.blues(20)[2:20]
@@ -403,7 +436,7 @@ ggarrange(p1,p2,p3,p4,nrow=2,ncol=2)
 ```
 
 
-```{r fig.height = 8, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
 MULT = 500
 load(file = "Results/VisiumHippo.RData")
 my_pal = pals::brewer.blues(20)[2:20]
@@ -423,7 +456,7 @@ p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colo
 #ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
 ggarrange(p1,p2,p1,p2,nrow=2,ncol=2)
 ```
-```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 4, fig.width = 8, fig.align = 'center', eval = F}
 resultsdir = "../Data/Slideseq/NewCerPuck_190926_08/SeuratResults/"
 load(file = file.path(resultsdir,'data.Rdata'))
 #my_mod <- function(p) {
@@ -452,7 +485,7 @@ for(i in 0:7) {
 
 ggarrange(plotlist = plots,ncol=4,nrow=2)
 ```
-```{r fig.height = 6, fig.width = 6, fig.align = 'center'}
+```{r fig.height = 6, fig.width = 6, fig.align = 'center', eval = F}
   resultsdir = "../Data/Slideseq/NewCerPuck_190926_08/SeuratResults/"
   load(file = file.path(resultsdir,'data.Rdata'))
   cluster_labels = c('Granule', 'Granule','Bergmann','Oligodendrocytes','MLI1','Purkinje','Astrocytes','Golgi')

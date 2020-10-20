@@ -1,8 +1,8 @@
 ---
 output:  
+  pdf_document: default
   html_document:
     keep_md: true
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -157,7 +157,7 @@ conf_mat_RCTD <- conf_mat$table
 ### Visualizing the results as confusion matrices for OLS within reference, OLS cross platform, and RCTD cross platform
 
 ```{r fig.height = 8, fig.width = 8, fig.align = 'center'}
-data <- readRDS(file="../Plotting/Results/ref_confusion.RDS")
+data <- readRDS(file="../Results/ref_confusion.RDS")
 common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 data$diag = data$Prediction == data$Reference
 data$diag[!data$diag] <- NA
@@ -167,7 +167,7 @@ p1 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +them
   scale_color_manual(guide = FALSE, values = c('TRUE' = "#D55E00"))
 
 #hist(platform_df$true_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
-data <- readRDS(file="../Plotting/Results/cross_confusion.RDS")
+data <- readRDS(file="../Results/cross_confusion.RDS")
 data$diag = as.character(data$Prediction) == as.character(data$Reference)
 data$diag[!data$diag] <- NA
 data$Prediction <- factor(data$Prediction,levels(data$Prediction)[c(1,2,5,7,9,10,14:19,3:4,6,8,11:13)])

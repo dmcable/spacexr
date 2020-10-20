@@ -1,8 +1,8 @@
 ---
 output:  
+  pdf_document: default
   html_document:
     keep_md: true
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -67,7 +67,7 @@ K_val = dim(Q_mat)[1] - 3; use_Q = T
 
 ### Run RCTD on interneurons to classify into 3 interneuron subtypes
 
-```{r data}
+```{r data, eval = F}
 refdir <- '../../Data/Reference/DropVizHC'
 inter_names<- c("Basket_OLM" ,'CGE',  "Neurogliaform_Lacunosum")
 log_l_thresh <- 10
@@ -131,7 +131,7 @@ for(barcode in doublet_barcodes) {
 
 ### Plot the confident classification results in space
 
-```{r fig.height = 6, fig.width = 8, fig.align = 'center'}
+```{r fig.height = 6, fig.width = 8, fig.align = 'center', eval = F}
 my_pal <- c("#D55E00","#9E0073", "#0072B2")
 conf_inter <- inter_df$confident
 barcodes_cur <- inter_barcodes[conf_inter]
@@ -145,7 +145,7 @@ ggarrange(p3)
 
 ### Spatially cluster interneurons and compute rate of agreement of subclass classifications
 
-```{r spatiallycluster}
+```{r spatiallycluster, eval = F}
 d <- dist(puck@coords[inter_barcodes,], method = "euclidean")
 hc1 <- hclust(d, method = "average")
 num_clusters = 200
@@ -182,7 +182,7 @@ paste("Std dev: ", std_cor) # 0.009
 
 ### Compare to Sst gene for reference
 
-```{r fig.height = 4, fig.width = 4, fig.align = 'center'}
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
 }
@@ -196,7 +196,7 @@ ggarrange(p4)
 
 ### Plot all hippocampal cell types
 
-```{r fig.height = 4, fig.width = 4, fig.align = 'center'}
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
 }
@@ -248,26 +248,31 @@ get_marker_data <- function(cell_type_names, cell_type_means, gene_list) {
 
 iv <- init_RCTD(load_info_renorm = T)
 cur_cell_types <- c("Astrocyte","CA1","CA3","Denate","Interneuron","Neurogenesis","Oligodendrocyte")
-puck <- iv$puck
-cell_type_info_restr = iv$cell_type_info
+puck <- readRDS('../../data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+reference <- readRDS('../../data/Reference/DropVizHC/scRefSubsampled1000.RDS')
+myRCTD <- create.RCTD(puck, reference)
+cell_type_info_restr = myRCTD@cell_type_info$info
 cell_type_info_restr[[1]] = cell_type_info_restr[[1]][,cur_cell_types]
 cell_type_info_restr[[2]] = cur_cell_types; cell_type_info_restr[[3]] = length(cur_cell_types)
 
-de_genes <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 2.5, expr_thresh = .0001, MIN_OBS = 3)
-de_genes_spec <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 4, expr_thresh = .0001, MIN_OBS = 3)
+de_genes <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 3, expr_thresh = .0001, MIN_OBS = 3)
+#de_genes_spec <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 4, expr_thresh = .0001, MIN_OBS = 3)
 marker_data_de = get_marker_data(cell_type_info_restr[[2]], cell_type_info_restr[[1]], de_genes)
-marker_data_de <- marker_data_de[!(marker_data_de$cell_type %in% c("Interneuron","Neurogenesis")) | (rownames(marker_data_de) %in% de_genes_spec),]
-saveRDS(marker_data_de, '../../Data/SpatialRNA/Puck_200115_08/results/marker_data_de.RDS')
+saveRDS(marker_data_de, '../../data/SpatialRNA/Puck_200115_08/results/marker_data_de_standard.RDS')
 ```
 
 ### Plot interneurons (by RCTD) and interneuron markers
 
 ```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+MULT <- 500
 my_pal = pals::brewer.blues(20)[2:20]
 cell_type = "Interneuron"
-marker_data_de <- readRDS('../../Data/SpatialRNA/Puck_200115_08/results/marker_data_de.RDS')
-cur_range <- c(0,0.005*MULT)
-gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+marker_data_de <- readRDS('../../Data/SpatialRNA/Puck_200115_08/results/marker_data_de_standard.RDS')
+cur_range <- c(0,0.010*MULT)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
 p7 <- RCTD::plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = .4, alpha = 1, small_point = T)
 p7 <- my_mod(p7)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
 

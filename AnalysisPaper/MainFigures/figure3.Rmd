@@ -1,8 +1,8 @@
 ---
 output:  
+  pdf_document: default
   html_document:
     keep_md: true
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -70,11 +70,13 @@ N_UMI_cond <- (length(UMI_list) + 1)/2
 spot_class_df <- as.data.frame(Matrix(0,nrow = N_UMI_cond, ncol = 2))
 rownames(spot_class_df) <- UMI_list[1:N_UMI_cond]; colnames(spot_class_df) <- c('singlets','doublets')
 barcodes <- rownames(results_df)
-for(nUMI in UMI_list[1:N_UMI_cond]) {
+for(nUMI in UMI_list) {
   vec = table(results_df[barcodes[meta_df$first_UMI == nUMI],]$spot_class)
   spot_class_df[as.character(nUMI), 'singlets'] = vec["singlet"]
   spot_class_df[as.character(nUMI), 'doublets'] = sum(vec) - vec["singlet"] - vec["reject"]
 }
+spot_class_df[1:6,] <- spot_class_df[1:6,] + spot_class_df[13:8,]
+spot_class_df <- spot_class_df[1:7,]
 spot_class_df <- sweep(spot_class_df, 1, rowSums(spot_class_df),'/')
 spot_class_df[,"nUMI"] <- UMI_list[1:N_UMI_cond]
 df <- melt(spot_class_df,  id.vars = 'nUMI', variable.name = 'series')

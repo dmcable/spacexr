@@ -15,7 +15,8 @@ create.RCTD(
   fc_cutoff_reg = 0.75,
   UMI_min = 100,
   UMI_max = 2e+05,
-  class_df = NULL
+  class_df = NULL,
+  cell_type_names = NULL
 )
 }
 \arguments{
@@ -39,6 +40,8 @@ number of available cores.}
 \item{UMI_max}{maximum UMI per pixel included in the analysis}
 
 \item{class_df}{(optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.}
+
+\item{cell_type_names}{A list of cell types to be included from the reference. If NULL, uses all cell types}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function

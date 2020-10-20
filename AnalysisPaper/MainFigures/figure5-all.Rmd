@@ -1,8 +1,8 @@
 ---
 output:  
+  pdf_document: default
   html_document:
     keep_md: true
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -168,8 +168,49 @@ for(i in(1:n_classes)) {
 new_levels <- levels(final_labels)
 new_levels[4] <- levels(final_labels)[22]
 new_levels[22] <- levels(final_labels)[4]
-p2 <- RCTD::plot_class(puck, names(conf_inter[conf_inter]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p2 <- RCTD::plot_class(puck, names(conf_inter[conf_inter]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+
+my_pal <- cbind(c(240,163,255),c(0,117,220),c(153,63,0),c(76,0,92),c(25,25,25),c(0,92,49),c(43,206,72),c(255,204,153),c(128,128,128),c(148,255,181),c(143,124,0),c(157,204,0),c(194,0,136),c(0,51,128),c(255,164,5),c(255,168,187),c(66,102,0),c(255,0,16),c(94,241,242),c(0,153,143),c(224,255,102),c(116,10,255),c(153,0,0),c(255,255,128),c(255,255,0),c(255,80,5))
+my_pal <- apply(my_pal, 2, function (x) rgb(x[1],x[2],x[3],maxColorValue = 255))
+pres <- table(final_labels[names(conf_inter[conf_inter])]) > 0
+my_pal_pres <- rep('#000000', length(pres))
+names(my_pal_pres) <- names(pres)
+my_pal_pres[pres] <- my_pal[1:sum(pres)]
+my_pal_pres['OLM3'] <- my_pal[26]
+my_pal_pres['OLM3'] <- '#ffffaa'
+my_pal_pres['CGE_1'] <- '#ff00ff'
+my_pal_pres['CGE_11'] <- '#cc9900'
+temp <- my_pal_pres['CGE_3']
+my_pal_pres['CGE_3'] <- my_pal_pres['Lacunosum']
+my_pal_pres['Lacunosum'] <- temp
+p2 <- p2 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
 ggarrange(p2)
+```
+
+
+### Plot independently
+
+```{r fig.height = 16, fig.width = 16, fig.align = 'center'}
+new_levels <- levels(final_labels)
+new_levels[4] <- levels(final_labels)[22]
+new_levels[22] <- levels(final_labels)[4]
+p1 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(1,2,5,6,7,8,10)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p1 <- p1 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+p2 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(15,4,14,11,12,13)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p2 <- p2 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+
+p3 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(3,9,16,17,18,27)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p3 <- p3 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+p4 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(20,21,22,23,24,25,26,19)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p4 <- p4 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+
+
+ggarrange(p1,p2,p3,p4,nrow = 2, ncol = 2)
 ```
 
 

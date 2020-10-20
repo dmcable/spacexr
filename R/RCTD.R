@@ -1,5 +1,5 @@
 
-process_cell_type_info <- function(reference) {
+process_cell_type_info <- function(reference, cell_type_names) {
    print("Begin: process_cell_type_info")
    print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
    print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
@@ -8,7 +8,8 @@ process_cell_type_info <- function(reference) {
    CELL_MIN = 25 # need at least this for each cell type
    if(min(cell_counts) < CELL_MIN)
       stop(paste0("init_RCTD error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
-   cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
+   cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI
+                                        , cell_type_names = cell_type_names)
    print("End: process_cell_type_info")
    return(cell_type_info)
 }
@@ -26,18 +27,22 @@ process_cell_type_info <- function(reference) {
 #' @param max_cores for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for
 #' number of available cores.
 #' @param class_df (optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.
+#' @param cell_type_names A list of cell types to be included from the reference. If NULL, uses all cell types
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
 create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 200000,
-                         class_df = NULL) {
+                         class_df = NULL, cell_type_names = NULL) {
    config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, max_cores = max_cores,
-                 N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30, MIN_CHANGE_BULK = 0.0001, UMI_max = UMI_max, MIN_OBS = 3)
+                 N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30, MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, UMI_max = UMI_max, MIN_OBS = 3)
    if(test_mode)
-     config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_curoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,
-          N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1, UMI_max = 200000, MIN_OBS = 3, max_cores = 1)
-   cell_type_info <- list(info = process_cell_type_info(reference), renorm = NULL)
+     config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_cutoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,
+          N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1, MIN_CHANGE_REG = 0.001, UMI_max = 200000, MIN_OBS = 3, max_cores = 1)
+   if(is.null(cell_type_names))
+      cell_type_names <- levels(reference@meta.data$liger_ident_coarse)
+   cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names), renorm = NULL)
    puck = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    print('create.RCTD: getting regression differentially expressed genes: ')
+   #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
    gene_list_reg = get_de_genes(cell_type_info$info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
    print('create.RCTD: getting platform effect normalization differentially expressed genes: ')
    gene_list_bulk = get_de_genes(cell_type_info$info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
@@ -57,7 +62,7 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE,
 #' @param doublet_mode \code{logical} of whether RCTD should be run in doublet_mode.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 #' @export
-run.RCTD <- function(RCTD, doublet_mode = T) {
+run.RCTD <- function(RCTD, doublet_mode = "doublet") {
    RCTD <- fitBulk(RCTD)
    RCTD <- choose_sigma_c(RCTD)
    RCTD <- fitPixels(RCTD, doublet_mode = doublet_mode)

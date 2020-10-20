@@ -71,8 +71,14 @@ seurat.to.SpatialRNA <- function(reference, cell_type_info) {
       cell_type_names = cell_type_names, nUMI = nUMI, n_cell_type = n_cell_type)
 }
 
-
-#given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
+#' Restricts a SpatialRNA object to a subset of genes (and applies a UMI threshold)
+#'
+#' @param puck a \code{\linkS4class{SpatialRNA}} object
+#' @param gene_list a list of gene names
+#' @param UMI_thresh minimum UMI per pixel
+#' @param UMI_max maximum UMI per pixel
+#' @return Returns a \code{\linkS4class{SpatialRNA}} with counts filtered based on UMI threshold and gene list
+#' @export
 restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
   keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
   puck@counts = puck@counts[gene_list,keep_loc]
