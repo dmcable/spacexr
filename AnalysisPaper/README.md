@@ -99,4 +99,6 @@ and
 [post-processing](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/processNMF.R)
 in R. Supplemental figures were generated with the
 [supp.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp.Rmd)
+and
+[supp\_part2.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp_part2.Rmd)
 R markdown file.
