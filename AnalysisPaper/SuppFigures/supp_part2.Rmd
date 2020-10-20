@@ -167,63 +167,6 @@ p4<- ggplot(all_df, aes(x=Group.1*100,y=x, group = class, colour = class)) + geo
 ggarrange(p1,p2,p3,p4, nrow = 2, ncol = 2)
 ```
 # RCTD Cell Class Classification
-```{r fig-5, fig.height = 4, fig.width = 4, fig.align = 'center', eval = T}
-load('../../data/SpatialRNA/Puck_Viz/results/gathered_results.RData')
-class_df <- data.frame(iv$cell_type_info[[2]], row.names = iv$cell_type_info[[2]]); colnames(class_df)[1] = "class"
-class_df["Bergmann","class"] = "Astrocytes"
-class_df["Fibroblast","class"] = "Endothelial"
-class_df["MLI2","class"] = "MLI1"
-class_df["Macrophages","class"] = "Microglia"
-class_df["Polydendrocytes","class"] = "Oligodendrocytes"
-results_df <- results$results_df
-metadir <- "../../data/SpatialRNA/Puck_Viz/MetaData"
-meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
-meta_df <- meta_data$meta_df
-first_pred <- class_df[results_df$first_type,] == class_df[as.character(meta_df$first_type),] |
-  class_df[results_df$first_type,] == class_df[as.character(meta_df$second_type),]
-first_conf <- results_df$spot_class != 'reject'
-
-second_pred <- class_df[results_df$second_type,] == class_df[as.character(meta_df$first_type),] |
-  class_df[results_df$second_type,] == class_df[as.character(meta_df$second_type),]
-second_conf <- results_df$spot_class == 'doublet_certain'
-
-res_df <- data.frame(second_pred, meta_df$first_type, meta_df$second_type)[second_conf & 250 <= meta_df$first_UMI & meta_df$first_UMI <= 750,]
-sec_suc <- aggregate(. ~ meta_df.first_type + meta_df.second_type, res_df, sum)
-sec_tot <- aggregate(. ~ meta_df.first_type + meta_df.second_type, res_df, length)
-res_df <- data.frame(first_pred, meta_df$first_type, meta_df$second_type)[first_conf & 250 <= meta_df$first_UMI & meta_df$first_UMI <= 750,]
-fir_suc <- aggregate(. ~ meta_df.first_type + meta_df.second_type, res_df, sum)
-fir_tot <- aggregate(. ~ meta_df.first_type + meta_df.second_type, res_df, length)
-sec_suc$accuracy_mat <- (fir_suc$first_pred + sec_suc$second_pred) / (fir_tot$first_pred + sec_tot$second_pred)
-
-colnames(sec_suc) = c('Prediction','Reference','skip','value')
-sec_suc_tot <- rbind(sec_suc,sec_suc)
-sec_suc_tot$Prediction <- as.character(sec_suc_tot$Prediction)
-sec_suc_tot$Reference <- as.character(sec_suc_tot$Reference)
-sec_suc_tot$Prediction[67:132] <- sec_suc_tot$Reference[1:66]
-sec_suc_tot$Reference[67:132] <- sec_suc_tot$Prediction[1:66]
-square_results <- dcast(sec_suc_tot, formula = Reference ~ Prediction)
-print(mean(sec_suc_tot$value[1:66]))
-print(sd(sec_suc_tot$value[1:66]))
-
-rownames(square_results) <- square_results$Reference
-square_results$Reference <- NULL
-square_results[1,] <-colMeans(square_results[1:2,],na.rm=T)
-square_results[3,] <- colMeans(square_results[3:4,],na.rm=T)
-square_results[7,] <- colMeans(square_results[7:8,],na.rm=T)
-square_results[9,] <- colMeans(square_results[7:10,],na.rm=T)
-square_results <- square_results[c(1,3,5,6,7,9,11,12),]
-rownames(square_results)[1] <- "Astrocytes/Bergmann"
-rownames(square_results)[2] <- "Endo./Fibroblast"
-rownames(square_results)[5] <- "MLI"
-rownames(square_results)[6] <- "Oligoden./Polyden."
-data <- melt(as.matrix(square_results))
-colnames(data) = c('Prediction','Reference','value')
-mean(data$value,na.rm=T)
-#p2 <- ggplot(data, aes(Prediction, Reference, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.reds(20)[1:20], limits= c(0,1),name = "Identification Rate")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('First Cell Type')+ ylab('Second Cell Type')
-diverse_pal <- pals::kelly(13)[2:(13)]
-p2 <- ggplot(data, aes(Prediction, value, group=Reference, color = Reference))  +  geom_jitter(width = 0.3, size = 1) +theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Class 1')+ ylab('Cell Class Identification Rate') + scale_color_manual(values = diverse_pal, name = "Cell Type 2") + theme(axis.text=element_text(size=8)) + theme(axis.title=element_text(size=10))+ theme(legend.text=element_text(size=8),legend.spacing.x = unit(-0.1, 'cm'),legend.spacing.y = unit(-0.1, 'cm')) + guides(guide_legend(nrow=6,byrow=TRUE)) + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.0001,1.0001))+ theme(legend.position="top")
-ggarrange(p2)
-```
 
 ```{r fig-6.5, fig.height = 4, fig.width = 4, fig.align = 'center', eval = T}
 my_barc <- rownames(res_df)[res_df$meta_df.first_type == 'Bergmann' & res_df$meta_df.second_type == "Granule"]
