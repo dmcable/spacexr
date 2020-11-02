@@ -26,8 +26,8 @@ read.SpatialRNA <- function(datadir, count_file = "MappedDGEForR.csv") {
   #rownames(counts) = counts[,1]
   coords = tibble::column_to_rownames(coords, var = "barcodes")
   #rownames(coords) <- coords$barcodes
-  coords$barcodes <- NULL
-  counts = counts[,2:dim(counts)[2]]
+  #coords$barcodes <- NULL
+  #counts = counts[,2:dim(counts)[2]]
   puck = SpatialRNA(coords, as(as(counts,"matrix"),"dgCMatrix"))
   restrict_puck(puck, colnames(puck@counts))
 }

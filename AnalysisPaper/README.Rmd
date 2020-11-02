@@ -63,6 +63,8 @@ We provide R Markdown files that were used to create the main figures:
 * [Finding Astrocyte Genes Dependent on Cellular Colocalization](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-astrocytes.html) (Figure 6)
 * [Finding Spatially Variable Genes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html) (Figure 6)
 
+We have also provided [here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/Updated-Compatability) additional R Markdown files to update these analyses to be compatible with the current version of RCTD: 
+
 ### Supplemental Figures
 
 Prepocessing of the Visium dataset occured using [processVisium.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/processVisium.R). NMFreg on the Slide-seq cerebellum occurred using the NMFreg IPython notebook, and we did [pre-processing](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/prepareNMF.R) and [post-processing](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/processNMF.R) in R. Supplemental figures were generated with the [supp.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp.Rmd) and [supp_part2.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp_part2.Rmd) R markdown files.

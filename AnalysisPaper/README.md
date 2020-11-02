@@ -88,6 +88,11 @@ We provide R Markdown files that were used to create the main figures:
     Genes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html)
     (Figure 6)
 
+We have also provided
+[here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/Updated-Compatability)
+additional R Markdown files to update these analyses to be compatible
+with the current version of RCTD:
+
 ### Supplemental Figures
 
 Prepocessing of the Visium dataset occured using
@@ -101,4 +106,4 @@ in R. Supplemental figures were generated with the
 [supp.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp.Rmd)
 and
 [supp\_part2.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp_part2.Rmd)
-R markdown file.
+R markdown files.

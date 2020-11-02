@@ -4,7 +4,7 @@
 \alias{run.RCTD}
 \title{Runs the RCTD pipeline on a \code{\linkS4class{RCTD}} object}
 \usage{
-run.RCTD(RCTD, doublet_mode = T)
+run.RCTD(RCTD, doublet_mode = "doublet")
 }
 \arguments{
 \item{RCTD}{an \code{\linkS4class{RCTD}} object created using the \code{\link{create.RCTD}} function.}
