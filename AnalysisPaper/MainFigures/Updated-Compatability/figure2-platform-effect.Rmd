@@ -32,7 +32,6 @@ if(DropViz) {
   cell_type_info_unnorm <- myRCTD@cell_type_info$info
 }
 puck = myRCTD@spatialRNA
-iv <- init_RCTD(load_info_renorm = T) #initial variables
 if(DropViz) {
   common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
 } else {
