@@ -31,6 +31,27 @@ read.SpatialRNA <- function(datadir, count_file = "MappedDGEForR.csv") {
   restrict_puck(puck, colnames(puck@counts))
 }
 
+
+#' Creates a SpatialRNA object from a 10x Genomics Visium `outs` directory
+#'
+#' Given a SpatialRNA directory 10x Genomics Visium `outs` directory and returns a SpatialRNA object.
+#'
+#' @param datadir (string) full path to the 10x Genomics Visium `outs` directory
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
+#' from the input files
+#' @export
+read.VisiumSpatialRNA <- function (datadir) 
+{
+  coords <- readr::read_csv(file = paste(datadir, "spatial/tissue_positions_list.csv", 
+                                         sep = "/"), 
+                            col_names = c("barcodes", "in_tissue", "x", "y", "pxl_col_in_fullres", "pxl_row_in_fullres"))
+  coords = tibble::column_to_rownames(coords, var = "barcodes")
+  counts <- Seurat::Read10X_h5(paste0(datadir, "/filtered_feature_bc_matrix.h5"))
+  puck = SpatialRNA(coords, counts)
+  restrict_puck(puck, colnames(puck@counts))
+}
+
+
 save.SpatialRNA <- function(puck, save.folder) {
   dir.create(save.folder)
   write.csv(puck@coords, file.path(save.folder,'coords.csv'))
