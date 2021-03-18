@@ -1,14 +1,14 @@
 
 process_cell_type_info <- function(reference, cell_type_names) {
    print("Begin: process_cell_type_info")
-   print(paste("init_RCTD: number of cells in reference:", dim(reference@assays$RNA@counts)[2]))
-   print(paste("init_RCTD: number of genes in reference:", dim(reference@assays$RNA@counts)[1]))
-   cell_counts = table(reference@meta.data$liger_ident_coarse)
+   print(paste("process_cell_type_info: number of cells in reference:", dim(reference@counts)[2]))
+   print(paste("process_cell_type_info: number of genes in reference:", dim(reference@counts)[1]))
+   cell_counts = table(reference@cell_types)
    print(cell_counts)
    CELL_MIN = 25 # need at least this for each cell type
    if(min(cell_counts) < CELL_MIN)
-      stop(paste0("init_RCTD error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
-   cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI
+      stop(paste0("process_cell_type_info error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
+   cell_type_info <- get_cell_type_info(reference@counts, reference@cell_types, reference@nUMI
                                         , cell_type_names = cell_type_names)
    print("End: process_cell_type_info")
    return(cell_type_info)
@@ -38,7 +38,7 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE,
      config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_cutoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,
           N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1, MIN_CHANGE_REG = 0.001, UMI_max = 200000, MIN_OBS = 3, max_cores = 1)
    if(is.null(cell_type_names))
-      cell_type_names <- levels(reference@meta.data$liger_ident_coarse)
+      cell_type_names <- levels(reference@cell_types)
    cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names), renorm = NULL)
    puck = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    print('create.RCTD: getting regression differentially expressed genes: ')
@@ -58,11 +58,17 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE,
 #'
 #' Equivalent to sequentially running the functions \code{\link{fitBulk}}, \code{\link{choose_sigma_c}}, and \code{\link{fitPixels}}
 #'
+#' If in doublet mode, fits at most two cell types per pixel. It classifies each pixel as 'singlet' or 'doublet' and searches for the cell types
+#' on the pixel. If in full mode, can fit any number of cell types on each pixel. In multi mode, cell types are added using a greedy algorithm,
+#' up to a fixed number.
+#'
 #' @param RCTD an \code{\linkS4class{RCTD}} object created using the \code{\link{create.RCTD}} function.
-#' @param doublet_mode \code{logical} of whether RCTD should be run in doublet_mode.
+#' @param doublet_mode \code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 #' @export
 run.RCTD <- function(RCTD, doublet_mode = "doublet") {
+   if(!(doublet_mode %in% c('doublet','multi','full')))
+      stop(paste0("run.RCTD: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
    RCTD <- fitBulk(RCTD)
    RCTD <- choose_sigma_c(RCTD)
    RCTD <- fitPixels(RCTD, doublet_mode = doublet_mode)

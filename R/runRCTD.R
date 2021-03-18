@@ -120,10 +120,11 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
 #' Runs the RCTD algorithm
 #'
 #' If in doublet mode, fits at most two cell types per pixel. It classifies each pixel as 'singlet' or 'doublet' and searches for the cell types
-#' on the pixel. If in full mode, can fit any number of cell types on each pixel.
+#' on the pixel. If in full mode, can fit any number of cell types on each pixel. In multi mode, cell types are added using a greedy algorithm,
+#' up to a fixed number.
 #'
 #' @param RCTD an \code{\linkS4class{RCTD}} object after running the \code{\link{choose_sigma_c}} function.
-#' @param doublet_mode \code{logical} of whether RCTD should be run in doublet_mode.
+#' @param doublet_mode \code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 #' @export
 fitPixels <- function(RCTD, doublet_mode = "doublet") {
@@ -143,10 +144,12 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
       weights[i,] = results[[i]]$weights
     RCTD@results <- list(weights = weights)
     return(RCTD)
-  } else {
+  } else if(doublet_mode == "multi") {
     RCTD@results = process_beads_multi(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
                                   constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG)
     return(RCTD)
+  } else {
+    stop(paste0("fitPixels: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
   }
 }
 

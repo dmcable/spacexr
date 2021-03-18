@@ -319,6 +319,8 @@ plot_weights_doublet <- function(cell_type_names, puck, resultsdir, weights_doub
 #' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_doub_occur_stack <- function(doub_occur, resultsdir, cell_type_names) {
+  cell_type_names <- unlist(lapply(cell_type_names, function(x) paste0('celltype_',x)))
+  rownames(doub_occur) <- cell_type_names; colnames(doub_occur) <- cell_type_names;
   data <- reshape2::melt(doub_occur)
   colnames(data) = c('second_type','first_type','count')
   n_levels = length(cell_type_names)

@@ -12,7 +12,7 @@ An S4 class to represent Spatial Transcriptomic data
 \describe{
 \item{\code{coords}}{a dataframe with x and y coordinates of each pixel}
 
-\item{\code{counts}}{a dataframe of raw counts for each gene (rowname)
+\item{\code{counts}}{a sparse matrix of raw counts for each gene (rowname)
 and each pixel (colnames or barcodes)}
 
 \item{\code{n_cell_type}}{the number of cell types}
