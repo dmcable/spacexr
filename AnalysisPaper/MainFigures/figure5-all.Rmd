@@ -1,0 +1,216 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Spatially localizing 27 interneuron subtypes
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(Seurat)
+source('../../R/RCTD_helper.R')
+source('../../R/IRWLS.R')
+source('../../R/prob_model.R')
+```
+
+### Load in results of RCTD and select interneurons
+
+```{r inter}
+#given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
+restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
+  keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
+  puck@counts = puck@counts[gene_list,keep_loc]
+  if(length(puck@cell_labels) > 0) #check cell_labels non null
+    puck@cell_labels = puck@cell_labels[keep_loc]
+  puck@nUMI = puck@nUMI[keep_loc]
+  return(puck)
+}
+
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+#loading in that data:
+refdir = '../../Data/Reference/DropVizHC'
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+results_df <- results$results_df
+barcodes <- rownames(results_df)
+singlet_ind = results_df$first_type == "Interneuron" & results_df$spot_class == "singlet"
+singlet_barcodes <- barcodes[singlet_ind]
+doublet_barcodes <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"],
+                      barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"])
+doub_first <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"])
+doub_second <- barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"]
+second_type_list <- unlist(list(results_df[doub_first,]$second_type,results_df[doub_second,]$first_type))
+names(second_type_list) <- doublet_barcodes
+inter_barcodes <- c(singlet_barcodes, doublet_barcodes)
+
+Q_mat <- readRDS(file.path('../../Data/SpatialRNA/Puck_200115_08/results','Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = T
+
+puck <- readRDS('../../Data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+cell_type_info <- readRDS(file.path(refdir,'info_renorm_all.RDS'))
+gene_list <- intersect(rownames(cell_type_info[[1]]),rownames(puck@counts))
+puck <- restrict_puck(puck, names(which(puck@nUMI >= 100)))
+puck <- restrict_counts(puck, gene_list, UMI_max = 200000)
+```
+
+### Spatially cluster interneurons 
+
+```{r spatiallycluster}
+d <- dist(puck@coords[inter_barcodes,], method = "euclidean")
+hc1 <- hclust(d, method = "average")
+num_clusters = 200
+
+my_class <- as.factor(cutree(hc1,k=200))
+#manually split doublet spatial clusters
+library(plyr)
+relabel <- read.csv(file.path('../../Data/SpatialRNA/Puck_200115_08','cluster_relabels.csv'))
+for(i in unique(relabel$Cluster))
+  relabel[relabel$Cluster==i,"barcodes"] <- mapvalues(relabel[relabel$Cluster==i,]$Index,from = which(rownames(puck@coords) %in% inter_barcodes[my_class==i]), to=inter_barcodes[my_class==i])
+rownames(relabel) <- relabel$barcodes
+new_labels <- as.character(my_class)
+names(new_labels) <- names(my_class)
+new_labels[relabel$barcode] <- apply(relabel,1,function(x) paste(x[3],x[2],sep='_')) 
+new_labels <- as.factor(new_labels)
+new_labels <- mapvalues(new_labels, from = levels(new_labels), to = sample(1:length(levels(new_labels))))
+
+
+```
+
+### Compute the log likelihood of each subtype according to RCTD
+
+```{r data2, eval = FALSE}
+refdir <- '../../Data/Reference/DropVizHC'
+inter_names<- cell_type_info[[2]][17:43]
+log_l_thresh <- 10
+inter_df <- data.frame(best_type = factor(character(N),levels = inter_names), confident = logical(N), score_diff = numeric(N))
+rownames(inter_df) <- inter_barcodes
+i <- 1
+for(barcode in singlet_barcodes) {
+  print(i)
+  i <- i + 1
+  score_best <- 100000
+  score_second <- 100000
+  best_type <- NULL
+  for (type in inter_names) {
+    score <- get_singlet_score(cell_type_info, gene_list, puck@counts[gene_list,barcode], puck@nUMI[barcode], type, F)
+    if(score < score_best) {
+      score_second <- score_best
+      score_best <- score
+      best_type <- type
+    } else if(score < score_second) {
+      score_second <- score
+    }
+    inter_df[barcode,type] <- score
+  }
+  inter_df[barcode,"confident"] <- (score_second - score_best) > log_l_thresh
+  inter_df[barcode,"score_diff"] <- (score_second - score_best)
+  inter_df[barcode,"best_type"] <- best_type
+}
+
+for(barcode in doublet_barcodes) {
+  print(i)
+  i <- i + 1
+  score_best <- 100000
+  score_second <- 100000
+  best_type <- NULL
+  for (type in inter_names) {
+    score <- decompose_sparse(cell_type_info[[1]], gene_list, puck@nUMI[barcode], puck@counts[gene_list,barcode], type1=type, type2=as.character(second_type_list[barcode]), score_mode = T, constrain = F)
+    if(score < score_best) {
+      score_second <- score_best
+      score_best <- score
+      best_type <- type
+    } else if(score < score_second) {
+      score_second <- score
+    }
+    inter_df[barcode,type] <- score
+  }
+  inter_df[barcode,"confident"] <- (score_second - score_best) > log_l_thresh
+  inter_df[barcode,"score_diff"] <- (score_second - score_best)
+  inter_df[barcode,"best_type"] <- best_type
+}
+saveRDS(inter_df,'../../Data/SpatialRNA/Puck_200115_08/results/inter_df_all27.RDS')
+```
+
+### Compute joint likelihood of each spatial cluster
+
+```{r data3}
+
+inter_df <- readRDS('../../Data/SpatialRNA/Puck_200115_08/results/inter_df_all27.RDS')
+counter_barcodes <- barcodes[results_df$spot_class == "singlet" & results_df$first_type %in% c("CA1","CA3","Denate")]
+likelihoods <- inter_df[,4:30]
+inter_names<- cell_type_info[[2]][17:43]
+final_labels = factor(character(length(inter_barcodes)),levels = inter_names)
+names(final_labels) = inter_barcodes
+n_classes = length(levels(new_labels))
+conf_inter = inter_barcodes == 0
+for(i in(1:n_classes)) {
+  row_this <- colSums(likelihoods[inter_barcodes[new_labels==i],])
+  final_labels[inter_barcodes[new_labels==i]] <- names(which.min(row_this))
+  conf_inter[inter_barcodes[new_labels==i]] <- -(min(row_this) - row_this[order(row_this)[2]]) >= 10
+}
+```
+
+### Plot confident subtype classifications in space
+
+```{r fig.height = 6, fig.width = 8, fig.align = 'center'}
+new_levels <- levels(final_labels)
+new_levels[4] <- levels(final_labels)[22]
+new_levels[22] <- levels(final_labels)[4]
+p2 <- RCTD::plot_class(puck, names(conf_inter[conf_inter]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+
+my_pal <- cbind(c(240,163,255),c(0,117,220),c(153,63,0),c(76,0,92),c(25,25,25),c(0,92,49),c(43,206,72),c(255,204,153),c(128,128,128),c(148,255,181),c(143,124,0),c(157,204,0),c(194,0,136),c(0,51,128),c(255,164,5),c(255,168,187),c(66,102,0),c(255,0,16),c(94,241,242),c(0,153,143),c(224,255,102),c(116,10,255),c(153,0,0),c(255,255,128),c(255,255,0),c(255,80,5))
+my_pal <- apply(my_pal, 2, function (x) rgb(x[1],x[2],x[3],maxColorValue = 255))
+pres <- table(final_labels[names(conf_inter[conf_inter])]) > 0
+my_pal_pres <- rep('#000000', length(pres))
+names(my_pal_pres) <- names(pres)
+my_pal_pres[pres] <- my_pal[1:sum(pres)]
+my_pal_pres['OLM3'] <- my_pal[26]
+my_pal_pres['OLM3'] <- '#ffffaa'
+my_pal_pres['CGE_1'] <- '#ff00ff'
+my_pal_pres['CGE_11'] <- '#cc9900'
+temp <- my_pal_pres['CGE_3']
+my_pal_pres['CGE_3'] <- my_pal_pres['Lacunosum']
+my_pal_pres['Lacunosum'] <- temp
+p2 <- p2 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+ggarrange(p2)
+```
+
+
+### Plot independently
+
+```{r fig.height = 16, fig.width = 16, fig.align = 'center'}
+new_levels <- levels(final_labels)
+new_levels[4] <- levels(final_labels)[22]
+new_levels[22] <- levels(final_labels)[4]
+p1 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(1,2,5,6,7,8,10)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p1 <- p1 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+p2 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(15,4,14,11,12,13)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p2 <- p2 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+
+p3 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(3,9,16,17,18,27)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p3 <- p3 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+p4 <- RCTD::plot_class(puck, names(conf_inter[conf_inter][final_labels[names(conf_inter[conf_inter])] %in% levels(final_labels)[c(20,21,22,23,24,25,26,19)]]), factor(final_labels, new_levels), counter_barcodes = counter_barcodes)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position = c(0.74, 0.93))+theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm')) +geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + guides(color=guide_legend(ncol=5, title=""))
+p4 <- p4 + ggplot2::scale_color_manual("",values = my_pal_pres)
+
+
+
+ggarrange(p1,p2,p3,p4,nrow = 2, ncol = 2)
+```
+
+

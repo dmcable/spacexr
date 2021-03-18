@@ -1,0 +1,286 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# RCTD on the Hippocampus and spatially localizing three interneuron subclasses
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(Seurat)
+source('../../R/RCTD_helper.R')
+source('../../R/IRWLS.R')
+source('../../R/prob_model.R')
+```
+
+### Load in results of RCTD and select interneurons
+
+```{r inter}
+#given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
+restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
+  keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
+  puck@counts = puck@counts[gene_list,keep_loc]
+  if(length(puck@cell_labels) > 0) #check cell_labels non null
+    puck@cell_labels = puck@cell_labels[keep_loc]
+  puck@nUMI = puck@nUMI[keep_loc]
+  return(puck)
+}
+
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+#loading in that data:
+refdir = '../../Data/Reference/DropVizHC'
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+results_df <- results$results_df
+barcodes <- rownames(results_df)
+singlet_ind = results_df$first_type == "Interneuron" & results_df$spot_class == "singlet"
+singlet_barcodes <- barcodes[singlet_ind]
+doublet_barcodes <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"],
+                      barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"])
+doub_first <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"])
+doub_second <- barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"]
+second_type_list <- unlist(list(results_df[doub_first,]$second_type,results_df[doub_second,]$first_type))
+names(second_type_list) <- doublet_barcodes
+inter_barcodes <- c(singlet_barcodes, doublet_barcodes)
+
+puck <- readRDS('../../Data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+cell_type_info <- readRDS(file.path(refdir,'info_renorm_coarse.RDS'))
+gene_list <- intersect(rownames(cell_type_info[[1]]),rownames(puck@counts))
+puck <- restrict_puck(puck, names(which(puck@nUMI >= 100)))
+puck <- restrict_counts(puck, gene_list, UMI_max = 200000)
+
+Q_mat <- readRDS(file.path('../../Data/SpatialRNA/Puck_200115_08/results','Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = T
+```
+
+### Run RCTD on interneurons to classify into 3 interneuron subtypes
+
+```{r data, eval = F}
+refdir <- '../../Data/Reference/DropVizHC'
+inter_names<- c("Basket_OLM" ,'CGE',  "Neurogliaform_Lacunosum")
+log_l_thresh <- 10
+singlet_ind = results_df$first_type == "Interneuron" & results_df$spot_class == "singlet"
+singlet_barcodes <- barcodes[singlet_ind]
+doublet_barcodes <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"],
+                      barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"])
+doub_first <- c(barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_certain"], barcodes[results_df$first_type == "Interneuron" & results_df$spot_class == "doublet_uncertain"])
+doub_second <- barcodes[results_df$second_type == "Interneuron" & results_df$spot_class == "doublet_certain"]
+second_type_list <- unlist(list(results_df[doub_first,]$second_type,results_df[doub_second,]$first_type))
+names(second_type_list) <- doublet_barcodes
+inter_barcodes <- c(singlet_barcodes, doublet_barcodes)
+N = length(inter_barcodes)
+inter_df <- data.frame(best_type = factor(character(N),levels = inter_names), confident = logical(N), score_diff = numeric(N))
+rownames(inter_df) <- inter_barcodes
+i <- 1
+for(barcode in singlet_barcodes) {
+  print(i)
+  i <- i + 1
+  score_best <- 100000
+  score_second <- 100000
+  best_type <- NULL
+  for (type in inter_names) {
+    score <- get_singlet_score(cell_type_info, gene_list, puck@counts[gene_list,barcode], puck@nUMI[barcode], type, F)
+    if(score < score_best) {
+      score_second <- score_best
+      score_best <- score
+      best_type <- type
+    } else if(score < score_second) {
+      score_second <- score
+    }
+    inter_df[barcode,type] <- score
+  }
+  inter_df[barcode,"confident"] <- (score_second - score_best) > log_l_thresh
+  inter_df[barcode,"score_diff"] <- (score_second - score_best)
+  inter_df[barcode,"best_type"] <- best_type
+}
+
+for(barcode in doublet_barcodes) {
+  print(i)
+  i <- i + 1
+  score_best <- 100000
+  score_second <- 100000
+  best_type <- NULL
+  for (type in inter_names) {
+    score <- decompose_sparse(cell_type_info[[1]], gene_list, puck@nUMI[barcode], puck@counts[gene_list,barcode], type1=type, type2=as.character(second_type_list[barcode]), score_mode = T, constrain = F)
+    if(score < score_best) {
+      score_second <- score_best
+      score_best <- score
+      best_type <- type
+    } else if(score < score_second) {
+      score_second <- score
+    }
+    inter_df[barcode,type] <- score
+  }
+  inter_df[barcode,"confident"] <- (score_second - score_best) > log_l_thresh
+  inter_df[barcode,"score_diff"] <- (score_second - score_best)
+  inter_df[barcode,"best_type"] <- best_type
+}
+```
+
+### Plot the confident classification results in space
+
+```{r fig.height = 6, fig.width = 8, fig.align = 'center', eval = F}
+my_pal <- c("#D55E00","#9E0073", "#0072B2")
+conf_inter <- inter_df$confident
+barcodes_cur <- inter_barcodes[conf_inter]
+new_class <- inter_df$best_type
+names(new_class) <- inter_barcodes
+counter_barcodes <- barcodes[results_df$spot_class == "singlet" & results_df$first_type %in% c("CA1","CA3","Denate")]
+p3 <- plot_class(puck, barcodes_cur, new_class, counter_barcodes = counter_barcodes) + ggplot2::scale_color_manual("",values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+ 
+  scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + theme(legend.position="top") +theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm'))+geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+ggarrange(p3)
+```
+
+### Spatially cluster interneurons and compute rate of agreement of subclass classifications
+
+```{r spatiallycluster, eval = F}
+d <- dist(puck@coords[inter_barcodes,], method = "euclidean")
+hc1 <- hclust(d, method = "average")
+num_clusters = 200
+
+my_class <- as.factor(cutree(hc1,k=200))
+#manually split doublet spatial clusters
+library(plyr)
+relabel <- read.csv(file.path('../../Data/SpatialRNA/Puck_200115_08','cluster_relabels.csv'))
+for(i in unique(relabel$Cluster))
+  relabel[relabel$Cluster==i,"barcodes"] <- mapvalues(relabel[relabel$Cluster==i,]$Index,from = which(rownames(puck@coords) %in% inter_barcodes[my_class==i]), to=inter_barcodes[my_class==i])
+rownames(relabel) <- relabel$barcodes
+new_labels <- as.character(my_class)
+names(new_labels) <- names(my_class)
+new_labels[relabel$barcode] <- apply(relabel,1,function(x) paste(x[3],x[2],sep='_')) 
+new_labels <- as.factor(new_labels)
+new_labels <- mapvalues(new_labels, from = levels(new_labels), to = sample(1:length(levels(new_labels))))
+
+total = 0
+agree = 0
+total_sq = 0
+for(i in levels(new_labels)) {
+  these_barcodes = which(new_labels == i & conf_inter)
+  if(length(these_barcodes) >= 2) {
+    total_sq = total_sq + (length(these_barcodes)*(length(these_barcodes)-1)/2)^2
+    total = total + length(these_barcodes)*(length(these_barcodes)-1)/2
+    agree = agree + sum(unlist(lapply(table(new_class[these_barcodes]),function(x) x*(x-1)/2)))
+  }
+}
+correct = agree / total
+paste("Within cluster agreement: ", correct) # 0.971
+std_cor = ((agree / total) - (agree / total)^2)*(total_sq/(total^2))
+paste("Std dev: ", std_cor) # 0.009
+```
+
+### Compare to Sst gene for reference
+
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+MULT = 500
+cur_range = c(0,MULT*0.003)
+p4 <-plot_puck_continuous(puck,inter_barcodes,MULT*puck@counts["Sst",inter_barcodes]/puck@nUMI[inter_barcodes],counter_barcodes = counter_barcodes,ylimit=cur_range)
+p4 <- my_mod(p4)+ggplot2::scale_colour_gradientn(paste("Sst Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+ggarrange(p4)
+
+```
+
+### Plot all hippocampal cell types
+
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+barcodes = rownames(results_df[results_df$spot_class != "reject" & puck@nUMI >= 200,])
+my_table = puck@coords[barcodes,]
+my_table$class = results_df[barcodes,]$first_type
+n_levels = iv$cell_type_info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = iv$cell_type_info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Ependymal"] <- "#D55E00"
+my_pal_curr["Interneuron"] <- "#E69F00"
+my_pal_curr["CA1"] <- "#56B4E9"
+my_pal_curr["Denate"] <- "#009E73"
+my_pal_curr["Oligodendrocyte"] <- "#EFCB00"
+my_pal_curr["CA3"] <- "#0072B2"
+my_pal_curr["Microglia_Macrophages"] <- "#000000"
+my_pal_curr["Astrocyte"] <- "#CC79A7"
+my_pal_curr["Choroid"] <- my_pal["Oligodendrocyte"]
+my_pal_curr["Entorihinal"] <- my_pal["CA3"]
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p1 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .05, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres],breaks = c('Astrocyte','Denate','Interneuron','Oligodendrocyte','Microglia_Macrophages','Ependymal','CA1','CA3'), labels = c('Astrocyte','Dentate','Interneuron','Oligo','Microglia','Ependymal','CA1','CA3'))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+ theme(legend.position="top") +theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm'))
+p1 <- my_mod(p1)
+
+ggarrange(p1)
+```
+
+### Find marker genes
+
+```{r markers, eval=FALSE}
+
+get_marker_data <- function(cell_type_names, cell_type_means, gene_list) {
+  marker_means = cell_type_means[gene_list,]
+  marker_norm = marker_means / rowSums(marker_means)
+  marker_data = as.data.frame(cell_type_names[max.col(marker_means)])
+  marker_data$max_epr <- apply(cell_type_means[gene_list,],1,max)
+  colnames(marker_data) = c("cell_type",'max_epr')
+  rownames(marker_data) = gene_list
+  marker_data$log_fc <- 0
+  epsilon <- 1e-9
+  for(cell_type in unique(marker_data$cell_type)) {
+    cur_genes <- gene_list[marker_data$cell_type == cell_type]
+    other_mean = rowMeans(cell_type_means[cur_genes,cell_type_names != cell_type])
+    marker_data$log_fc[marker_data$cell_type == cell_type] <- log(epsilon + cell_type_means[cur_genes,cell_type]) - log(epsilon + other_mean)
+  }
+  return(marker_data)
+}
+
+iv <- init_RCTD(load_info_renorm = T)
+cur_cell_types <- c("Astrocyte","CA1","CA3","Denate","Interneuron","Neurogenesis","Oligodendrocyte")
+puck <- readRDS('../../data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+reference <- readRDS('../../data/Reference/DropVizHC/scRefSubsampled1000.RDS')
+myRCTD <- create.RCTD(puck, reference)
+cell_type_info_restr = myRCTD@cell_type_info$info
+cell_type_info_restr[[1]] = cell_type_info_restr[[1]][,cur_cell_types]
+cell_type_info_restr[[2]] = cur_cell_types; cell_type_info_restr[[3]] = length(cur_cell_types)
+
+de_genes <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 3, expr_thresh = .0001, MIN_OBS = 3)
+#de_genes_spec <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 4, expr_thresh = .0001, MIN_OBS = 3)
+marker_data_de = get_marker_data(cell_type_info_restr[[2]], cell_type_info_restr[[1]], de_genes)
+saveRDS(marker_data_de, '../../data/SpatialRNA/Puck_200115_08/results/marker_data_de_standard.RDS')
+```
+
+### Plot interneurons (by RCTD) and interneuron markers
+
+```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+MULT <- 500
+my_pal = pals::brewer.blues(20)[2:20]
+cell_type = "Interneuron"
+marker_data_de <- readRDS('../../Data/SpatialRNA/Puck_200115_08/results/marker_data_de_standard.RDS')
+cur_range <- c(0,0.010*MULT)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
+p7 <- RCTD::plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = .4, alpha = 1, small_point = T)
+p7 <- my_mod(p7)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cur_range <- c(0,1)
+all_weights <- results$weights_doublet[puck@nUMI >= 300 & results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, results$weights_doublet[puck@nUMI >= 100 & !(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p8 <- RCTD::plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range, size = .6, alpha = 1, small_point = T)
+p8 <- my_mod(p8)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+ggarrange(p7,p8,nrow=1,ncol=2)
+```

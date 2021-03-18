@@ -1,0 +1,74 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Platform Effect Prediction (between single-nucleus and single-cell RNA-seq)
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(readr)
+library(Seurat)
+```
+
+### Load in RCTD results on cross-platform normalization
+
+```{r setupdata}
+DropViz <- T
+iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz, load_info = F)
+if(DropViz) {
+  proportions = iv$proportions
+  cell_type_info_unnorm <- iv$cell_type_info
+}
+puck = iv$puck
+iv <- init_RCTD(load_info_renorm = T) #initial variables
+if(DropViz) {
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+} else {
+  common_cell_types <- iv$cell_type_info[[2]]
+}
+```
+
+### Compute true and predicted (by RCTD) platform effects
+
+```{r start}
+#platform effect analysis
+true_proportions <- proportions * 0
+true_proportions[common_cell_types] = 1
+true_proportions = true_proportions / sum(true_proportions)
+gene_means <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% true_proportions
+bulk_vec = rowSums(puck@counts);
+total_UMI <- sum(puck@nUMI)
+true_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means,2)
+
+gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][iv$gene_list,]) %*% proportions / sum(proportions)
+pred_platform_effect = log(bulk_vec[iv$gene_list] / total_UMI,2) -log(gene_means_unnorm_pred,2)
+R2 = cor(true_platform_effect, pred_platform_effect)^2
+print(R2) # 0.899
+platform_df <- data.frame(estimated_platform_effect = pred_platform_effect,true_platform_effect=true_platform_effect)
+
+sig_pe <- c(sd(pred_platform_effect)*log(2), sd(true_platform_effect)*log(2))
+names(sig_pe) <- c('sigma_pe_est','sigma_pe_true')
+```
+
+### Density plot of platform effects, and plot of true vs predicted platform effects
+
+```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+R2 = 0.90
+p1 <-ggplot(platform_df, aes(x=true_platform_effect)) + geom_density() + theme_classic() + xlab('Log Ratio of Gene Expression by Platform')+ylab('Density of Genes') + scale_x_continuous(breaks = c(-5,0,5), limits = c(-8,5)) + scale_y_continuous(breaks = c(0,.1,.2))
+#hist(platform_df$true_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+p2 <- ggplot(platform_df,aes(x=true_platform_effect,y=estimated_platform_effect)) + geom_point(alpha = 0.1, size=0.75) + geom_line(aes(x=true_platform_effect,y=true_platform_effect)) + theme_classic() + xlab('Measured Platform Effect with Known Cell Types') + ylab('Estimated Platform Effect of RCTD with Unknown Cell Types') + theme(axis.text=element_text(size=8),axis.title=element_text(size=9))
+  
+ggarrange(p1, p2, nrow = 1)
+```

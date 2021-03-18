@@ -45,10 +45,10 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_names) {
 #' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_all_cell_types <- function(results_df, coords, cell_type_names, resultsdir) {
-  barcodes = rownames(results_df[results_df$spot_class != "reject",])
+  barcodes = rownames(results_df[results_df$spot_class != "reject" & results_df$first_type %in% cell_type_names,])
   my_table = coords[barcodes,]
   my_table$class = results_df[barcodes,]$first_type
-  n_levels = length(cell_type_names)
+  n_levels = length(levels(my_table$class))
   my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
   pres = unique(as.integer(my_table$class))
   pres = pres[order(pres)]
@@ -319,6 +319,8 @@ plot_weights_doublet <- function(cell_type_names, puck, resultsdir, weights_doub
 #' @return returns \code{\link{ggplot2}} object
 #' @export
 plot_doub_occur_stack <- function(doub_occur, resultsdir, cell_type_names) {
+  cell_type_names <- unlist(lapply(cell_type_names, function(x) paste0('celltype_',x)))
+  rownames(doub_occur) <- cell_type_names; colnames(doub_occur) <- cell_type_names;
   data <- reshape2::melt(doub_occur)
   colnames(data) = c('second_type','first_type','count')
   n_levels = length(cell_type_names)

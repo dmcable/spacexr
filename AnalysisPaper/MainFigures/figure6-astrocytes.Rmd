@@ -1,0 +1,221 @@
+---
+output:  
+  html_document:
+    keep_md: yes
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T)
+```
+
+# Finding Astrocyte Genes Dependent on Cellular Colocalization
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(dplyr)
+library(fields)
+library(tidyr)
+```
+
+## Plotting Astrocyte Doublets
+
+```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+#loading in that data:
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+n_levels = iv$cell_type_info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = iv$cell_type_info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Ependymal"] <- "#D55E00"
+my_pal_curr["Interneuron"] <- "#E69F00"
+my_pal_curr["CA1"] <- "#56B4E9"
+my_pal_curr["Denate"] <- "#009E73"
+my_pal_curr["Oligodendrocyte"] <- "#EFCB00"
+my_pal_curr["CA3"] <- "#0072B2"
+my_pal_curr["Microglia_Macrophages"] <- "#000000"
+my_pal_curr["Astrocyte"] <- "#CC79A7"
+my_pal_curr["Choroid"] <- my_pal["Oligodendrocyte"]
+my_pal_curr["Entorihinal"] <- my_pal["CA3"]
+cell_type = "Astrocyte"
+doublets <- results$results_df[results$results_df$spot_class == "doublet_certain",]
+doublets_type = doublets[doublets$first_type == cell_type | doublets$second_type == cell_type,]
+barcodes = rownames(doublets_type)
+my_table = iv$puck@coords[barcodes,]
+my_table$class = doublets_type$first_type
+my_table2 = iv$puck@coords[barcodes,]
+my_table2$class = doublets_type$second_type
+my_table = rbind(my_table, my_table2)
+my_table = my_table[my_table$class != cell_type,]
+n_levels = iv$cell_type_info[[3]]
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .05, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres],breaks = c('Endothelial_Tip','Denate','Interneuron','Oligodendrocyte','Microglia_Macrophages','Endothelial_Stalk','CA1','CA3'), labels = c('Endo_Tip','Dentate','Interneuron','Oligo','Microglia','Endo_Stalk','CA1','CA3'))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+  theme(legend.position="top") +theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm'))
+
+p2 <- my_mod(p2)
+
+ggarrange(p2)
+```
+
+## Finding Astrocyte genes that depend on cellular environment
+
+```{r fig-6, fig.height = 4, fig.width = 4, fig.align = 'center'}
+results_df <- results$results_df
+ast_gene_list <- rownames(iv$cell_type_info[[1]])
+cell_type_list_not <- c("CA1","CA3","Oligodendrocyte","Denate","Interneuron")
+ast_gene_list <- names(which(log(iv$cell_type_info[[1]][ast_gene_list,"Astrocyte"]/apply(iv$cell_type_info[[1]][ast_gene_list,cell_type_list_not],1,max)) >= 1.6))
+ast_gene_list <- ast_gene_list[which(iv$cell_type_info[[1]][ast_gene_list,"Astrocyte"] > 2e-5)]
+non_reject <- results_df$spot_class != "reject"
+loc_df <- cbind(results_df[non_reject, "first_type"], iv$puck@coords[non_reject, c('x','y')])
+doub_ind <- results_df$spot_class == "doublet_certain"
+loc_df2 <- cbind(results_df[doub_ind, "second_type"], iv$puck@coords[doub_ind, c('x','y')])
+colnames(loc_df) = c('cell_type','x','y'); colnames(loc_df2) = c('cell_type','x','y')
+loc_df <- rbind(loc_df, loc_df2)
+conversion <- .65
+D_vec_microns = 40
+D_vec = D_vec_microns / conversion
+D = D_vec
+
+mat <- rdist(loc_df[,c('x','y')])
+mat_ind = mat <= D
+xcoord <- floor((which(mat_ind)-1)/dim(loc_df)[1]) + 1
+ycoord <- (which(mat_ind)-1) %% dim(loc_df)[1] + 1
+small_df <- data.frame(xcoord, ycoord, mat[mat_ind])
+colnames(small_df) = c('ind1', 'ind2', 'dist')
+small_df$type1 <- loc_df[small_df$ind1,"cell_type"]
+small_df$type2 <- loc_df[small_df$ind2,"cell_type"]
+neighbors <- as.data.frame((small_df %>% group_by(ind1, type2) %>% summarise(count = n())) %>% pivot_wider(id_cols = ind1, names_from = type2, values_from=count))
+neighbors[is.na(neighbors)] <- 0
+my_map <- c(which(results_df[non_reject,]$spot_class == "doublet_certain"),tail((1:dim(loc_df)[1]),sum(results_df$spot_class == "doublet_certain")),which(results_df[non_reject,]$spot_class == "singlet"))
+my_neigh <- neighbors[my_map,]
+rownames(my_neigh) <- colnames(puck_d@counts)
+my_neigh$ind1 <- NULL
+ast_neigh <- my_neigh[puck_d@cell_labels=="Astrocyte",]
+ast_prop <- sweep(ast_neigh, 1, rowSums(ast_neigh),'/')
+cutoff <- 0.25
+max_type <- apply(ast_prop,1, function(x) colnames(ast_prop)[which.max(x[2:17])+1])
+
+cell_type_list <- c("CA1","CA3","Astrocyte","Oligodendrocyte","Denate","Interneuron")
+cell_type="Oligodendrocyte"
+gene_mean_mat <- Matrix(0,nrow = length(ast_gene_list), ncol = length(cell_type_list))
+gene_sd_mat <- Matrix(0,nrow = length(ast_gene_list), ncol = length(cell_type_list))
+rownames(gene_mean_mat) = ast_gene_list; colnames(gene_mean_mat) = cell_type_list
+rownames(gene_sd_mat) = ast_gene_list; colnames(gene_sd_mat) = cell_type_list
+norm_counts <- sweep(puck_d@counts, 2, puck_d@nUMI, '/')
+for(cell_type in cell_type_list) {
+  if(cell_type == "Astrocyte")
+    my_ind <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+  else
+    my_ind <- rownames(ast_prop)[ast_prop[,cell_type] > 0.25 & max_type == cell_type]
+  gene_mean_mat[,cell_type] <- rowMeans(norm_counts[ast_gene_list,my_ind])
+  gene_sd_mat[,cell_type] <- apply(norm_counts[ast_gene_list,my_ind],1,sd)/sqrt(length(my_ind))
+  #plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,],title=cell_type,ylimit = c(0,1e-2))
+  #plot_puck_continuous(puck_d,my_ind, puck_d@counts[gene,]*puck_d@nUMI,title=cell_type,ylimit = c(0,1))
+}
+Z = abs(gene_mean_mat - gene_mean_mat[,"Astrocyte"])/(sqrt(gene_sd_mat^2 + gene_sd_mat[,"Astrocyte"]^2))
+log_fc <- log(apply(gene_mean_mat,1,max)/apply(gene_mean_mat,1,mean),2)
+inds <- apply(Z,1,which.max)
+Z_val <- numeric(length(log_fc))
+names(Z_val) <- names(log_fc)
+for(gene in names(log_fc))
+  Z_val[gene] <- Z[gene,inds[gene]]
+genes_found <- names(which((log_fc >= 0.6) & (Z_val > 1.96)))
+p_val <- 2 - 2*pnorm(Z_val[genes_found])
+
+ast_gene_list <- c('Slc7a10','Pantr1','Slc6a11','Kcnj16','Entpd2') 
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+cur_cell_types = list('Slc7a10' = c('CA1','CA3','Denate'), 'Pantr1' = 'CA1', 'Slc6a11' = c('CA1','CA3','Denate'), 'Kcnj16' = c('CA1','CA3','Denate'), 'Entpd2' = 'Denate')
+results <- Matrix(0, nrow = length(ast_gene_list), ncol = 4)
+rownames(results) = ast_gene_list
+colnames(results) = c('m1','s1', 'm2', 's2')
+for(gene in ast_gene_list) {
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind_2 <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  results[gene,'m1'] = mean(norm_counts[gene,my_ind_1])
+  results[gene,'s1'] = sd(norm_counts[gene,my_ind_1]) / sqrt(length(my_ind_1))
+  results[gene,'m2'] = mean(norm_counts[gene,my_ind_2])
+  results[gene,'s2'] = sd(norm_counts[gene,my_ind_2]) / sqrt(length(my_ind_2))
+}
+results <- data.frame(results)
+results["Pantr1",] <- results["Pantr1",] / 5
+plot_df <- rbind(results[,1:2],setNames(results[,3:4], names(results[,1:2])))
+plot_df$class = c(rep(1,5), rep(2,5))
+gene_fact <- factor(ast_gene_list)
+new_levels = levels(gene_fact)
+new_levels[3] = levels(gene_fact)[5]
+new_levels[5] = levels(gene_fact)[3]
+gene_fact <- factor(c(ast_gene_list),new_levels)
+plot_df$gene <- unlist(list(gene_fact,gene_fact))
+plot_df$env <- c("Other Astrocytes","Other Astrocytes","Other Astrocytes","Other Astrocytes","Other Astrocytes",'Excitatory Neurons',"CA1", 'Excitatory Neurons','Excitatory Neurons','Dentate')
+MULT <- 500
+plot_df$m1 <- plot_df$m1 * MULT
+plot_df$s1 <- plot_df$s1 * MULT
+results <- data.frame(results)
+Z_calc <- (results$m2 - results$m1) / (sqrt(results$s1^2 + results$s2^2))
+p_calc <- 2 - 2*pnorm(Z_calc)
+names(p_calc) <- ast_gene_list
+p_val[names(p_calc)] <- p_calc
+write.csv(data.frame(p_val), file = "Results/Astrocytes.csv")
+
+p1 <- ggplot(plot_df, aes(x=gene,y=m1, group = class, color = env)) + geom_point()+geom_errorbar(aes(ymin=m1-s1, ymax=m1 + s1), width=.02,position=position_dodge(.001))+scale_y_continuous("Normalized Expression",sec.axis = sec_axis(~.*5, name="Pantr1 Expression")) +theme_classic()+ scale_color_manual(values=c("#0072B2","#D55E00","#009E73",'#000000' ), name = "Cellular Environment") + 
+   xlab("Gene") + ylab("Normalized Expression") +  theme(legend.position = "top") + geom_vline(xintercept=4.5, linetype="dashed", color = "black", size=0.5) + guides(color=guide_legend(nrow=2))
+
+
+ggarrange(p1,nrow=1)
+```
+
+## Visualizing the Slc6a11 gene, expressed in astrocytes localized near excitatory neurons
+
+```{r fig-7, fig.height = 4, fig.width = 4, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks =c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+my_ind_1 <- rownames(ast_prop)[ast_prop[,"Astrocyte"] > 0.8]
+cur_cell_types = list('Pantr1' = 'CA1', 'Slc6a11' = c('CA1','CA3','Denate'), 'Kcnj16' = c('CA1','CA3','Denate'), 'Entpd2' = 'Denate')
+p3 <- list()
+p2 <- list()
+p1 <- list()
+for(ind in c(3,5)) {
+  gene <- ast_gene_list[ind]
+  max_col = ast_prop[,cur_cell_types[[gene]]]
+  if(length(cur_cell_types[[gene]]) > 1)
+    max_col = apply(max_col,1,max)
+  my_ind <- rownames(ast_prop)[max_col > 0.25 & max_type %in% cur_cell_types[[gene]]]
+  
+  my_class <- rep(0,length(rownames(ast_prop)))
+  names(my_class) <- rownames(ast_prop)
+  my_class[names(which(norm_counts[gene,my_ind] < .001))] <- 1
+  my_class[names(which(norm_counts[gene,my_ind] >= .001))] <- 3
+  my_class[names(which(norm_counts[gene,my_ind_1] < .001))] <- 2
+  my_class[names(which(norm_counts[gene,my_ind_1] >= .001))] <- 4
+  my_barc <- names(my_class[my_class > 0])
+  p3[[ind]] <- plot_class(puck_d, my_barc[order(my_class[my_barc])], factor(my_class)) 
+  p3[[ind]] <- my_mod(p3[[ind]]) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))
+  #p3[[ind]] <- my_mod(p3[[ind]]) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#009E73","#009E73"))
+  cur_range <- c(0,.001)
+  p2[[ind]] <- plot_puck_continuous(puck_d,my_ind, norm_counts[gene,],ylimit = cur_range)
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+  p1[[ind]] <- plot_puck_continuous(puck_d,my_ind_1,norm_counts[gene,],ylimit = cur_range)
+  p1[[ind]] <- my_mod(p1[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Expression"), colors = pals::kovesi.rainbow(20), limits = cur_range, breaks = cur_range)
+}
+ggarrange(p3[[3]])
+```
+
+## Visualizing the Entpd2 gene, expressed in astrocytes localized near dentate cells
+
+```{r fig-8, fig.height = 4, fig.width = 4, fig.align = 'center'}
+ggarrange(p3[[5]])
+```

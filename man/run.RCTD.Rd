@@ -4,16 +4,21 @@
 \alias{run.RCTD}
 \title{Runs the RCTD pipeline on a \code{\linkS4class{RCTD}} object}
 \usage{
-run.RCTD(RCTD, doublet_mode = T)
+run.RCTD(RCTD, doublet_mode = "doublet")
 }
 \arguments{
 \item{RCTD}{an \code{\linkS4class{RCTD}} object created using the \code{\link{create.RCTD}} function.}
 
-\item{doublet_mode}{\code{logical} of whether RCTD should be run in doublet_mode.}
+\item{doublet_mode}{\code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 }
 \description{
 Equivalent to sequentially running the functions \code{\link{fitBulk}}, \code{\link{choose_sigma_c}}, and \code{\link{fitPixels}}
+}
+\details{
+If in doublet mode, fits at most two cell types per pixel. It classifies each pixel as 'singlet' or 'doublet' and searches for the cell types
+on the pixel. If in full mode, can fit any number of cell types on each pixel. In multi mode, cell types are added using a greedy algorithm,
+up to a fixed number.
 }

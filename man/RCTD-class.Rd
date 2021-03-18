@@ -12,7 +12,7 @@ Created using the \code{\link{create.RCTD}} function, a user can run RCTD using 
 \describe{
 \item{\code{spatialRNA}}{a \code{\linkS4class{SpatialRNA}} object containing the Spatial RNA dataset to be processed}
 
-\item{\code{reference}}{a Seurat object containing the annotated single cell reference}
+\item{\code{reference}}{a \code{\linkS4class{Reference}} object containing the cell type-labeled single cell reference}
 
 \item{\code{config}}{a list of configuration options, set using the \code{\link{create.RCTD}} function}
 

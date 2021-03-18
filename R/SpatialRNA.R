@@ -1,42 +1,4 @@
 
-
-#' Creates a SpatialRNA object from a directory
-#'
-#' Given a SpatialRNA directory folder with 2 files: \code{BeadLocationsForR.csv} and \code{MappedDGEForR.csv}.
-#' and returns a SpatialRNA object.
-#'
-#' @section Input file format (contained in datadir):
-#' \enumerate{
-#' \item \code{BeadLocationsForR.csv} # a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations
-#' of the pixels.
-#' \item \code{MappedDGEForR.csv} # a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel.
-#' }
-#'
-#' @param datadir (string) the directory of the SpatialRNA dataset
-#' @param count_file (optional, string) the file location for the DGE
-#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
-#' from the input files
-#' @export
-read.SpatialRNA <- function(datadir, count_file = "MappedDGEForR.csv") {
-  coords <- readr::read_csv(file = paste(datadir,"BeadLocationsForR.csv",sep="/"))
-  counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
-  colnames(coords)[2] = 'x' #renaming xcoord -> x
-  colnames(coords)[3] = 'y' #renaming ycoord -> y
-  counts = tibble::column_to_rownames(counts, var = colnames(counts)[1])
-  #rownames(counts) = counts[,1]
-  coords = tibble::column_to_rownames(coords, var = "barcodes")
-  #rownames(coords) <- coords$barcodes
-  coords$barcodes <- NULL
-  puck = SpatialRNA(coords, as(as(counts,"matrix"),"dgCMatrix"))
-  restrict_puck(puck, colnames(puck@counts))
-}
-
-save.SpatialRNA <- function(puck, save.folder) {
-  dir.create(save.folder)
-  write.csv(puck@coords, file.path(save.folder,'coords.csv'))
-  white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
-}
-
 fake_coords <- function(counts) {
   coords <- data.frame(Matrix(0,nrow=dim(counts)[2],ncol=2))
   colnames(coords) <- c('x','y')
@@ -44,39 +6,128 @@ fake_coords <- function(counts) {
   return(coords)
 }
 
-#constructor of SpatialRNA object
-SpatialRNA <- function(coords = NULL, counts, nUMI = NULL) {
-  if(is.null(coords)) {
-    coords <- fake_coords(counts)
-  }
+#' constructor of SpatialRNA object
+#' @param counts A matrix (or dgCmatrix) representing Digital Gene Expression (DGE). Rownames should be genes
+#' and colnames represent barcodes/pixel names.
+#' @param coords A data.frame (or matrix) representing the spatial pixel locations. rownames are barcodes/pixel names,
+#' and there should be two columns for 'x' and for 'y'.
+#' @param nUMI Optional, a named (by pixel barcode) list of total counts or UMI's appearing at each pixel. If not provided,
+#' nUMI will be assumed to be the total counts appearing on each pixel.
+#' @param use_fake_coords logical, FALSE by default. If true, the 'coords' parameter will be ignored, and replaced with a placeholder
+#' coords matrix.
+#'
+#' Counts should be untransformed count-level data
+#'
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
+#' from the input files
+#' @export
+
+SpatialRNA <- function(coords, counts, nUMI = NULL, use_fake_coords = FALSE) {
+  counts <- check_counts(counts, 'SpatialRNA')
+  if(use_fake_coords)
+    coords <- use_fake_coords(counts)
+  else
+    coords <- check_coords(coords)
   if(is.null(nUMI)) {
     nUMI = colSums(counts)
+    names(nUMI) <- colnames(counts)
+  } else {
+    check_UMI(nUMI, 'SpatialRNA')
   }
-  names(nUMI) <- colnames(counts)
-  new("SpatialRNA", coords = coords, counts = counts, nUMI = nUMI)
+  barcodes <- intersect(intersect(names(nUMI), rownames(coords)), colnames(counts))
+  if(length(barcodes) == 0)
+    stop('SpatialRNA: coords, counts, and nUMI do not share any barcode names. Please ensure that rownames(coords)
+         matches colnames(counts) and names(nUMI)')
+  if(length(barcodes) < max(length(nUMI),dim(coords)[1],dim(counts)[2]))
+    warning('SpatialRNA: some barcodes in nUMI, coords, or counts were not mutually shared. Such barcodes were removed.')
+  if(sum(nUMI[barcodes] != colSums(counts[,barcodes])) > 0)
+    warning('SpatialRNA: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this
+            is intended, there is no problem.')
+  new("SpatialRNA", coords = coords[barcodes,], counts = counts[,barcodes], nUMI = nUMI[barcodes])
 }
 
-#Use the seurat object to create a 'fake' SpatialRNA object
-seurat.to.SpatialRNA <- function(reference, cell_type_info) {
-  cell_labels = reference@meta.data$liger_ident_coarse
-  nUMI = reference@meta.data$nUMI
-  counts = reference@assays$RNA@counts
-  names(nUMI) = colnames(counts)
-  names(cell_labels) = colnames(counts)
-  cell_type_names = cell_type_info[[2]]
-  n_cell_type = cell_type_info[[3]]
-  coords <- fake_coords(counts)
-  new("SpatialRNA", coords = coords, counts = counts, cell_labels = cell_labels,
-      cell_type_names = cell_type_names, nUMI = nUMI, n_cell_type = n_cell_type)
+check_UMI <- function(nUMI, f_name, require_2d = F) {
+  if(!is.atomic(nUMI))
+    stop(paste0(f_name,': nUMI is not an atomic vector. Please format nUMI as an atomic vector.'))
+  if(!is.numeric(nUMI))
+    stop(paste0(f_name,': nUMI is not numeric'))
+  if(max(abs(nUMI %% 1)) > 1e-6)
+    stop(paste0(f_name,': nUMI does not contain integers'))
+  if(is.null(names(nUMI)))
+    stop(paste0(f_name,': names(nUMI) is null. Please enter barcodes as names'))
+  if(length(nUMI) == 1)
+    if(require_2d)
+      stop(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. Please format nUMI so that
+           the length is greater than 1.'))
+    else
+      warning(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. If this is unintended,
+        please format nUMI so that the length is greater than 1.'))
+}
+
+check_counts <- function(counts, f_name, require_2d = F) {
+  if(class(counts) != 'dgCMatrix') {
+    if(class(counts) != 'matrix')
+      tryCatch({
+        counts <- as(counts,'matrix')
+      }, error = function(e) {
+        stop(paste0(f_name,': could not convert counts to matrix using as(counts,\'matrix\'). Please check that
+             counts is coercible to matrix, such as a matrix, dgCmatrix, or data.frame.'))
+      })
+    counts <- as(counts,"dgCMatrix")
+  }
+  if(dim(counts)[1] == 1) #check more than one gene
+    stop(paste0(f_name,': the first dimension of counts is 1, indicating only one gene present. Please format counts so that
+           the first dimension is greater than 1.'))
+  if(dim(counts)[2] == 1)
+    if(require_2d)
+      stop(paste0(f_name,': the second dimension of counts is 1, indicating only one cell present. Please format counts so that
+           the second dimension is greater than 1.'))
+    else
+      warning(paste0(f_name,': the second dimension of counts is 1, indicating only one cell/pixel present. If this is unintended,
+        please format counts so that the second dimension is greater than 1.'))
+  if(!is.numeric(counts[1,1]))
+    stop(paste0(f_name,': elements of counts are not numeric'))
+  if(max(abs(counts %% 1)) > 1e-6)
+    stop(paste0(f_name,': counts does not contain integers'))
+  if(is.null(rownames(counts)))
+    stop(paste0(f_name,': rownames(counts) is null. Please enter gene names as rownames'))
+  if(is.null(colnames(counts)))
+    stop(paste0(f_name,': colnames(counts) is null. Please enter barcodes as colnames'))
+  return(counts)
+}
+
+check_coords <- function(coords) {
+  if(class(coords) != 'data.frame') {
+    tryCatch({
+      coords <- as(coords,'data.frame')
+    }, error = function(e) {
+      stop('SpatialRNA: could not convert coords to data.frame using as(coords,\'data.frame\'). Please check that
+           coords is coercible to data.frame, such as a matrix or data.frame .')
+    })
+  }
+  if(dim(coords)[2] != 2) #check more than one gene
+    stop('SpatialRNA: the second dimension of coords is not 2. Please enforce that dim(coords)[2] == 2 (x and y coordinates).')
+  colnames(coords) <- c('x','y')
+  if(!(is.numeric(coords$x) & is.numeric(coords$y)))
+    stop('SpatialRNA: coords is not numeric')
+  if(is.null(rownames(coords)))
+    stop('SpatialRNA: rownames(coords) is null. Please enter barcodes as rownames')
+  return(coords)
 }
 
 
-#given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
+
+#' Restricts a SpatialRNA object to a subset of genes (and applies a UMI threshold)
+#'
+#' @param puck a \code{\linkS4class{SpatialRNA}} object
+#' @param gene_list a list of gene names
+#' @param UMI_thresh minimum UMI per pixel
+#' @param UMI_max maximum UMI per pixel
+#' @return Returns a \code{\linkS4class{SpatialRNA}} with counts filtered based on UMI threshold and gene list
+#' @export
 restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
   keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
   puck@counts = puck@counts[gene_list,keep_loc]
-  if(length(puck@cell_labels) > 0) #check cell_labels non null
-    puck@cell_labels = puck@cell_labels[keep_loc]
   puck@nUMI = puck@nUMI[keep_loc]
   return(puck)
 }
@@ -93,48 +144,15 @@ restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
 restrict_puck <- function(puck, barcodes) {
   barcodes = intersect(colnames(puck@counts), barcodes)
   puck@counts = puck@counts[,barcodes]
-  if(length(puck@cell_labels) > 0) #check cell_labels non null
-    puck@cell_labels = puck@cell_labels[barcodes]
   puck@nUMI = puck@nUMI[barcodes]
   puck@coords = puck@coords[barcodes,]
   return(puck)
 }
 
-#given a dataframe with points consecutively, crops the points left (from perspective of first point) those lines
-crop_puck_line <- function(puck, line_dat) {
-  keep_loc = puck@coords$x == puck@coords$x
-  for(i in 1:(dim(line_dat)[1]/2)) {
-    y1 = line_dat$Y[2*i - 1]
-    x1 = line_dat$X[2*i - 1]
-    y2 = line_dat$Y[2*i]
-    x2 = line_dat$X[2*i]
-    keep_loc = keep_loc & ((puck@coords$y - y1)*(x2-x1) > (puck@coords$x - x1) * (y2-y1))
-  }
-  return (restrict_puck(puck, rownames(puck@coords[keep_loc,])))
-}
-
-
-split_puck <- function(puck, SpatialRNAdir, n_folds) {
-  splitdir <- file.path(SpatialRNAdir, "SplitPuck")
-  if(!dir.exists(splitdir))
-    dir.create(splitdir)
-  splitresdir <- file.path(SpatialRNAdir, "SplitPuckResults")
-  if(!dir.exists(splitresdir))
-    dir.create(splitresdir)
-  do.call(file.remove, list(list.files(splitdir, full.names = TRUE)))
-  do.call(file.remove, list(list.files(splitresdir, full.names = TRUE)))
-  barcodes <- colnames(puck@counts)
-  N <- length(barcodes)
-  for (i in 1:n_folds) {
-    puck_fold <- restrict_puck(puck, barcodes[(round((i-1)*N/n_folds) + 1):round(i*N/n_folds)])
-    saveRDS(puck_fold, file.path(splitdir, paste0("puck",i,".RDS")))
-  }
-}
 
 #coerces an old SpatialRNA object
 coerce_old <- function(puck) {
-  new("SpatialRNA", coords = puck@coords, counts = puck@counts, cell_labels = puck@cell_labels,
-      cell_type_names = puck@cell_type_names, nUMI = puck@nUMI, n_cell_type = puck@n_cell_type)
+  new("SpatialRNA", coords = puck@coords, counts = puck@counts, nUMI = puck@nUMI)
 }
 
 

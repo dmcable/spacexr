@@ -1,0 +1,214 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# RCTD on the Slide-seq cerebellum
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+```
+
+### Find Marker Genes
+
+```{r markers, eval = FALSE}
+get_marker_data <- function(cell_type_names, cell_type_means, gene_list) {
+  marker_means = cell_type_means[gene_list,]
+  marker_norm = marker_means / rowSums(marker_means)
+  marker_data = as.data.frame(cell_type_names[max.col(marker_means)])
+  marker_data$max_epr <- apply(cell_type_means[gene_list,],1,max)
+  colnames(marker_data) = c("cell_type",'max_epr')
+  rownames(marker_data) = gene_list
+  marker_data$log_fc <- 0
+  epsilon <- 1e-9
+  for(cell_type in unique(marker_data$cell_type)) {
+    cur_genes <- gene_list[marker_data$cell_type == cell_type]
+    other_mean = rowMeans(cell_type_means[cur_genes,cell_type_names != cell_type])
+    marker_data$log_fc[marker_data$cell_type == cell_type] <- log(epsilon + cell_type_means[cur_genes,cell_type]) - log(epsilon + other_mean)
+  }
+  return(marker_data)
+}
+
+myRCTD <- readRDS('../../myRCTD_cer.rds')
+cur_cell_types <- c("Bergmann","Granule","Purkinje","MLI1","Oligodendrocytes")
+puck <- myRCTD@spatialRNA
+cell_type_info_restr = myRCTD@cell_type_info$info
+cell_type_info_restr[[1]] = cell_type_info_restr[[1]][,cur_cell_types]
+cell_type_info_restr[[2]] = cur_cell_types; cell_type_info_restr[[3]] = length(cur_cell_types)
+
+de_genes <- get_de_genes(cell_type_info_restr, puck, fc_thresh = 3, expr_thresh = .0001, MIN_OBS = 3)
+marker_data_de = get_marker_data(cell_type_info_restr[[2]], cell_type_info_restr[[1]], de_genes)
+saveRDS(marker_data_de, '../../Data/SpatialRNA/NewCerPuck_190926_08/results/marker_data_de_standard.RDS')
+```
+
+### Plot results of RCTD (all cell types)
+
+```{r fig.height = 6, fig.width = 6, fig.align = 'center'}
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+#loading in that data:
+load(file = '../../Data/SpatialRNA/NewCerPuck_190926_08/results/gathered_results.RData')
+results_df <- results$results_df
+weights_doublet <- results$weights_doublet
+puck <- iv$puck
+marker_data_de <- readRDS('../../Data/SpatialRNA/NewCerPuck_190926_08/results/marker_data_de_standard.RDS')
+barcodes = rownames(results_df[results_df$spot_class != "reject" & puck@nUMI >= 100,])
+my_table = puck@coords[barcodes,]
+my_table$class = results_df[barcodes,]$first_type
+n_levels = iv$cell_type_info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = iv$cell_type_info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Oligodendrocytes"] <- "#CC79A7"
+my_pal_curr["MLI1"] <- "#E69F00"
+my_pal_curr["Astrocytes"] <- "#56B4E9"
+my_pal_curr["Granule"] <- "#009E73"
+my_pal_curr["MLI2"] <- "#F0E442"
+my_pal_curr["Bergmann"] <- "#0072B2"
+my_pal_curr["Purkinje"] <- "#D55E00"
+my_pal_curr["Golgi"] <- "#000000"
+my_pal_curr["Endothelial"] <- my_pal["Oligodendrocytes"]
+my_pal_curr["Ependymal"] <- my_pal["Purkinje"]
+my_pal_curr["Lugaro"] <- my_pal["MLI2"]
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p1 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .1, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres], breaks = c('Astrocytes','Bergmann','Granule','Purkinje','MLI2','Oligodendrocytes','MLI1'), labels = c('Astrocytes','Bergmann','Granule','Purkinje','MLI2','Oligo','MLI1'))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ 
+  scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+ggarrange(p1)
+```
+
+### Plot Granule, Oligo, and MLI1 RCTD cell type calls, and marker genes
+
+```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ theme(legend.position="top") + geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+}
+
+cell_type = "Granule"
+MULT <- 500
+cur_range <- c(0,MULT*0.03)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
+p1 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200],MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+p1 <- my_mod(p1) +ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+  
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p2 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Oligodendrocytes"
+cur_range <- c(0,MULT*0.05)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
+p3 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste("Oligo","Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p4 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p4 <- my_mod(p4)+ggplot2::scale_colour_gradientn(paste("Oligo","Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "MLI1"
+cur_range <- c(0,MULT*0.015)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
+p5 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+p5 <- my_mod(p5)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p6 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p6 <- my_mod(p6)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
+```
+
+### Plot Doublet co-occurance frequency (called by RCTD)
+
+```{r fig.height = 4, fig.width = 4, fig.align = 'center'}
+doublets <- results$results_df[results$results_df$spot_class == "doublet_certain",]
+doub_occur <- table(doublets$second_type, doublets$first_type)
+rest_cell <- c("MLI1",   "MLI2", "Purkinje","Bergmann", "Granule", "Oligodendrocytes")
+doub_chart <- doub_occur[rest_cell, rest_cell]
+diag(doub_chart) <- 0.5 * table(results_df[results_df$spot_class == "singlet","first_type"])[rest_cell]
+doub_chart["MLI1",] <- doub_chart["MLI1",] + doub_chart["MLI2",]
+doub_chart[,"MLI1"] <- doub_chart[,"MLI1"] + doub_chart[,"MLI2"]
+doub_chart <- doub_chart[-2,-2]
+doub_chart <- doub_chart[c('MLI1','Bergmann','Purkinje','Granule','Oligodendrocytes'),c('MLI1','Bergmann','Purkinje','Granule','Oligodendrocytes')]
+doub_chart <- doub_chart + t(doub_chart)
+doub_chart <- log(doub_chart,2)
+doub_chart[doub_chart < 1] <- 1
+doub_chart[doub_chart > log(100,2)] <- log(100,2)
+rownames(doub_chart)[5] = "Oligo"; colnames(doub_chart)[5] = "Oligo"
+colnames(doub_chart)[1] <- "MLI"; rownames(doub_chart)[1] <- "MLI"
+data <- melt(as.matrix(doub_chart))
+colnames(data) = c('Prediction','Reference','value')
+p4 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Log Doublet Count", labels = c(1,6),breaks = c(1,6))+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Type 1')+ ylab('Cell Type 2')+ theme(legend.position="top")
+ggarrange(p4)
+```
+
+### Plot Bergmann and Purkinje singlets and doublet (called by RCTD) in marker gene space
+
+```{r fig.height = 4, fig.width = 8, fig.align = 'center'}
+load(file = '../../Data/SpatialRNA/NewCerPuck_190926_08/results/gathered_results.RData')
+results_df <- results$results_df
+weights_doublet <- results$weights_doublet
+puck <- iv$puck
+marker_data_de <- readRDS('../../Data/SpatialRNA/NewCerPuck_190926_08/results/marker_data_de_standard.RDS')
+#marker_data_de <- readRDS('../../Data/SpatialRNA/NewCerPuck_190926_08/results/marker_data_de_purkberg.RDS')
+berg_genes <- intersect(rownames(marker_data_de)[marker_data_de$cell_type == "Bergmann"], rownames(puck@counts))
+purk_genes <- intersect(rownames(marker_data_de)[marker_data_de$cell_type == "Purkinje"], rownames(puck@counts))
+my_ind = results_df$spot_class=="singlet" & results_df$first_type == "Purkinje"
+plot_df <- data.frame(colSums(puck@counts[berg_genes, my_ind]) / puck@nUMI[my_ind], colSums(puck@counts[purk_genes, my_ind]) / puck@nUMI[my_ind])
+colnames(plot_df) = c('Bergmann','Purkinje')
+plot_df$type = "Purkinje"
+plot_df_final <- plot_df[puck@nUMI[my_ind] >= 300,]
+my_ind = results_df$spot_class=="singlet" & results_df$first_type == "Bergmann"
+plot_df <- data.frame(colSums(puck@counts[berg_genes, my_ind]) / puck@nUMI[my_ind], colSums(puck@counts[purk_genes, my_ind]) / puck@nUMI[my_ind])
+colnames(plot_df) = c('Bergmann','Purkinje')
+plot_df$type = "Bergmann"
+plot_df_final <- rbind(plot_df_final, plot_df[puck@nUMI[my_ind] >= 300,])
+MULT <- 500
+plot_df_final$Bergmann <- MULT * plot_df_final$Bergmann
+plot_df_final$Purkinje <- MULT * plot_df_final$Purkinje
+my_pal = pals::coolwarm(20)
+#ggplot2::ggplot(plot_df_final) + ggplot2::geom_point(aes(x=berg,y=purk, color = type),alpha = 0.2,size=3) + coord_fixed()
+p1 <- ggplot2::ggplot(plot_df_final) + 
+  ggplot2::geom_point(ggplot2::aes(x=Bergmann,y=Purkinje, color = type),alpha = 0.2,size=1) + 
+  ggplot2::coord_fixed() + ggplot2::theme_classic() + ggplot2::scale_x_continuous(breaks = c(0,30,60), limits = c(0,60)) + scale_y_continuous(breaks = c(0,20,40), limits = c(0,40)) +
+  labs(color="Cell Type") + guides(color = guide_legend(override.aes = list(size = 3,alpha=1))) +
+  scale_color_manual(values=c(my_pal[1], my_pal[20]))+ theme(legend.position="top")+ xlab('Bergmann Markers') + ylab('Purkinje Markers')
+
+my_ind = results_df$spot_class == "doublet_certain" & results_df$first_type == "Purkinje" & results_df$second_type == "Bergmann" & puck@nUMI > 300
+plot_df <- data.frame(colSums(puck@counts[berg_genes, my_ind]) / puck@nUMI[my_ind], colSums(puck@counts[purk_genes, my_ind]) / puck@nUMI[my_ind])
+colnames(plot_df) = c('Bergmann','Purkinje')
+plot_df$weight <- weights_doublet[my_ind,1]
+plot_df_final <- plot_df
+my_ind = results_df$spot_class == "doublet_certain" & results_df$first_type == "Bergmann" & results_df$second_type == "Purkinje" & puck@nUMI > 300
+plot_df <- data.frame(colSums(puck@counts[berg_genes, my_ind]) / puck@nUMI[my_ind], colSums(puck@counts[purk_genes, my_ind]) / puck@nUMI[my_ind])
+colnames(plot_df) = c('Bergmann','Purkinje')
+plot_df$weight <- weights_doublet[my_ind,2]
+plot_df_final <- rbind(plot_df_final,plot_df)
+plot_df_final$Bergmann <- MULT * plot_df_final$Bergmann
+plot_df_final$Purkinje <- MULT * plot_df_final$Purkinje
+p2 <- ggplot2::ggplot(plot_df_final) + ggplot2::geom_point(ggplot2::aes(x=Bergmann,y=Purkinje, color = weight),alpha = 1,size=1) +  coord_fixed() + ggplot2::scale_colour_gradientn(colors = my_pal, limits = c(0,1)) + theme_classic() + labs(color="Cell Type") + guides(color = guide_legend(override.aes = list(size = 3,alpha=1)))+ theme(legend.position="top")+ scale_x_continuous(breaks = c(0,30,60), limits = c(0,60)) + scale_y_continuous(breaks = c(0,20,40), limits = c(0,40))+ xlab('Bergmann Markers') + ylab('Purkinje Markers')
+
+ggarrange(p1, p2, nrow = 1)
+
+```

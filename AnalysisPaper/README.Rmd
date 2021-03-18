@@ -1,0 +1,70 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# Robust decomposition of cell type mixtures in spatial transcriptomics
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+Here, we will explain how the analysis occured for our paper 'Robust decomposition of cell type mixtures in spatial transcriptomics',
+which introduces and validates the RCTD R package. You may access the RCTD open-source R package [here](https://github.com/dmcable/RCTD).
+
+### Obtaining Data
+
+The data generated and/or used in this study may be accessed at the [Broad Institute's Single Cell Portal](https://singlecell.broadinstitute.org/single_cell/study/SCP948). This repository contains 
+both the Slide-seq datasets used in this study, and the single-cell RNA-sequencing references.
+
+### Pre-processing
+
+For each single-cell dataset, we generated a Seurat object and saved as an RDS file. For example, the script
+[dropSeqProcess.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/dropSeqProcess.R) is used to
+convert the hippocampus single-cell dataset to a Seurat object.
+
+To obtain a simulated doublet dataset from each of the single-cell and single-nucleus references, we ran the script
+[doubletsimulation.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/doubletsimulation.R).
+
+To cluster interneuron subtypes into three subtype classes, we ran the script [subcluster.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/subcluster.R). This script additionally 
+creates a Seurat object for the interneuron subtypes and computes average cell type profiles.
+
+### Running RCTD
+
+For each dataset, RCTD was run according to the instructions for the [RCTD package](https://github.com/dmcable/RCTD). Configuration
+files used are located in [conf](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/conf). Specifically, 'datasetCerPuck.yml' was
+used for the Cerebellum Slide-seq dataset, 'datasetHippoPuck.yml' was used for the hippocampus Slide-seq dataset, 'datasetCross.yml' was used 
+for the simulated Cerebellum doublet dataset, and 'datasetInterneuronCoarse.yml' and 'datasetHippoInterneuron.yml' were used for running RCTD on
+interneruon subtypes.
+
+On the simulated doublets dataset, in addition to running RCTD with the typical pipeline, the script [weightDecompose.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/weightDecompose.R) was used to evaluate RCTD's ability to predict
+cell type proportion.
+
+### Generating Main Figures
+
+We provide R Markdown files that were used to create the main figures:
+
+* [Unsupervised clustering on the Slide-seq cerebellum](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure1.html) (Figure 1)
+* [Platform Effect Prediction](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure2-platform-effect.html) (Figure 1,2)
+* [Comparison of Ordinary Least Squares and RCTD](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure2.html) (Figure 1,2)
+* [Validation of RCTD on decomposition of simulated doublets](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure3.html) (Figure 3)
+* [RCTD on the Slide-seq cerebellum](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure4.html) (Figure 4)
+* [Spatially localizing 27 interneuron subtypes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure5-all.html) (Figure 5)
+* [RCTD on the Hippocampus and spatially localizing three interneuron subclasses](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure5-interneurons.html) (Figure 5)
+* [Finding Astrocyte Genes Dependent on Cellular Colocalization](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-astrocytes.html) (Figure 6)
+* [Finding Spatially Variable Genes](https://raw.githack.com/dmcable/RCTD/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html) (Figure 6)
+
+We have also provided [here](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/MainFigures/Updated-Compatability) additional R Markdown files to update these analyses to be compatible with the current version of RCTD: 
+
+### Supplemental Figures
+
+Prepocessing of the Visium dataset occured using [processVisium.R](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/processVisium.R). NMFreg on the Slide-seq cerebellum occurred using the NMFreg IPython notebook, and we did [pre-processing](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/prepareNMF.R) and [post-processing](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/Rscripts/processNMF.R) in R. Supplemental figures were generated with the [supp.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp.Rmd) and [supp_part2.Rmd](https://github.com/dmcable/RCTD/tree/dev/AnalysisPaper/SuppFigures/supp_part2.Rmd) R markdown files.
