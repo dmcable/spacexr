@@ -1,0 +1,192 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Comparison of Ordinary Least Squares and RCTD
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(readr)
+library(Seurat)
+```
+
+### Ordinary Least Squares prediction cross platform (single nucleus to single cell)
+
+```{r start, eval = FALSE}
+DropViz <- T
+iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz, load_info = F)
+if(DropViz) {
+  proportions = iv$proportions
+  cell_type_info_unnorm <- iv$cell_type_info
+}
+puck = iv$puck
+iv <- init_RCTD(load_info_renorm = T) #initial variables
+if(DropViz) {
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+} else {
+  common_cell_types <- iv$cell_type_info[[2]]
+}
+resultsdir <- paste0(iv$slideseqdir,"/results")
+metadir <- file.path(iv$slideseqdir,"MetaData")
+meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
+meta_df <- meta_data$meta_df
+Q_mat <- readRDS(file.path(resultsdir,'Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = T
+
+my_barc <- c(rownames(meta_df[meta_df$first_UMI == 0,]),rownames(meta_df[meta_df$first_UMI == 1000,])) #c(0,1000)
+true_names <- c(as.character(meta_df[rownames(meta_df[meta_df$first_UMI == 0,]), "second_type"]),as.character(meta_df[rownames(meta_df[meta_df$first_UMI == 1000,]), "first_type"]))
+names(true_names) <- my_barc
+puck <- restrict_puck(puck, my_barc)
+puck@cell_labels <- factor(true_names, levels = iv$cell_type_info[[2]])
+#puck_sm <- restrict_puck(puck, rownames(meta_df[meta_df$first_UMI == 0,]))
+#Figure 2A: OLS Prediction works on Training data, but not cross-reference
+test_results = process_data(puck, iv$gene_list, cell_type_info_unnorm, proportions = NULL, trust_model = F, constrain = F, OLS = T)
+#scratch
+cell_type_lev = factor(1:iv$cell_type_info[[3]])
+cell_type_map = data.frame(cindex = 1:iv$cell_type_info[[3]], row.names = iv$cell_type_info[[2]])
+pred_labels = test_results[[3]]
+true_labels = lapply(puck@cell_labels, function(x) cell_type_map[as.character(x),"cindex"])
+true_labels = as.integer(puck@cell_labels[as.character(colnames(puck@counts))])
+conf_mat = caret::confusionMatrix(factor(pred_labels,cell_type_lev),factor(true_labels,cell_type_lev))
+norm_conf = sweep(conf_mat$table, 2, colSums(conf_mat$table), '/')
+rownames(norm_conf) <- iv$cell_type_info[[2]]; colnames(norm_conf) <- iv$cell_type_info[[2]]
+#end
+library(reshape2)
+data <- melt(norm_conf[,common_cell_types])
+saveRDS(data,file="../Plotting/Results/cross_confusion.RDS")
+```
+
+### Ordinary Least Squares prediction within reference (single nucleus RNA-seq)
+
+```{r start2, eval = FALSE}
+DropViz <- F
+iv <- init_RCTD(gene_list_reg = F, get_proportions = DropViz, load_info = F)
+if(DropViz) {
+  proportions = iv$proportions
+  cell_type_info_unnorm <- iv$cell_type_info
+}
+puck = iv$puck
+iv <- init_RCTD(load_info_renorm = T) #initial variables
+if(DropViz) {
+  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+} else {
+  common_cell_types <- iv$cell_type_info[[2]]
+}
+resultsdir <- paste0(iv$slideseqdir,"/results")
+metadir <- file.path(iv$slideseqdir,"MetaData")
+meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
+meta_df <- meta_data$meta_df
+Q_mat <- readRDS(file.path(resultsdir,'Q_mat.RDS'))
+N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
+K_val = dim(Q_mat)[1] - 3; use_Q = T
+
+my_barc <- c(rownames(meta_df[meta_df$first_UMI == 0,]),rownames(meta_df[meta_df$first_UMI == 1000,])) #c(0,1000)
+true_names <- c(as.character(meta_df[rownames(meta_df[meta_df$first_UMI == 0,]), "second_type"]),as.character(meta_df[rownames(meta_df[meta_df$first_UMI == 1000,]), "first_type"]))
+names(true_names) <- my_barc
+puck <- restrict_puck(puck, my_barc)
+puck@cell_labels <- factor(true_names, levels = iv$cell_type_info[[2]])
+#puck_sm <- restrict_puck(puck, rownames(meta_df[meta_df$first_UMI == 0,]))
+#Figure 2A: OLS Prediction works on Training data, but not cross-reference
+test_results = process_data(puck, iv$gene_list, cell_type_info_unnorm, proportions = NULL, trust_model = F, constrain = F, OLS = T)
+#scratch
+cell_type_lev = factor(1:iv$cell_type_info[[3]])
+cell_type_map = data.frame(cindex = 1:iv$cell_type_info[[3]], row.names = iv$cell_type_info[[2]])
+pred_labels = test_results[[3]]
+true_labels = lapply(puck@cell_labels, function(x) cell_type_map[as.character(x),"cindex"])
+true_labels = as.integer(puck@cell_labels[as.character(colnames(puck@counts))])
+conf_mat = caret::confusionMatrix(factor(pred_labels,cell_type_lev),factor(true_labels,cell_type_lev))
+norm_conf = sweep(conf_mat$table, 2, colSums(conf_mat$table), '/')
+rownames(norm_conf) <- iv$cell_type_info[[2]]; colnames(norm_conf) <- iv$cell_type_info[[2]]
+#end
+library(reshape2)
+data <- melt(norm_conf[,common_cell_types])
+saveRDS(data,file="../Plotting/Results/ref_confusion.RDS")
+```
+
+### RCTD prediction cross platform (single nucleus to single cell)
+
+```{r start3}
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_Viz/results/gathered_results.RData')
+#loading in that data:
+refdir = '../../Data/Reference/DropVizHC'
+load('../../Data/SpatialRNA/Puck_Viz/results/gathered_results.RData')
+results_df <- results$results_df
+metadir <- file.path(paste0('../../','Data/SpatialRNA/Puck_Viz'),"MetaData")
+meta_data <- readRDS(file.path(metadir,"meta_data.RDS"))
+meta_df <- meta_data$meta_df
+UMI_tot <- meta_data$UMI_tot; UMI_list <- meta_data$UMI_list
+
+get_class_df <- function(cell_type_names, use_classes = F) {
+  class_df = data.frame(cell_type_names, row.names = cell_type_names)
+  colnames(class_df)[1] = "class"
+  if(use_classes) {
+    class_df["Bergmann","class"] = "Astrocytes"
+    class_df["Fibroblast","class"] = "Endothelial"
+    class_df["MLI2","class"] = "MLI1"
+    class_df["Macrophages","class"] = "Microglia"
+    class_df["Polydendrocytes","class"] = "Oligodendrocytes"
+  }
+  return(class_df)
+}
+cell_type_names <- iv$cell_type_info[[2]]
+class_df <- get_class_df(cell_type_names, use_classes = T)
+
+resultsdir = file.path(iv$slideseqdir, "results")
+
+#next make the confusion matrix
+true_types = unlist(list(meta_df[meta_df$first_UMI == 0,"second_type"], meta_df[meta_df$first_UMI == UMI_tot,"first_type"]))
+pred_types = unlist(list(results_df[meta_df$first_UMI == 0, "first_type"], results_df[meta_df$first_UMI == UMI_tot, "first_type"]))
+conf_mat <- caret::confusionMatrix(pred_types,factor(true_types,levels = iv$cell_type_info[[2]]))
+conf_mat_RCTD <- conf_mat$table
+```
+
+### Visualizing the results as confusion matrices for OLS within reference, OLS cross platform, and RCTD cross platform
+
+```{r fig.height = 8, fig.width = 8, fig.align = 'center'}
+data <- readRDS(file="../Results/ref_confusion.RDS")
+common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+data$diag = data$Prediction == data$Reference
+data$diag[!data$diag] <- NA
+data$Prediction <- factor(data$Prediction,levels(data$Prediction)[c(1,2,5,7,9,10,14:19,3:4,6,8,11:13)])
+data <- data[data$Reference %in% common_cell_types,]
+p1 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.blues(20)[2:20], limits= c(0,1),name = "Classification Proportion")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('True Cell Type')+ ylab('Predicted Cell Type') + geom_tile(data = data[!is.na(data$diag), ], aes(color = diag), size = 0.7) +
+  scale_color_manual(guide = FALSE, values = c('TRUE' = "#D55E00"))
+
+#hist(platform_df$true_platform_effect, breaks =30,xlab = "log2(Platform Effect)", main = "Measured Platform effects between dropviz and 10x")
+data <- readRDS(file="../Results/cross_confusion.RDS")
+data$diag = as.character(data$Prediction) == as.character(data$Reference)
+data$diag[!data$diag] <- NA
+data$Prediction <- factor(data$Prediction,levels(data$Prediction)[c(1,2,5,7,9,10,14:19,3:4,6,8,11:13)])
+p2 <- ggplot(data[data$Reference %in% common_cell_types,], aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.blues(20)[2:20], limits= c(0,1)) + theme(axis.text.x = element_text(angle = 45, hjust = 1))+ xlab('True Cell Type')+ ylab('Predicted Cell Type')+ geom_tile(data = data[!is.na(data$diag), ], aes(color = diag), size = 0.7) +
+  scale_color_manual(guide = FALSE, values = c('TRUE' = "#D55E00"))
+
+
+conf_mat <- conf_mat_RCTD
+all_cell_types = c("Astrocytes", "Bergmann", "Candelabrum", "Choroid", "Endothelial", "Ependymal", "Fibroblast", "Globular","Golgi", "Granule", "Lugaro","Macrophages" ,"Microglia" ,"MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+rownames(conf_mat) <- all_cell_types; colnames(conf_mat) <- all_cell_types
+norm_conf = sweep(conf_mat, 2, colSums(conf_mat), '/')
+data <- melt(as.matrix(norm_conf[,common_cell_types]))
+colnames(data) = c('Prediction','Reference','value')
+data$diag = as.character(data$Prediction) == as.character(data$Reference)
+data$diag[!data$diag] <- NA
+data$Prediction <- factor(data$Prediction,levels(data$Prediction)[c(1,2,5,7,9,10,14:19,3:4,6,8,11:13)])
+p3 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.blues(20)[2:20], limits= c(0,1),name = "Classification Proportion")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('True Cell Type')+ ylab('Predicted Cell Type')+ geom_tile(data = data[!is.na(data$diag), ], aes(color = diag), size = 0.7) +
+  scale_color_manual(guide = FALSE, values = c('TRUE' = "#D55E00"))
+
+
+ggarrange(p1, p2, p3,nrow = 2, ncol = 2, common.legend = T)
+```

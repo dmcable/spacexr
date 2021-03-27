@@ -1,0 +1,16 @@
+#cross
+default:
+  #folder constaining the puck
+  SpatialRNAfolder: "Puck_Viz"
+  #folder of the single cell reference
+  reffolder: "10xCer" #10xCer
+  #name of the puck counts file
+  countfile: "MappedDGEForR.csv"
+  #name of the single cell reference
+  reffile: "scRefSubsampled1000.RDS" # "scRefSubsampled1000.RDS"
+  #RDS of puck
+  puckrds: "puck.RDS"
+  #number to split puck
+  n_puck_folds: 40
+  #config file to use ("test" or "default")
+  config_mode: "default"

@@ -16,7 +16,8 @@ create.RCTD(
   UMI_min = 100,
   UMI_max = 2e+05,
   class_df = NULL,
-  CELL_MIN_INSTANCE = 25
+  CELL_MIN_INSTANCE = 25,
+  cell_type_names = NULL
 )
 }
 \arguments{
@@ -42,6 +43,9 @@ number of available cores.}
 \item{class_df}{(optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.}
 
 \item{CELL_MIN_INSTANCE}{minimum number of cells required per cell type. Default 25, can be lowered if desired.}
+
+\item{cell_type_names}{A list of cell types to be included from the reference. If NULL, uses all cell types}
+                 
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function

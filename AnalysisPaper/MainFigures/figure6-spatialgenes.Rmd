@@ -1,0 +1,224 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Finding Spatially Variable Genes
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+library(Seurat)
+```
+
+### Setup and filter for genes expressed in CA3
+
+```{r data}
+#given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
+restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
+  keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
+  puck@counts = puck@counts[gene_list,keep_loc]
+  if(length(puck@cell_labels) > 0) #check cell_labels non null
+    puck@cell_labels = puck@cell_labels[keep_loc]
+  puck@nUMI = puck@nUMI[keep_loc]
+  return(puck)
+}
+
+puck <- readRDS('../../Data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+reference <- readRDS('../../Data/Reference/DropVizHC/scRefSubsampled1000.RDS')
+cell_type_info <- get_cell_type_info(reference@assays$RNA@counts, reference@meta.data$liger_ident_coarse, reference@meta.data$nUMI)
+gene_list <- intersect(rownames(cell_type_info[[1]]),rownames(puck@counts))
+gene_list <- gene_list[rowSums(puck@counts[gene_list,]) >= 10]
+gene_list <- gene_list[apply(cell_type_info[[1]][gene_list,],1,function(x) max(x)) >= 2e-5]
+puck <- restrict_puck(puck, names(which(puck@nUMI >= 100)))
+puck <- restrict_counts(puck, gene_list, UMI_max = 200000)
+CA3_genes <- names(which(cell_type_info[[1]][gene_list,]$CA3*2 > apply(cell_type_info[[1]][gene_list,!(cell_type_info[[2]] %in% c('CA1','CA3','Denate','Neuron.Slc17a6', "Entorihinal", "Neurogenesis"))],1,max)))
+CA3_genes <- CA3_genes[cell_type_info[[1]][CA3_genes,"CA3"] >= 2e-5]
+```
+
+### Compute expected cell type specific gene expression
+
+```{r decompose}
+#Command used to save the data from the gather_results.R script:
+#save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+#loading in that data:
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+puck_d <- get_decomposed_data(results$results_df, CA3_genes, puck, results$weights_doublet, cell_type_info)
+```
+
+### Find Spatially Variable Genes within CA3
+
+```{r CA3_spatial}
+cell_barc <- puck_d@cell_labels == "CA3" & puck_d@nUMI >= 300
+gene_df <- puck_d@coords[cell_barc,]
+gene_df$nUMI <- puck_d@nUMI[cell_barc]
+get_int_genes <- function(gene_df,cell_type, gene_list_ct, puck_d, cell_barc) {
+  pvals <- numeric(length(gene_list_ct)); names(pvals) = gene_list_ct
+  cvs <- numeric(length(gene_list_ct)); names(cvs) = gene_list_ct
+  toti = 0
+  for(gene in gene_list_ct) {
+    print(toti)
+    toti = toti + 1
+    gene_df$nUMI <- puck_d@nUMI[cell_barc]
+    Tr = 100
+    f_dist <- numeric(Tr)
+    F_keep = 0
+    big_count = 0
+    for(i in 1:Tr) {
+      gene_df$gene <- puck_d@counts[gene,cell_barc]/ puck_d@nUMI[cell_barc]
+      if(i > 1)
+        gene_df$gene <- sample(gene_df$gene)
+      n = dim(gene_df)[1]
+      fit <- loess(gene ~ x*y, span = 0.8, data = gene_df, degree = 1)
+      #with(dat, plot(x, y, col = getcol(f), pch = 16, cex = 0.5, main = i))
+      p <- fit$enp+1
+      ss_total <-   sum((gene_df$gene- mean(gene_df$gene))^2)
+      rss <- sum(fit$residuals^2)
+      ss_reg <- ss_total - rss
+      ms_reg <- ss_reg / (p-1)
+      ms_res <- rss/(n-p)
+      fstat <- ms_reg/ms_res
+      if(i == 1) {
+        gene_df$fitted <- fitted(fit)
+        F_keep = fstat
+        cvs[gene] <- sd(gene_df$fitted)/mean(gene_df$fitted)
+        if(cvs[gene] < 0.5)
+          break
+      } else {
+        if(fstat > F_keep)
+          big_count = big_count + 1
+      }
+      if(big_count > 3)
+        break
+      #print(c(fstat, 1  - pf(fstat, p-1, n-p)))
+      f_dist[i] <- fstat
+    }
+    pvals[gene] = (big_count + 1) / Tr
+  }
+  means_df <- data.frame(pvals,cvs)
+  return(means_df)
+}
+means_df_CA3 <- get_int_genes(gene_df,"CA3", CA3_genes, puck_d, cell_barc)
+int_genes_CA3 <- rownames(means_df_CA3[means_df_CA3$cvs >= 0.5 & means_df_CA3$pvals < 0.02,])
+```
+
+## Find Spatially Variable Genes Ignoring Cell Type
+
+```{r global_spatial}
+hippo <- CreateSeuratObject(puck@counts, project = "Slideseq",assay = "RNA",min.cells = 0,min.features = 0,names.field = 1,names.delim = "_",meta.data = NULL)
+hippo <- NormalizeData(hippo, verbose = FALSE)
+hippo <- FindVariableFeatures(hippo, selection.method = "vst", nfeatures = 2000, verbose = FALSE)
+hippo <- ScaleData(hippo)
+hippo[['image']] <- new(Class='SlideSeq',assay='RNA',coordinates = puck@coords[colnames(puck@counts),])
+resultsdir = "Data/Slideseq/NewCerPuck_190926_08/SeuratResults/"
+DefaultAssay(hippo) <- "RNA"
+hippo <- FindSpatiallyVariableFeatures(hippo, assay = "RNA", slot = "scale.data", features = VariableFeatures(hippo)[1:1000],
+                                       selection.method = "moransi", x.cuts = 100, y.cuts = 100)
+spatial_genes <- t(cell_type_info[[1]][head(SpatiallyVariableFeatures(hippo, selection.method = "moransi"),20),])
+```
+
+## Plot coefficient of variation of spatially variable genes, across and within cell types
+
+```{r fig-1x, fig.height = 4, fig.width = 8, fig.align = 'center'}
+CA3_spatial <- intersect(colnames(spatial_genes),rownames(means_df_CA3))
+p_val <- means_df_CA3[int_genes_CA3,'pvals']
+names(p_val) <- int_genes_CA3
+write.csv(data.frame(p_val), file = "Results/CA3.csv")
+all_cv <- apply(cell_type_info[[1]][gene_list,],1,function(x) sd(x)/mean(x))
+plot_df <- data.frame(c(all_cv[colnames(spatial_genes)],sample(all_cv,50)), c(rep('glob',length(colnames(spatial_genes))),rep('null',50))) 
+colnames(plot_df) <- c('quant','colr')
+plot_df$cat <- 1
+p2 <- ggplot(plot_df, aes(x = colr, y = quant)) +
+  geom_jitter(alpha = 0.75) +
+  geom_boxplot(fill = NA, width = 0.4, outlier.alpha = 0) +
+  theme_classic() + scale_y_continuous(breaks = c(0,2,4), limits = c(0,4.2)) +xlab('Globally Variable Genes') + ylab('Coefficient of Variation Across Cell Types') +  scale_x_discrete(labels = c('Genes Detected Ignoring Cell Type','Randomly Selected Genes')) +  theme(axis.title.x=element_blank(),axis.text=element_text(size=8)) 
+
+fc_df <- data.frame(means_df_CA3[int_genes_CA3,]$cvs, 'Local')
+fc_df2 <- data.frame(means_df_CA3[CA3_spatial,]$cvs,'Global')
+colnames(fc_df) <- c('score','class'); colnames(fc_df2) <- c('score','class')
+fc_df <- rbind(fc_df2,fc_df)
+p1 <- ggplot(fc_df, aes(x = class, y = score)) +
+  geom_jitter(alpha = .75) +
+  geom_boxplot(fill = NA, width = 0.4, outlier.alpha = 0) +
+  theme_classic() + ylim(c(0,1.7)) + ylab('Coefficient of Variation Within CA3')  + scale_x_discrete(labels = c('Genes Detected Ignoring Cell Type','Genes Detected within Cell Type')) +  theme(axis.title.x=element_blank(),axis.text=element_text(size=7))
+
+
+ggarrange(p2,p1,nrow = 1)
+```
+
+## Plot the gene Ptk2b in excitatory neurons and in general
+
+```{r fig.height = 4, fig.width = 4, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks =c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+results_df <- results$results_df
+gene = "Ptk2b"
+my_class <- rep(0,length(colnames(puck@counts)))
+names(my_class) <- colnames(puck@counts)
+type_list <- c("CA1","CA3","Denate")
+my_ind <- (results_df$spot_class != "reject" & results_df$first_type %in% type_list) | (results_df$spot_class == "doublet_certain" & results_df$second_type %in% type_list) 
+my_ind2 <- (results_df$spot_class %in% c("singlet", "doublet_certain")) & !my_ind
+my_class[names(which(puck@counts[gene,my_ind] < 0.1))] <- 1
+my_class[names(which(puck@counts[gene,my_ind] >= 0.1))] <- 3
+my_class[names(which(puck@counts[gene,my_ind2] < 0.1))] <- 2
+my_class[names(which(puck@counts[gene,my_ind2] >= 0.1))] <- 4
+my_barc <- names(my_class[my_class > 0])
+p <- plot_class(puck, my_barc[order(my_class[my_barc])], factor(my_class)) 
+p <- my_mod(p) + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))
+ggarrange(p)
+```
+
+## 2D local regression smoothing of Rgs14 and Cpne9 genes within CA3 cell types
+
+```{r fig-2fgddg, fig.height = 4, fig.width = 8, fig.align = 'center'}
+my_pal = pals::brewer.ylorrd(20)[2:20]
+
+my_mod <- function(p) {
+  p + xlim(c(3800,5700)) + ylim(c(2100,3500)) + geom_segment(aes(x = 4000, y = 2400, xend = 4154, yend = 2400), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+#int_genes <- c("Rgs14","Spink8",'Cpne9','Kcnf1')
+int_genes <- c("Rgs14",'Cpne9')
+MULT <- 500
+p1 <- list()
+p2 <- list()
+for(ind in 1:length(int_genes)) {
+  gene <- int_genes[ind]
+  max_val <- 20*mean((puck_d@counts[gene,]/puck_d@nUMI)[cell_barc])
+  cur_range <- c(0, MULT*.00087)
+  if(ind == 2)
+    cur_range <- c(0,MULT*.00025)
+  barcodes <- rownames(gene_df)
+  raw_df <- puck_d@coords[barcodes,]
+  raw_df$val <- as.integer((puck_d@counts[gene,]/puck_d@nUMI)[barcodes] > 0.0002)
+  raw_df <- raw_df[raw_df$val > 0,]
+  raw_df$val <- factor(raw_df$val)
+
+  
+  
+  gene_df$gene <- puck_d@counts[gene,cell_barc]/puck_d@nUMI[cell_barc]
+  fit <- loess(gene ~ x*y, span = 0.8, data = gene_df, degree = 1)
+  gene_df$fitted <- fitted(fit)
+  plot_val <- pmax(0,gene_df$fitted)
+  names(plot_val) <- as.character(which(cell_barc))
+  min_val = MULT*min(plot_val);max_val = MULT*quantile(plot_val[gene_df$x  >= 3800 & gene_df$x < 5700 & gene_df$y > 2100 & gene_df$y < 3500],0.95)
+  p2[[ind]]<- plot_puck_continuous(puck_d,barcodes,MULT*plot_val[names(puck_d@cell_labels)], ylimit = c(min_val,max_val), size = 1.25, alpha = 0.2)
+  cur_range <- c(-.00001*MULT, signif(max_val,2))
+  p2[[ind]] <- my_mod(p2[[ind]])+ ggplot2::scale_colour_gradientn(paste(gene, "Smoothed"), colors = pals::brewer.orrd(20)[2:20],limits = cur_range, breaks = c(0,signif(max_val,2)), labels = c(0,signif(max_val,2)))
+  p2[[ind]] <- p2[[ind]] + geom_point(data=raw_df, aes(fill=val),,size = 0.1) + scale_fill_manual("Raw",values = c("#000000"),labels = c("")) + guides(fill = guide_legend(override.aes = list(size=2)))
+}
+#ggarrange(p1[[1]], p2[[1]], p1[[2]], p2[[2]],p1[[3]], p2[[3]],p1[[4]], p2[[4]], nrow = 4,ncol=2)
+#ggarrange(p1[[1]], p2[[1]],p1[[2]], p2[[2]], nrow = 2,ncol=2)
+ggarrange(p2[[1]], p2[[2]],nrow = 1,ncol=2)
+```

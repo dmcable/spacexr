@@ -10,7 +10,8 @@ process_beads_batch(
   puck,
   class_df = NULL,
   constrain = T,
-  MAX_CORES = 8
+  MAX_CORES = 8,
+  MIN.CHANGE = 0.001
 )
 }
 \arguments{

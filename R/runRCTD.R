@@ -58,7 +58,7 @@ process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, tr
 #' @return Returns \code{results}, a list of RCTD results for each pixel, which can be organized by
 #' feeding into \code{\link{gather_results}}
 #' @export
-process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T, MAX_CORES = 8) {
+process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T, MAX_CORES = 8, MIN.CHANGE = 0.001) {
   beads = t(as.matrix(puck@counts[gene_list,]))
   #out_file = "logs/process_beads_log.txt"
   #if (file.exists(out_file))
@@ -75,7 +75,7 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
-      result = process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain)
+      result = process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
       result
     }
     parallel::stopCluster(cl)
@@ -83,7 +83,35 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
     #not parallel
     results <- list()
     for(i in 1:(dim(beads)[1])) {
-      results[[i]] <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain)
+      results[[i]] <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
+    }
+  }
+  return(results)
+}
+
+process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T, MAX_CORES = 8, MIN.CHANGE = 0.001) {
+  beads = t(as.matrix(puck@counts[gene_list,]))
+  if(MAX_CORES > 1) {
+    numCores = parallel::detectCores();
+    if(parallel::detectCores() > MAX_CORES)
+      numCores <- MAX_CORES
+    cl <- parallel::makeCluster(numCores,outfile="") #makeForkCluster
+    doParallel::registerDoParallel(cl)
+    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'delta')
+    results <- foreach::foreach(i = 1:(dim(beads)[1]), .export = environ) %dopar% { #.packages = c("quadprog"),
+      #if(i %% 100 == 0)
+      #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
+      assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
+      assign("K_val",K_val, envir = globalenv());
+      result = process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
+      result
+    }
+    parallel::stopCluster(cl)
+  } else {
+    #not parallel
+    results <- list()
+    for(i in 1:(dim(beads)[1])) {
+      results[[i]] <- process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
     }
   }
   return(results)
@@ -92,32 +120,40 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
 #' Runs the RCTD algorithm
 #'
 #' If in doublet mode, fits at most two cell types per pixel. It classifies each pixel as 'singlet' or 'doublet' and searches for the cell types
-#' on the pixel. If in full mode, can fit any number of cell types on each pixel.
+#' on the pixel. If in full mode, can fit any number of cell types on each pixel. In multi mode, cell types are added using a greedy algorithm,
+#' up to a fixed number.
 #'
 #' @param RCTD an \code{\linkS4class{RCTD}} object after running the \code{\link{choose_sigma_c}} function.
-#' @param doublet_mode \code{logical} of whether RCTD should be run in doublet_mode.
+#' @param doublet_mode \code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 #' @export
-fitPixels <- function(RCTD, doublet_mode = T) {
+fitPixels <- function(RCTD, doublet_mode = "doublet") {
   set_likelihood_vars(RCTD@internal_vars$Q_mat, RCTD@internal_vars$X_vals)
   cell_type_info <- RCTD@cell_type_info$renorm
-  if(doublet_mode) {
+  if(doublet_mode == "doublet") {
     results = process_beads_batch(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
-                                  constrain = F, MAX_CORES = RCTD@config$max_cores)
+                                  constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG)
     return(gather_results(RCTD, results))
-  } else {
+  } else if(doublet_mode == "full") {
     beads = t(as.matrix(RCTD@spatialRNA@counts[RCTD@internal_vars$gene_list_reg,]))
-    results = decompose_batch(RCTD@spatialRNA@nUMI, cell_type_info[[1]], beads, RCTD@internal_vars$gene_list_reg, constrain = F, max_cores = RCTD@config$max_cores)
+    results = decompose_batch(RCTD@spatialRNA@nUMI, cell_type_info[[1]], beads, RCTD@internal_vars$gene_list_reg, constrain = F,
+                              max_cores = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG)
     weights = Matrix(0, nrow = length(results), ncol = RCTD@cell_type_info$renorm[[3]])
     rownames(weights) = colnames(RCTD@spatialRNA@counts); colnames(weights) = RCTD@cell_type_info$renorm[[2]];
     for(i in 1:dim(weights)[1])
       weights[i,] = results[[i]]$weights
     RCTD@results <- list(weights = weights)
     return(RCTD)
+  } else if(doublet_mode == "multi") {
+    RCTD@results = process_beads_multi(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
+                                  constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG)
+    return(RCTD)
+  } else {
+    stop(paste0("fitPixels: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
   }
 }
 
-decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T, OLS = F, max_cores = 8) {
+decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain = T, OLS = F, max_cores = 8, MIN.CHANGE = 0.001) {
   #out_file = "logs/decompose_batch_log.txt"
   #if (file.exists(out_file))
   #  file.remove(out_file)
@@ -135,13 +171,13 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
-      decompose_full(data.matrix(cell_type_means[gene_list,]*nUMI[i]), nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
+      decompose_full(data.matrix(cell_type_means[gene_list,]*nUMI[i]), nUMI[i], beads[i,], constrain = constrain, OLS = OLS, MIN_CHANGE = MIN.CHANGE)
     }
     parallel::stopCluster(cl)
   } else {
     weights <- list()
     for(i in 1:(dim(beads)[1])) {
-      weights[[i]] <- decompose_full(data.matrix(cell_type_means[gene_list,]*nUMI[i]), nUMI[i], beads[i,], constrain = constrain, OLS = OLS)
+      weights[[i]] <- decompose_full(data.matrix(cell_type_means[gene_list,]*nUMI[i]), nUMI[i], beads[i,], constrain = constrain, OLS = OLS, MIN_CHANGE = MIN.CHANGE)
     }
   }
   return(weights)

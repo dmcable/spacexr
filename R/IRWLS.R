@@ -22,15 +22,19 @@ solveOLS<-function(S,B, constrain = T){
 #solve using WLS with weights dampened by a certain dampening constant
 #if constrain, constrain the weights to sum up to 1
 #eta is alpha in the sparsity paper
-solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, n.iter = 50, MIN_CHANGE = .001, bulk_mode = F){
+solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE,
+                              n.iter = 50, MIN_CHANGE = .001, bulk_mode = F, solution = NULL){
   if(!bulk_mode)
     B[B > K_val] <- K_val
   if(OLS) {
     solution<-solveOLS(S,B, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
     return(list(weights = solution, converged = T))
   }
-  solution <- numeric(dim(S)[2])
-  solution[] <- 1/length(solution) #actually, just ignore the OLS solution
+  if(is.null(solution)) {
+    solution <- numeric(dim(S)[2])
+    solution[] <- 1/length(solution) #actually, just ignore the OLS solution
+  }
+  #solution <- runif(length(solution))*2 / length(solution) # random initialization
   names(solution) <- colnames(S)
 
   S_mat <<- matrix(0,nrow = dim(S)[1],ncol = dim(S)[2]*(dim(S)[2] + 1)/2)

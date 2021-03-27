@@ -57,10 +57,4 @@ get_norm_ref <- function(puck, cell_type_means, gene_list, proportions) {
   cell_type_means_renorm = sweep(cell_type_means[gene_list,],1,weight_avg / target_means,'/')
 }
 
-#restrict a reference to certain cell types
-restrict_ref <- function(reference, cell_type_names) {
-  keep = reference@meta.data$liger_ident_coarse %in% cell_type_names
-  reference@meta.data = reference@meta.data[keep,]
-  reference@assays$RNA@counts = reference@assays$RNA@counts[,keep]
-  return(reference)
-}
+

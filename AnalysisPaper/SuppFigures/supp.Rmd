@@ -1,0 +1,504 @@
+---
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = F, warning = F, message = F, cache = T)
+```
+
+```{r libraries}
+library(RCTD)
+library(Matrix)
+library(ggplot2)
+library(ggpubr)
+library(gridExtra)
+library(reshape2)
+```
+
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center', eval = F}
+load(file = "Results/SlideseqCerebellum.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ theme(legend.position="top") + geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+}
+plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+  all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+  all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+  plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range,title=cell_type)
+  plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+}
+
+ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+```
+
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
+load(file = "Results/NMFreg")
+cur_range <- c(0,1)
+cell_type = "Granule"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh_nmf[cell_type,]) & (apply(nmf_norm_weights,1,which.max) == 10)))
+p1 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p1 <- my_mod(p1)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "MLI2"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh_nmf[cell_type,]) & (apply(nmf_norm_weights,1,which.max) == 15)))
+p2 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Bergmann"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh_nmf[cell_type,]) & (apply(nmf_norm_weights,1,which.max) == 2)))
+p3 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+ggarrange(p1,p1,p2,p2,p3,p3,nrow=3,ncol=2)
+```
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
+load(file = "Results/NMFreg")
+thresh = 0.25
+cur_range <- c(0,1)
+cell_type = "Granule"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 10)))
+p1 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p1 <- my_mod(p1)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "MLI2"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 15)))
+p2 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Bergmann"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 2)))
+p3 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+thresh = 0.35
+cur_range <- c(0,1)
+cell_type = "Granule"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 10)))
+p4 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p4 <- my_mod(p4)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "MLI2"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 15)))
+p5 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p5 <- my_mod(p5)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Bergmann"
+plot_val = nmf_norm_weights[,cell_type]
+names(plot_val) = colnames(iv$puck@counts)
+cur_barc = names(which((nmf_norm_weights[,cell_type] > thresh) & (apply(nmf_norm_weights,1,which.max) == 2)))
+p6 <- plot_puck_continuous(iv$puck, cur_barc, plot_val, ylimit = cur_range)
+p6 <- my_mod(p6)+ggplot2::scale_colour_gradientn(paste(cell_type,"NMFreg Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+ggarrange(p1,p4,p2,p5,p3,p6,nrow=3,ncol=2)
+```
+
+```{r fig.height = 12, fig.width = 12, fig.align = 'center', eval = F}
+  occur <- numeric(iv$cell_type_info[[3]])
+  names(occur) = iv$cell_type_info[[2]]
+  for (i in 1:iv$cell_type_info[[3]]) {
+    cell_type = iv$cell_type_info[[2]][i]
+    my_cond = (nmf_norm_weights[,cell_type] > thresh_nmf[cell_type,]) & (apply(nmf_norm_weights,1,which.max) == i)
+    occur[cell_type] = sum(my_cond)
+  }
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_classic() + theme(legend.position="none") + ylim(c(0,6500)) + theme(axis.text.x = element_text(hjust = 1, angle = 45)) + xlab('Cell Type') + ylab('NMFreg Confident Predictions')
+  
+  occur <- numeric(iv$cell_type_info[[3]])
+  names(occur) = iv$cell_type_info[[2]]
+  for (i in 1:iv$cell_type_info[[3]]) {
+    cell_type = iv$cell_type_info[[2]][i]
+    my_cond = (nmf_norm_weights[,cell_type] > 0.25) & (apply(nmf_norm_weights,1,which.max) == i)
+    occur[cell_type] = sum(my_cond)
+  }
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  plot2<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_classic() + theme(legend.position="none") + ylim(c(0,6500)) + theme(axis.text.x = element_text(hjust = 1, angle = 45)) + xlab('Cell Type') + ylab('NMFreg Confident Predictions')
+  occur <- numeric(iv$cell_type_info[[3]])
+  names(occur) = iv$cell_type_info[[2]]
+  for (i in 1:iv$cell_type_info[[3]]) {
+    cell_type = iv$cell_type_info[[2]][i]
+    my_cond = (nmf_norm_weights[,cell_type] > 0.35) & (apply(nmf_norm_weights,1,which.max) == i)
+    occur[cell_type] = sum(my_cond)
+  }
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  plot3<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_classic() + theme(legend.position="none") + ylim(c(0,6500)) + theme(axis.text.x = element_text(hjust = 1, angle = 45)) + xlab('Cell Type') + ylab('NMFreg Confident Predictions')
+  
+  occur <- numeric(iv$cell_type_info[[3]])
+  names(occur) = iv$cell_type_info[[2]]
+  for (i in 1:iv$cell_type_info[[3]]) {
+    cell_type = iv$cell_type_info[[2]][i]
+    occur[cell_type] = sum((results_df$spot_class != "reject" & results_df$first_type == cell_type) + (results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type))
+  }
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  plot4<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_classic() + theme(legend.position="none") + ylim(c(0,6500)) + theme(axis.text.x = element_text(hjust = 1, angle = 45)) + xlab('Cell Type') + ylab('RCTD Confident Predictions')
+  ggarrange(plot4, plot,plot2,plot3,nrow=2,ncol=2)
+```
+
+```{r fig.height = 12, fig.width = 8, fig.align = 'center', eval = F}
+load(file = "Results/SlideseqCerebellum.RData")
+MULT = 500
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ theme(legend.position="top") + geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+}
+
+cell_type = "Granule"
+cur_range <- c(0,MULT*0.03)
+gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+p1 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200],MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+p1 <- my_mod(p1) +ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+  
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p2 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"RCTD Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "MLI1"
+cur_range <- c(0,MULT*0.015)
+gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+p3 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+cell_type = "MLI2"
+p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p4 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p4 <- my_mod(p4)+ggplot2::scale_colour_gradientn(paste(cell_type,"RCTD Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Bergmann"
+cur_range <- c(0,MULT*0.06)
+gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+p5 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 200], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range)
+p5 <- my_mod(p5)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cur_range <- c(0,1)
+all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+p6 <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range)
+p6 <- my_mod(p6)+ggplot2::scale_colour_gradientn(paste(cell_type,"RCTD Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
+```
+
+
+
+```{r fig.height = 4, fig.width = 6, fig.align = 'center', eval = F}
+conf_mat <- read.csv(file.path("../Data/Slideseq/CerRef/results",'confusion_matrix.csv'))
+conf_mat <- conf_mat[,2:20]
+all_cell_types = c("Astrocytes", "Bergmann", "Candelabrum", "Choroid", "Endothelial", "Ependymal", "Fibroblast", "Globular","Golgi", "Granule", "Lugaro","Macrophages" ,"Microglia" ,"MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+rownames(conf_mat) <- all_cell_types; colnames(conf_mat) <- all_cell_types
+norm_conf = sweep(conf_mat, 2, colSums(conf_mat), '/')
+data <- melt(as.matrix(norm_conf))
+colnames(data) = c('Prediction','Reference','value')
+data$diag = as.character(data$Prediction) == as.character(data$Reference)
+data$diag[!data$diag] <- NA
+p3 <- ggplot(data, aes(Reference, Prediction, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.blues(20)[2:20], limits= c(0,1),name = "Classification Proportion")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('True Cell Type')+ ylab('Predicted Cell Type')+ geom_tile(data = data[!is.na(data$diag), ], aes(color = diag), size = 0.7) +
+  scale_color_manual(guide = FALSE, values = c('TRUE' = "#D55E00"))
+
+
+ggarrange(p3)
+```
+
+
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
+load(file = "../Plotting/Results/decompose_ref.RData")
+load("../Plotting/Results/doublet_ref.RData")
+my_pal = pals::coolwarm(20)
+doublet_df$prop <- doublet_df$nUMI / 1000
+plot_df = doublet_df[doublet_df$series == "doublets",]
+p1 <- ggplot(plot_df, aes(prop,value)) + geom_line()  + 
+  geom_errorbar(aes(ymin=value-1.96*std, ymax=value+1.96*std), width=.02,position=position_dodge(.001)) + theme_classic() + 
+  geom_hline(yintercept=0, linetype="dashed", color = "grey", size=0.5) + geom_hline(yintercept=1, linetype="dashed", color = "grey", size=0.5) + xlab("UMI Proportion of Minority Cell Type") + ylab("Doublet Classification Rate") + scale_color_manual(values=c(my_pal[1], my_pal[20]),labels = c("Doublet"), name = "Class") + scale_y_continuous(breaks = c(0,0.5,1), limits = c(0,1))+ scale_x_continuous(breaks = c(0,0.25,0.5), limits = c(-.03,0.53))
+#singlet accuracy 92.8% +- .41% s.e.
+#doublet accuracy:
+# (sum(doublet_df[11:13,"value"]*2) + doublet_df[14,"value"])/7 #82.8%
+# sqrt((sum(doublet_df[11:13,"std"]^2*4) + doublet_df[14,"std"]^2)/49) # 0.3% s.e.
+p2 <-ggplot2::ggplot(plot_df_weight, ggplot2::aes(x=proportion, y=type1_avg, colour = "type1_avg")) +
+    ggplot2::geom_line() +
+    ggplot2::geom_point()+
+    ggplot2::geom_line(ggplot2::aes(y=proportion,colour = "proportion")) +
+    ggplot2::geom_errorbar(ggplot2::aes(ymin=type1_avg-st_dev/1.96, ymax=type1_avg+st_dev/1.96), width=.05,
+                           position=ggplot2::position_dodge(0.05)) + theme_classic() + xlab('True Bergmann Proportion')+ ylab('Predicted Bergmann Proportion')+ scale_color_manual(values=c(my_pal[20], my_pal[1]),labels = c("",""), name = "") + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.01,1.01))+ scale_x_continuous(breaks = c(0,0.5,1), limits = c(-.03,1.03))+ theme(legend.position = "none")
+
+plot_df <- data.frame(unlist(list(plot_df_de$gene,plot_df_de$gene)),c(plot_df_de$predicted,plot_df_de$true),c(rep("Predicted",20),rep("True",20)))
+colnames(plot_df) <- c('Gene','Value','Class')
+p3 <- ggplot2::ggplot(plot_df, ggplot2::aes(x=Gene,y=Value)) + geom_point(aes(color=Class)) + theme_classic()+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + scale_y_continuous(breaks = c(0,0.5,1), limits = c(0,1)) + scale_color_manual(values=c(my_pal[1], my_pal[20]), name = "") + ylab('Proportion in Bergmann')+ theme(legend.position="top")
+ 
+
+
+ggarrange(p1,p2, p3, nrow = 2, ncol = 2)
+```
+
+```{r fig.height = 8, fig.width = 6, fig.align = 'center', eval = F}
+
+conf_mat <- read.csv(file.path("../Data/Slideseq/Puck_Viz/results",'confusion_matrix.csv'))
+conf_mat <- conf_mat[,2:20]
+all_cell_types = c("Astrocytes", "Bergmann", "Candelabrum", "Choroid", "Endothelial", "Ependymal", "Fibroblast", "Globular","Golgi", "Granule", "Lugaro","Macrophages" ,"Microglia" ,"MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+rownames(conf_mat) <- all_cell_types; colnames(conf_mat) <- all_cell_types
+norm_conf = sweep(conf_mat, 2, colSums(conf_mat), '/')
+my_diag <- diag(as.matrix(norm_conf))[common_cell_types]
+my_diag["Bergmann"] <- my_diag["Bergmann"] + norm_conf["Astrocytes","Bergmann"]
+my_diag["Astrocytes"] <- my_diag["Astrocytes"] + norm_conf["Bergmann","Astrocytes"]
+my_diag["MLI1"] <- my_diag["MLI1"] + norm_conf["MLI2","MLI1"]
+my_diag["MLI2"] <- my_diag["MLI2"] + norm_conf["MLI1","MLI2"]
+my_diag["Endothelial"] <- my_diag["Endothelial"] + norm_conf["Fibroblast","Endothelial"]
+my_diag["Fibroblast"] <- my_diag["Fibroblast"] + norm_conf["Endothelial","Fibroblast"]
+my_diag["Oligodendrocytes"] <- my_diag["Oligodendrocytes"] + norm_conf["Polydendrocytes","Oligodendrocytes"]
+my_diag["Polydendrocytes"] <- my_diag["Polydendrocytes"] + norm_conf["Oligodendrocytes","Polydendrocytes"]
+
+diag(square_results) <- my_diag
+data <- melt(as.matrix(square_results))
+colnames(data) = c('Prediction','Reference','value')
+#p2 <- ggplot(data, aes(Prediction, Reference, fill= value)) +  geom_tile() +theme_classic() +scale_fill_gradientn(colors = pals::brewer.reds(20)[1:20], limits= c(0,1),name = "Identification Rate")+ theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('First Cell Type')+ ylab('Second Cell Type')
+diverse_pal <- pals::kelly(20)[2:(20)]
+p2 <- ggplot(data, aes(Prediction, value, group=Reference, color = Reference))  +  geom_jitter(width = 0.3, size = 1) +theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Type 1')+ ylab('Identification Rate') + scale_color_manual(values = diverse_pal, name = "Cell Type 2") + theme(axis.text=element_text(size=8)) + theme(axis.title=element_text(size=10))+ theme(legend.text=element_text(size=8),legend.spacing.x = unit(-0.1, 'cm'),legend.spacing.y = unit(-0.1, 'cm')) + guides(guide_legend(nrow=6,byrow=TRUE)) + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.0001,1.0001))
+#mean(square_results[row(square_results) != col(square_results)]) #mean: .919
+#sd(square_results[row(square_results) != col(square_results)]) # sd: .094
+
+
+diag(DE_dat) <- 0
+data <- melt(DE_dat)
+colnames(data) = c('Prediction','Reference','value')
+p3 <- ggplot(data, aes(Prediction, value, group=Reference, color = Reference))   + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.0001,1.0001)) + geom_jitter(width = 0.3,size=1) +theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Type 1')+ ylab('Mean Absolute Relative Error') + scale_color_manual(values = diverse_pal, name = "Second Cell Type")+ theme(axis.text=element_text(size=8)) + theme(axis.title=element_text(size=10))
+#mean(DE_dat[row(DE_dat) != col(DE_dat)]) #mean: .019
+#sd(DE_dat[row(DE_dat) != col(DE_dat)]) # sd: .026
+
+
+diag(RMSE_dat) <- 0 
+data <- melt(as.matrix(RMSE_dat))
+colnames(data) = c('Prediction','Reference','value')
+p1 <- ggplot(data, aes(Prediction, value, group=Reference, color = Reference))   + scale_y_continuous(breaks = c(0,0.5,1), limits = c(-.0001,1.0001)) + geom_jitter(width = 0.3,size=1) +theme_classic() + theme(axis.text.x = element_text(angle = 45, hjust = 1)) + xlab('Cell Type 1')+ ylab('Root Mean Squared Error') + scale_color_manual(values = diverse_pal, name = "Second Cell Type")+ theme(axis.text=element_text(size=8)) + theme(axis.title=element_text(size=10))
+#mean(RMSE_dat[row(RMSE_dat) < col(RMSE_dat)]) #mean: .128
+#sd(RMSE_dat[row(RMSE_dat) < col(RMSE_dat)]) # sd: .069
+
+ggarrange(p2,p3,p1, nrow = 3, ncol= 1, common.legend = T)
+
+```
+
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center', eval = F}
+load(file = "Results/VisiumHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(2900,5100)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(2800,6400)) + geom_segment(aes(x = 3000, y = 2900, xend = 3384.6, yend = 2900), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+  all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+  all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+  if(length(rownames(all_weights)) > 0) {
+    plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range,title=cell_type, size = 1)
+    plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+  } else {
+    all_weights_vec = c(-0.1); names(all_weights_vec) = rownames(norm_weights)[1]
+    plots[[i]] <- plot_puck_continuous(puck, rownames(norm_weights)[1], all_weights_vec, ylimit = cur_range,title=cell_type, size = 1,alpha=0)
+    plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+  }
+}
+
+#ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+```
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+load(file = "../Results/VisiumHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(2900,5100)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(2800,6400)) + geom_segment(aes(x = 3000, y = 2900, xend = 3384.6, yend = 2900), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+  if(sum(all_weights_vec) > 0) {
+    plots[[i]] <- plot_puck_continuous(puck, rownames(norm_weights), all_weights_vec, ylimit = cur_range,title=cell_type, size = 1)
+    plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+  }
+}
+
+ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+
+```
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(4400,8000)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(-500,2000)) + geom_segment(aes(x = 4700, y = -400, xend = 5084.6, yend = -400), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+library(spdep)
+
+coerce_old <- function(puck) {
+  new("SpatialRNA", coords = puck@coords, counts = puck@counts, cell_labels = puck@cell_labels,
+      cell_type_names = puck@cell_type_names, nUMI = puck@nUMI, n_cell_type = puck@n_cell_type)
+}
+puck <- coerce_old(puck)
+puck_transf <- puck
+puck_transf@coords <- as.data.frame(Rotation(puck@coords, 125/180*pi))
+colnames(puck_transf@coords) <- c('x','y')
+puck_transf@coords[,'x'] <- -puck_transf@coords[,'x']
+new_plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+  new_plots[[i]] <- plot_puck_continuous(puck_transf, rownames(norm_weights), all_weights_vec, ylimit = cur_range,title=cell_type, size = 1)
+  new_plots[[i]] <- my_mod(new_plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+}
+#new_plot <- my_mod(new_plot)+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+#ggarrange(new_plot, plots[[16]])
+```
+
+```{r fig.height = 16, fig.width = 12, fig.align = 'center'}
+load(file = "../Results/SlideseqHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
+}
+
+plots <- list()
+for(i in 1:length(iv$cell_type_info[[2]])) {
+  cell_type = iv$cell_type_info[[2]][i]
+  cur_range <- c(0,1)
+  all_weights <- weights_doublet[results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
+  all_weights <- rbind(all_weights, weights_doublet[!(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
+  all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
+  plots[[i]] <- plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range,title=cell_type)
+  plots[[i]] <- my_mod(plots[[i]])+ggplot2::scale_colour_gradientn("Weight", colors = my_pal, limits = cur_range, breaks = cur_range)
+}
+
+ggarrange(plotlist = plots,ncol=4,nrow=5, common.legend = T)
+```
+```{r fig.height = 12, fig.width = 8, fig.align = 'center'}
+ggarrange(plots[[2]], new_plots[[2]], plots[[6]], new_plots[[6]], plots[[16]], new_plots[[16]], nrow = 3, ncol = 2, common.legend = T)
+```
+
+
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
+MULT = 500
+load(file = "Results/VisiumHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+cell_type = "CA1"
+cur_range <- c(0,0.0015*MULT)
+gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+p1 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300],MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = 1, alpha = 1)
+p1 <- my_mod(p1) +ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+  
+cur_range <- c(0,1)
+
+all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+p2 <- plot_puck_continuous(puck, rownames(norm_weights), all_weights_vec, ylimit = cur_range, size = 1, alpha = 1)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cell_type = "Denate"
+cur_range <- c(0,0.0014*MULT)
+gran_genes <- rownames(marker_data_de[marker_data_de$cell_type == cell_type,])
+p3 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size =1, alpha = 1)
+p3 <- my_mod(p3)+ggplot2::scale_colour_gradientn(paste("Dentate","Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+cur_range <- c(0,1)
+all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+p4 <- plot_puck_continuous(puck, rownames(norm_weights), all_weights_vec, ylimit = cur_range, size = 1, alpha = 1)
+p4 <- my_mod(p4)+ggplot2::scale_colour_gradientn(paste("Dentate","Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+
+#ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
+ggarrange(p1,p2,p3,p4,nrow=2,ncol=2)
+```
+
+
+```{r fig.height = 8, fig.width = 8, fig.align = 'center', eval = F}
+MULT = 500
+load(file = "Results/VisiumHippo.RData")
+my_pal = pals::brewer.blues(20)[2:20]
+cell_type = "Oligodendrocyte"
+cur_range <- c(0,0.15*MULT)
+gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]),rownames(puck@counts))
+p1 <- plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300],MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = 1, alpha = 1)
+p1 <- my_mod(p1) +ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
+  
+cur_range <- c(0,1)
+
+all_weights_vec <- as.vector(norm_weights[,cell_type]); names(all_weights_vec) <- rownames(norm_weights)
+p2 <- plot_puck_continuous(puck, rownames(norm_weights), all_weights_vec, ylimit = cur_range, size = 1, alpha = 1)
+p2 <- my_mod(p2)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
+
+
+#ggarrange(p1,p2,p3,p4,p5,p6,nrow=3,ncol=2)
+ggarrange(p1,p2,p1,p2,nrow=2,ncol=2)
+```
+```{r fig.height = 4, fig.width = 8, fig.align = 'center', eval = F}
+resultsdir = "../Data/Slideseq/NewCerPuck_190926_08/SeuratResults/"
+load(file = file.path(resultsdir,'data.Rdata'))
+#my_mod <- function(p) {
+#  p + scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ #theme(legend.position="top") + geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  #theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), #axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+#}
+cluster_labels = c('Granule 1', 'Granule 2','Bergmann','Oligo','MLI','Purkinje','Astrocytes','Golgi')
+#plots <- list()
+#for(i in 0:7) {
+  #my_pal = pals::brewer.blues(20)[2:20]
+  #plots[[i+1]] <- RCTD::plot_puck_continuous(puck, names(puck@cell_labels[puck@cell_labels == i]),  factor(puck@nUMI/puck@nUMI), ylimit = c(0,1))
+  #plots[[i+1]] <- my_mod(plots[[i+1]]) + scale_color_manual("",values=c(my_pal[19]),labels = c(paste(cluster_labels[i+1],"Cluster")))  
+#}
+
+
+my_pal = pals::brewer.blues(20)[2:20]
+my_mod <- function(p) {
+  p + scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ theme(legend.position="top") + geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+}
+plots <- list()
+for(i in 0:7) {
+  cur_range <- c(0,1.01)
+  plots[[i+1]] <- plot_puck_continuous(puck, names(puck@cell_labels[puck@cell_labels == i]), puck@nUMI/puck@nUMI, ylimit = cur_range,title=cluster_labels[i+1],small_point = T,alpha = 1, size = 0.6)
+  
+  plots[[i+1]] <- my_mod(plots[[i+1]])+ggplot2::scale_colour_gradientn(colors = my_pal, limits = cur_range, breaks = cur_range) + theme(legend.position="none")
+}
+
+ggarrange(plotlist = plots,ncol=4,nrow=2)
+```
+```{r fig.height = 6, fig.width = 6, fig.align = 'center', eval = F}
+  resultsdir = "../Data/Slideseq/NewCerPuck_190926_08/SeuratResults/"
+  load(file = file.path(resultsdir,'data.Rdata'))
+  cluster_labels = c('Granule', 'Granule','Bergmann','Oligodendrocytes','MLI1','Purkinje','Astrocytes','Golgi')
+  occur <- numeric(iv$cell_type_info[[3]]-1)
+  names(occur) = iv$cell_type_info[[2]][-15]
+  for (i in 1:8) {
+    cell_type = cluster_labels[i]
+    my_cond = (puck@cell_labels == (i - 1))
+    occur[cell_type] = occur[cell_type] + sum(my_cond)
+  }
+  names(occur)[14] <- 'MLI'
+  df<- reshape2::melt(as.list(occur)); colnames(df) = c('Count','Cell_Type')
+  plot<-ggplot(df, aes(x=Cell_Type, y=Count, fill=Cell_Type)) +
+    geom_bar(stat="identity")+theme_classic() + theme(legend.position="none") + ylim(c(0,6500)) + theme(axis.text.x = element_text(hjust = 1, angle = 45)) + xlab('Cell Type') + ylab('Unsupervised Clustering Predictions')
+  ggarrange(plot)
+```

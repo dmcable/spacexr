@@ -8,7 +8,7 @@
 
 
 To get started, create a \code{\linkS4class{SpatialRNA}} object (called \code{puck} here) for the
-spatial transcriptomics data and a \code{\linkS4class{Seurat}} object (called \code{reference} here) for the
+spatial transcriptomics data and a \code{\linkS4class{Reference}} object (called \code{reference} here) for the
 scRNA-seq data. Then simply run RCTD as:
 
 \code{myRCTD <- create.RCTD(puck, reference)}
