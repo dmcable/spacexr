@@ -67,7 +67,7 @@ chooseSigma <- function(prediction, counts, Q_mat_all, X_vals, sigma) {
 #' @return Returns an \code{\linkS4class{RCTD}} with the estimated \code{sigma_c}.
 #' @export
 choose_sigma_c <- function(RCTD) {
-  puck = RCTD@spatialRNA; MIN_UMI = 300; sigma = 100
+  puck = RCTD@spatialRNA; MIN_UMI = 0; sigma = 100
   #Q_mat_all <- readRDS('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/Qmat/Q_mat_c.rds')
   Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "RCTD"))
   Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "RCTD"))
