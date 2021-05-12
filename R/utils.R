@@ -32,6 +32,8 @@ get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .
   if(length(grep("mt-",gene_list)) > 0)
     gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
+  if(length(gene_list) == 0)
+    stop("get_de_genes: Error: 0 common genes between SpatialRNA and Reference objects. Please check for gene list nonempty intersection.")
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
   for(cell_type in cell_type_info[[2]]) {
     other_mean = rowMeans(cell_type_info[[1]][gene_list,cell_type_info[[2]] != cell_type])
