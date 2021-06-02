@@ -6,21 +6,6 @@ fake_coords <- function(counts) {
   return(coords)
 }
 
-#' constructor of SpatialRNA object
-#' @param counts A matrix (or dgCmatrix) representing Digital Gene Expression (DGE). Rownames should be genes
-#' and colnames represent barcodes/pixel names.
-#' @param coords A data.frame (or matrix) representing the spatial pixel locations. rownames are barcodes/pixel names,
-#' and there should be two columns for 'x' and for 'y'.
-#' @param nUMI Optional, a named (by pixel barcode) list of total counts or UMI's appearing at each pixel. If not provided,
-#' nUMI will be assumed to be the total counts appearing on each pixel.
-#' @param use_fake_coords logical, FALSE by default. If true, the 'coords' parameter will be ignored, and replaced with a placeholder
-#' coords matrix.
-#'
-#' Counts should be untransformed count-level data
-#'
-#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
-#' from the input files
-#' @export
 
 
 #' Creates a SpatialRNA object from a 10x Genomics Visium `outs` directory
@@ -49,6 +34,21 @@ save.SpatialRNA <- function(puck, save.folder) {
   white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
 }
 
+#' constructor of SpatialRNA object
+#' @param counts A matrix (or dgCmatrix) representing Digital Gene Expression (DGE). Rownames should be genes
+#' and colnames represent barcodes/pixel names.
+#' @param coords A data.frame (or matrix) representing the spatial pixel locations. rownames are barcodes/pixel names,
+#' and there should be two columns for 'x' and for 'y'.
+#' @param nUMI Optional, a named (by pixel barcode) list of total counts or UMI's appearing at each pixel. If not provided,
+#' nUMI will be assumed to be the total counts appearing on each pixel.
+#' @param use_fake_coords logical, FALSE by default. If true, the 'coords' parameter will be ignored, and replaced with a placeholder
+#' coords matrix.
+#'
+#' Counts should be untransformed count-level data
+#'
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
+#' from the input files
+#' @export
 SpatialRNA <- function(coords, counts, nUMI = NULL, use_fake_coords = FALSE) {
   counts <- check_counts(counts, 'SpatialRNA')
   if(use_fake_coords)
