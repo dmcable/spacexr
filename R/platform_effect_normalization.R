@@ -77,6 +77,9 @@ choose_sigma_c <- function(RCTD) {
   X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "RCTD"))
   #get initial classification
   N_fit = min(RCTD@config$N_fit,sum(puck@nUMI > MIN_UMI))
+  if(N_fit == 0) {
+      stop(paste('choose_sigma_c determined a N_fit of 0! This is probably due to unusually low UMI counts per bead in your dataset. Try decreasing the parameter UMI_min_sigma. It currently is',MIN_UMI,'but none of the beads had counts larger than that.'))
+  }
   fit_ind = sample(names(puck@nUMI[puck@nUMI > MIN_UMI]), N_fit)
   beads = t(as.matrix(puck@counts[RCTD@internal_vars$gene_list_reg,fit_ind]))
   print(paste('chooseSigma: using initial Q_mat with sigma = ',sigma/100))
