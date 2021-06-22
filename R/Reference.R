@@ -12,13 +12,13 @@
 #' @return Returns a \code{\linkS4class{Reference}} object containing the counts matrix, cell type labels, and UMI vector
 #' from the input files
 #' @export
-Reference <- function(counts, cell_types, nUMI = NULL) {
-  counts <- check_counts(counts, 'Reference', require_2d = T)
+Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE) {
+  counts <- check_counts(counts, 'Reference', require_2d = T, require_int = require_int)
   if(is.null(nUMI)) {
     nUMI = colSums(counts)
     names(nUMI) <- colnames(counts)
   } else {
-    check_UMI(nUMI, 'Reference', require_2d = T)
+    check_UMI(nUMI, 'Reference', require_2d = T, require_int = require_int)
   }
   check_cell_types(cell_types)
   barcodes <- intersect(intersect(names(nUMI), names(cell_types)), colnames(counts))
@@ -45,4 +45,25 @@ check_cell_types <- function(cell_types) {
     stop('Reference: length(levels(cell_types)) < 2. cell_types needs to be a factor with multiple levels for each cell type.')
   if(is.null(names(cell_types)))
     stop('Reference: names(cell_types) is null. Please enter cell barcodes as names')
+}
+
+convert_old <- function(old_reference) {
+  cell_types <- old_reference@meta.data$liger_ident_coarse
+  nUMI <- old_reference@meta.data$nUMI
+  names(cell_types) <- rownames(old_reference@meta.data);
+  names(nUMI) <- rownames(old_reference@meta.data);
+  Reference(old_reference@assays$RNA@counts, cell_types, nUMI)
+}
+
+restrict_reference <- function(reference, barcodes) {
+  reference@counts <- reference@counts[,barcodes]
+  reference@nUMI <- reference@nUMI[barcodes]
+  reference@cell_types <- reference@cell_types[barcodes]
+  return(reference)
+}
+
+restrict_reference_cell_types <- function(reference, cell_type_list) {
+  new_ref <- (restrict_reference(reference, names(reference@cell_types)[reference@cell_types %in% cell_type_list]))
+  new_ref@cell_types <- droplevels(new_ref@cell_types)
+  return(new_ref)
 }

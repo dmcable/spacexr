@@ -4,6 +4,9 @@
 \name{RCTD}
 \alias{RCTD}
 \title{RCTD: an R package for assigning cell types to spatial transcriptomics data.}
+\description{
+RCTD: an R package for assigning cell types to spatial transcriptomics data.
+}
 \section{Running RCTD}{
 
 

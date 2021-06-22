@@ -131,6 +131,8 @@ More specifically, the `results_df` object contains one column per pixel (barcod
 
 Finally, the function `get_decomposed_data` can be used to get expected counts of each gene in each cell type, for both doublets and singlets. We note that this only provides the expectation, but the variance may be fairly high. Also, this function makes the assumption that the ratio of gene expression within cell types is approximately the same as the scRNA-seq reference. It should be used as a tool for exploratory data analysis. 
 
+Note that in multi-mode, results consists of a list of results for each pixel, which contains all_weights (weights from full mode), cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and sub_weights (proportions of cell types on multi mode).
+
 Note, some of the plots are not displayed here, but rather saved as pdf files in the 'RCTD_Plots' directory.
 
 ```{r results, results = 'hide',  fig.width = 8, fig.height=8}

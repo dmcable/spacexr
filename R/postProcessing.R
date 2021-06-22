@@ -38,3 +38,44 @@ gather_results <- function(RCTD, results) {
   return(RCTD)
 }
 
+
+#' @export
+get_decomposed_data_full_doublet <- function(gene_list, puck, weights, ct_info) {
+  first_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
+  second_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
+  rownames(first_DGE) = rownames(weights); rownames(second_DGE) = rownames(weights)
+  colnames(first_DGE) = gene_list; colnames(second_DGE) = gene_list
+  for(ind in 1:dim(weights)[1]) {
+    barcode = rownames(weights)[ind]
+    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights[barcode,], gene_list, ct_info, colnames(weights)[1],colnames(weights)[2])
+    first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
+  }
+  norm1 <- sweep(first_DGE, 1, weights[rownames(weights),1] * puck@nUMI[rownames(first_DGE)], '/')
+  norm2 <- sweep(second_DGE, 1, weights[rownames(weights),2] * puck@nUMI[rownames(second_DGE)], '/')
+  all_DGE <- rbind(norm1, norm2)
+  cell_type_labels <- unlist(list(rep(colnames(weights)[1], dim(weights)[1]), rep(colnames(weights)[2], dim(weights)[1])))
+  nUMI <- c(weights[rownames(weights),1] *puck@nUMI[rownames(first_DGE)], weights[rownames(weights),2]*puck@nUMI[rownames(second_DGE)])
+  rownames(all_DGE) = 1:dim(all_DGE)[1]; names(cell_type_labels) <- 1:dim(all_DGE)[1]; names(nUMI) <- 1:dim(all_DGE)[1]
+  ref_d <- Reference(t(all_DGE), factor(cell_type_labels), nUMI, require_int = F)
+  return(ref_d)
+}
+
+#decompose a doublet into two cells
+decompose_doublet_fast <- function(bead, weights, gene_list, cell_type_info, type1, type2) {
+  N_genes = length(gene_list)
+  expect_1 = vector(mode="numeric",length = N_genes)
+  expect_2 = vector(mode="numeric",length = N_genes)
+  variance = vector(mode="numeric",length = N_genes)
+  names(expect_1) = gene_list; names(expect_2) = gene_list; names(variance) = gene_list
+  epsilon = 1e-10
+  for(ind in which(bead > 0)) {
+    gene = gene_list[ind]
+    denom = weights[1] * cell_type_info[[1]][gene,type1] + weights[2] * cell_type_info[[1]][gene,type2] + epsilon
+    posterior_1 = (weights[1] * cell_type_info[[1]][gene,type1] + epsilon / 2) / denom
+    expect_1[[ind]] = posterior_1 * bead[gene]
+    expect_2[[ind]] = bead[gene] - posterior_1 * bead[gene]
+    variance[[ind]] = posterior_1 * bead[gene] * (1 - posterior_1)
+  }
+  return(list(expect_1 = expect_1, expect_2 = expect_2, variance = variance))
+}
+

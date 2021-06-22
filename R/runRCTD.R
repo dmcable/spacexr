@@ -128,6 +128,7 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
 #' @export
 fitPixels <- function(RCTD, doublet_mode = "doublet") {
+  RCTD@config$doublet_mode <- doublet_mode
   set_likelihood_vars(RCTD@internal_vars$Q_mat, RCTD@internal_vars$X_vals)
   cell_type_info <- RCTD@cell_type_info$renorm
   if(doublet_mode == "doublet") {

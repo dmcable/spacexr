@@ -12,7 +12,8 @@ run.RCTD(RCTD, doublet_mode = "doublet")
 \item{doublet_mode}{\code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.}
 }
 \value{
-an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
+an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm. Please see \code{\linkS4class{RCTD}}
+documentation for more information on interpreting the content of the RCTD object.
 }
 \description{
 Equivalent to sequentially running the functions \code{\link{fitBulk}}, \code{\link{choose_sigma_c}}, and \code{\link{fitPixels}}

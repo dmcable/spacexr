@@ -14,6 +14,13 @@ set_likelihood_vars <- function(Q_mat_loc, X_vals) {
   K_val <<- dim(Q_mat)[1] - 3;
 }
 
+set_global_Q_all <- function() {
+  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "RCTD"))
+  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "RCTD"))
+  Q_mat_all <<- c(Q1,Q2)
+  X_vals <<- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "RCTD"))
+}
+
 ht_pdf <- function(z, sigma) {
   x = z/sigma
   p = ht_pdf_norm(x)
@@ -111,8 +118,11 @@ calc_Q_k <- function(x, bead) {
 }
 
 #negative log likelihood
-calc_log_l_vec <- function(lambda, Y) {
-  return(-sum(log(calc_Q_k(lambda,Y))))
+calc_log_l_vec <- function(lambda, Y, return_vec = FALSE) {
+  log_l_vec <- -log(calc_Q_k(lambda,Y))
+  if(return_vec)
+    return(log_l_vec)
+  return(sum(log_l_vec))
 }
 
 

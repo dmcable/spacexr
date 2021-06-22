@@ -45,7 +45,6 @@ number of available cores.}
 \item{CELL_MIN_INSTANCE}{minimum number of cells required per cell type. Default 25, can be lowered if desired.}
 
 \item{cell_type_names}{A list of cell types to be included from the reference. If NULL, uses all cell types}
-                 
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function

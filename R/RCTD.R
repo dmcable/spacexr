@@ -42,24 +42,24 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE,
           N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1, MIN_CHANGE_REG = 0.001, UMI_max = 200000, MIN_OBS = 3, max_cores = 1)
    if(is.null(cell_type_names))
       cell_type_names <- levels(reference@cell_types)
-   cell_type_info <- list(info = process_cell_type_info(reference, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
+   cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
 
-   puck = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
+   puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    print('create.RCTD: getting regression differentially expressed genes: ')
    #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
-   gene_list_reg = get_de_genes(cell_type_info$info, puck, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
+   gene_list_reg = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_reg) == 0)
       stop("create.RCTD: Error: 0 regression differentially expressed genes found")
    print('create.RCTD: getting platform effect normalization differentially expressed genes: ')
-   gene_list_bulk = get_de_genes(cell_type_info$info, puck, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
+   gene_list_bulk = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_bulk) == 0)
       stop("create.RCTD: Error: 0 bulk differentially expressed genes found")
-   puck = restrict_counts(puck, gene_list_bulk, UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
+   puck = restrict_counts(puck.original, gene_list_bulk, UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    puck = restrict_puck(puck, colnames(puck@counts))
    if(is.null(class_df))
       class_df <- data.frame(cell_type_info$info[[2]], row.names = cell_type_info$info[[2]]); colnames(class_df)[1] = "class"
    internal_vars <- list(gene_list_reg = gene_list_reg, gene_list_bulk = gene_list_bulk, proportions = NULL, class_df = class_df)
-   new("RCTD", spatialRNA = puck, reference = reference, config = config, cell_type_info = cell_type_info, internal_vars = internal_vars)
+   new("RCTD", spatialRNA = puck, originalSpatialRNA = puck.original, reference = reference, config = config, cell_type_info = cell_type_info, internal_vars = internal_vars)
 }
 
 #' Runs the RCTD pipeline on a \code{\linkS4class{RCTD}} object
@@ -72,7 +72,8 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 8, test_mode = FALSE,
 #'
 #' @param RCTD an \code{\linkS4class{RCTD}} object created using the \code{\link{create.RCTD}} function.
 #' @param doublet_mode \code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm.
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm. Please see \code{\linkS4class{RCTD}}
+#' documentation for more information on interpreting the content of the RCTD object.
 #' @export
 run.RCTD <- function(RCTD, doublet_mode = "doublet") {
    if(!(doublet_mode %in% c('doublet','multi','full')))
@@ -82,3 +83,30 @@ run.RCTD <- function(RCTD, doublet_mode = "doublet") {
    RCTD <- fitPixels(RCTD, doublet_mode = doublet_mode)
 }
 
+#exports RCTD results as csv files
+export.RCTD <- function(RCTD, datadir) {
+   doublet_mode <- myRCTD@config$doublet_mode
+   if(is.null(doublet_mode))
+      stop("RCTD@config$doublet_mode is NULL. Please set to one of 'doublet', 'multi', 'full'.")
+   if(!(doublet_mode %in% c('doublet','multi','full')))
+      stop(paste0("export.RCTD: RCTD@config$doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
+   if(doublet_mode == 'multi')
+      stop("export.RCTD not implemented for RCTD@config$doublet_mode = 'multi'. Please contact the developers for assistance.")
+   write.csv(RCTD@results$weights, file.path(datadir, 'weights.csv'))
+   if(doublet_mode == 'doublet') {
+      write.csv(RCTD@results$weights_doublet, file.path(datadir, 'weights_doublet.csv'))
+      write.csv(RCTD@results$results_df, file.path(datadir, 'results_df.csv'))
+   }
+}
+
+check_vector <- function(variable, var_name, f_name) {
+   if(!is.atomic(variable))
+      stop(paste0(f_name,': ',var_name,' is not an atomic vector. Please format ',var_name,' as an atomic vector.'))
+   if(!is.numeric(variable))
+      stop(paste0(f_name,': ',var_name,' is not numeric'))
+   if(is.null(names(variable)))
+      stop(paste0(f_name,': names(',var_name,') is null. Please enter barcodes as names'))
+   if(length(variable) == 1)
+      stop(paste0(f_name,': the length of ',var_name,' is 1, indicating only one cell present. Please format ',var_name,' so that
+         the length is greater than 1.'))
+}

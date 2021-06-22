@@ -4,7 +4,7 @@
 \alias{Reference}
 \title{constructor of \code{\linkS4class{Reference}} object}
 \usage{
-Reference(counts, cell_types, nUMI = NULL)
+Reference(counts, cell_types, nUMI = NULL, require_int = TRUE)
 }
 \arguments{
 \item{counts}{A matrix (or dgCmatrix) representing Digital Gene Expression (DGE). Rownames should be genes

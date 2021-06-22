@@ -10,7 +10,9 @@ Created using the \code{\link{create.RCTD}} function, a user can run RCTD using 
 \section{Slots}{
 
 \describe{
-\item{\code{spatialRNA}}{a \code{\linkS4class{SpatialRNA}} object containing the Spatial RNA dataset to be processed}
+\item{\code{spatialRNA}}{a \code{\linkS4class{SpatialRNA}} object containing the Spatial RNA dataset to be used for RCTD}
+
+\item{\code{originalSpatialRNA}}{a \code{\linkS4class{SpatialRNA}} object containing the Spatial RNA dataset with all genes}
 
 \item{\code{reference}}{a \code{\linkS4class{Reference}} object containing the cell type-labeled single cell reference}
 
@@ -23,6 +25,16 @@ Created using the \code{\link{create.RCTD}} function, a user can run RCTD using 
 
 \item{\code{results}}{(created after running RCTD) a list of results_df (a dataframe of RCTD results in doublet mode),
 weights (a dataframe of RCTD predicted weights in full mode), and weights_doublet (a
-dataframe of predicted weights in doublet mode, with cell type information in results_df)}
+dataframe of predicted weights in doublet mode, with cell type information in results_df).
+
+In doublet-mode, The results of 'doublet_mode' are stored in `@results$results_df` and `@results$weights_doublet`, the weights of each cell type.
+More specifically, the `results_df` object contains one column per pixel (barcodes as rownames). Important columns are:
+* `spot_class`, a factor variable representing RCTD's classification in doublet mode: "singlet" (1 cell type on pixel), "doublet_certain" (2 cell types on pixel), "doublet_uncertain" (2 cell types on pixel, but only confident of 1), "reject" (no prediction given for pixel).
+* Next, the `first_type` column gives the first cell type predicted on the bead (for all spot_class conditions except "reject").
+* The `second_type column` gives the second cell type predicted on the bead for doublet spot_class conditions (not a confident prediction for "doublet_uncertain").
+
+Note that in multi-mode, results consists of a list of results for each pixel, which contains all_weights (weights from full mode),
+cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and
+sub_weights (proportions of cell types on multi mode).}
 }}
 

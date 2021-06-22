@@ -195,14 +195,14 @@ get_prediction_sparse <- function(cell_type_profiles, UMI_tot, p, type1, type2) 
   return(prediction)
 }
 
-get_singlet_score <- function(cell_type_profiles, bead, UMI_tot, type, constrain, MIN.CHANGE = 0.001) {
+get_singlet_score <- function(cell_type_profiles, bead, UMI_tot, type, constrain, MIN.CHANGE = 0.001, return_vec = FALSE) {
   if(!constrain)
     return(decompose_sparse(cell_type_profiles, UMI_tot, bead, type1=type, score_mode = T, constrain = constrain, MIN.CHANGE = MIN.CHANGE))
-  dummy_type = cell_type_info[[2]][1]
+  dummy_type = colnames(cell_type_profiles)[1]
   if(dummy_type == type)
-    dummy_type = cell_type_info[[2]][2]
+    dummy_type = colnames(cell_type_profiles)[2]
   prediction <- get_prediction_sparse(cell_type_profiles, UMI_tot, 1, type, dummy_type)
-  log_l <- calc_log_l_vec(prediction, bead)
+  log_l <- calc_log_l_vec(prediction, bead, return_vec = return_vec)
   return(log_l)
 }
 
