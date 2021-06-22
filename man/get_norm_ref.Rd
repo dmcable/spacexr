@@ -17,9 +17,8 @@ get_norm_ref(puck, cell_type_means, gene_list, proportions)
 (not constrained to sum to 1)}
 }
 \value{
-Returns \code{cell_type_info}, a list of three elements: (1) \code{cell_type_means} (a
-data_frame (genes by cell types) for mean normalized expression) (2) \code{cell_type_names}
-(a list of cell type names) and (3) the number of cell types
+Returns \code{cell_type_means}, a data_frame (genes by cell types) for mean normalized cell type expression profiles in which
+platform effects have been removed to match the \linkS4class{SpatialRNA} data.
 }
 \description{
 renormalizes \code{cell_type_means} to have average the same as the puck.

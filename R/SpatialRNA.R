@@ -7,8 +7,6 @@ fake_coords <- function(counts) {
 }
 
 
-
-
 #' Creates a SpatialRNA object from a 10x Genomics Visium `outs` directory
 #'
 #' Given a SpatialRNA directory 10x Genomics Visium `outs` directory and returns a SpatialRNA object.
@@ -24,7 +22,7 @@ read.VisiumSpatialRNA <- function (datadir)
                             col_names = c("barcodes", "in_tissue", "x", "y", "pxl_col_in_fullres", "pxl_row_in_fullres"))
   coords = tibble::column_to_rownames(coords, var = "barcodes")
   counts <- Seurat::Read10X_h5(paste0(datadir, "/filtered_feature_bc_matrix.h5"))
-  puck = SpatialRNA(coords, counts)
+  puck = SpatialRNA(coords[,c('x','y')], counts)
   restrict_puck(puck, colnames(puck@counts))
 }
 
