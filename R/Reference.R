@@ -45,6 +45,8 @@ check_cell_types <- function(cell_types) {
     stop('Reference: length(levels(cell_types)) < 2. cell_types needs to be a factor with multiple levels for each cell type.')
   if(is.null(names(cell_types)))
     stop('Reference: names(cell_types) is null. Please enter cell barcodes as names')
+  if(min(unlist(lapply(levels(cell_types),nchar))) == 0)
+    stop('Reference: levels(cell_types) contains a cell type with an empty name "". Please ensure all cell type names are nonempty strings.')
 }
 
 convert_old <- function(old_reference) {
