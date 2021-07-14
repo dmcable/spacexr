@@ -39,15 +39,24 @@ gather_results <- function(RCTD, results) {
 }
 
 
+
+#' Computes expected counts for each pixel for each cell type and each gene.
+#' @param gene_list A list of genes for which to compute decomposed gene expression.
+#' @param puck a \code{\linkS4class{SpatialRNA}} object to decompose.
+#' @param weights_doublet a matrix of cell type weights outputed by RCTD, i.e. accessible by myRCTD@results$weights_doublet
+#' @param cell_type_info accessible by myRCTD@cell_type_info$info or myRCTD@cell_type_info$renorm. A list of three elements: (1) \code{cell_type_means} (a
+#' data_frame (genes by cell types) for mean normalized expression) (2) \code{cell_type_names} (a list of cell type names) and (3) the number of cell types
+#' @return Returns a \code{\linkS4class{Reference}} object containing the decomposed cells for each pixel and
+#' cell type
 #' @export
-get_decomposed_data_full_doublet <- function(gene_list, puck, weights, ct_info) {
+get_decomposed_data <- function(gene_list, puck, weights_doublet, cell_type_info) {
   first_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
   second_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
   rownames(first_DGE) = rownames(weights); rownames(second_DGE) = rownames(weights)
   colnames(first_DGE) = gene_list; colnames(second_DGE) = gene_list
   for(ind in 1:dim(weights)[1]) {
     barcode = rownames(weights)[ind]
-    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights[barcode,], gene_list, ct_info, colnames(weights)[1],colnames(weights)[2])
+    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights[barcode,], gene_list, cell_type_info, colnames(weights)[1],colnames(weights)[2])
     first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
   }
   norm1 <- sweep(first_DGE, 1, weights[rownames(weights),1] * puck@nUMI[rownames(first_DGE)], '/')
