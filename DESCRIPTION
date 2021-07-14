@@ -13,7 +13,6 @@ Imports:
 	readr, 
 	ggplot2, 
 	pals, 
-	ggplot2,
 	Matrix, 
 	parallel,
 	doParallel, 

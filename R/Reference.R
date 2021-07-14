@@ -23,17 +23,22 @@ Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE) {
   check_cell_types(cell_types)
   barcodes <- intersect(intersect(names(nUMI), names(cell_types)), colnames(counts))
   if(length(barcodes) == 0)
-    stop('Reference: cell_types, counts, and nUMI do not share any barcode names. Please ensure that names(cell_types)
-         matches colnames(counts) and names(nUMI)')
+    stop('Reference: cell_types, counts, and nUMI do not share any barcode names. Please ensure that names(cell_types) matches colnames(counts) and names(nUMI)')
   if(length(barcodes) < max(length(nUMI),length(cell_types),dim(counts)[2]))
     warning('Reference: some barcodes in nUMI, cell_types, or counts were not mutually shared. Such barcodes were removed.')
   if(sum(nUMI[barcodes] != colSums(counts[,barcodes])) > 0)
-    warning('Reference: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this
-            is intended, there is no problem.')
+    warning('Reference: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this is intended, there is no problem.')
   missing_cell_types <- names(which(table(cell_types[barcodes]) == 0))
   if(length(missing_cell_types) > 0)
     warning(paste('Reference: missing cell types with no occurences: ',paste(missing_cell_types,collapse=', ')))
-  new("Reference", cell_types = cell_types[barcodes], counts = counts[,barcodes], nUMI = nUMI[barcodes])
+  reference <- new("Reference", cell_types = cell_types[barcodes], counts = counts[,barcodes], nUMI = nUMI[barcodes])
+  n_samples <- 10000; cur_count <- max(table(reference@cell_types))
+  if(cur_count > n_samples) {
+    warning(paste0('Reference: number of cells per cell type is ', cur_count, ', larger than maximum allowable of ', n_samples,
+    '. Downsampling number of cells to: ', n_samples))
+    reference <- create_downsampled_data(reference, n_samples = n_samples)
+  }
+  return(reference)
 }
 
 check_cell_types <- function(cell_types) {
@@ -66,4 +71,23 @@ restrict_reference_cell_types <- function(reference, cell_type_list) {
   new_ref <- (restrict_reference(reference, names(reference@cell_types)[reference@cell_types %in% cell_type_list]))
   new_ref@cell_types <- droplevels(new_ref@cell_types)
   return(new_ref)
+}
+
+create_downsampled_data <- function(reference, cell_types_keep = NULL, n_samples = 10000) {
+  if(is.null(cell_types_keep))
+    cell_types_keep = levels(reference@cell_types)
+  cell_types_keep = cell_types_keep[unlist(lapply(cell_types_keep, function(x) nchar(x) > 0))]
+  index_keep = c(); i = 1
+  repeat{
+    new_index = which(reference@cell_types == cell_types_keep[i])
+    new_samples = min(n_samples, length(new_index))
+    index_keep = c(index_keep, sample(new_index,new_samples,replace=FALSE))
+    if((i = i + 1) > length(cell_types_keep))
+      break
+  }
+  reference@counts = reference@counts[,index_keep]
+  reference@cell_types = reference@cell_types[index_keep]
+  reference@cell_types = droplevels(reference@cell_types)
+  reference@nUMI = reference@nUMI[index_keep]
+  return(reference)
 }

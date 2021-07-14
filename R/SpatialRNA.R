@@ -63,13 +63,11 @@ SpatialRNA <- function(coords, counts, nUMI = NULL, use_fake_coords = FALSE, req
   }
   barcodes <- intersect(intersect(names(nUMI), rownames(coords)), colnames(counts))
   if(length(barcodes) == 0)
-    stop('SpatialRNA: coords, counts, and nUMI do not share any barcode names. Please ensure that rownames(coords)
-         matches colnames(counts) and names(nUMI)')
+    stop('SpatialRNA: coords, counts, and nUMI do not share any barcode names. Please ensure that rownames(coords) matches colnames(counts) and names(nUMI)')
   if(length(barcodes) < max(length(nUMI),dim(coords)[1],dim(counts)[2]))
     warning('SpatialRNA: some barcodes in nUMI, coords, or counts were not mutually shared. Such barcodes were removed.')
   if(sum(nUMI[barcodes] != colSums(counts[,barcodes])) > 0)
-    warning('SpatialRNA: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this
-            is intended, there is no problem.')
+    warning('SpatialRNA: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this is intended, there is no problem.')
   new("SpatialRNA", coords = coords[barcodes,], counts = counts[,barcodes], nUMI = nUMI[barcodes])
 }
 
@@ -86,11 +84,9 @@ check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T) {
     stop(paste0(f_name,': names(nUMI) is null. Please enter barcodes as names'))
   if(length(nUMI) == 1)
     if(require_2d)
-      stop(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. Please format nUMI so that
-           the length is greater than 1.'))
+      stop(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. Please format nUMI so that the length is greater than 1.'))
     else
-      warning(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. If this is unintended,
-        please format nUMI so that the length is greater than 1.'))
+      warning(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. If this is unintended, please format nUMI so that the length is greater than 1.'))
 }
 
 check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
@@ -132,8 +128,7 @@ check_coords <- function(coords) {
     tryCatch({
       coords <- as(coords,'data.frame')
     }, error = function(e) {
-      stop('SpatialRNA: could not convert coords to data.frame using as(coords,\'data.frame\'). Please check that
-           coords is coercible to data.frame, such as a matrix or data.frame .')
+      stop('SpatialRNA: could not convert coords to data.frame using as(coords,\'data.frame\'). Please check that coords is coercible to data.frame, such as a matrix or data.frame .')
     })
   }
   if(dim(coords)[2] != 2) #check more than one gene

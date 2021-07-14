@@ -1,5 +1,5 @@
 
-solveOLS<-function(S,B, constrain = T){
+solveOLS<-function(S,B, solution, constrain = T){
   D<-t(S)%*%S
   d<-t(S)%*%B
   norm_factor <- norm(D,"2")
@@ -26,13 +26,11 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
                               n.iter = 50, MIN_CHANGE = .001, bulk_mode = F, solution = NULL){
   if(!bulk_mode)
     B[B > K_val] <- K_val
+  solution <- numeric(dim(S)[2])
+  solution[] <- 1/length(solution)
   if(OLS) {
-    solution<-solveOLS(S,B, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
+    solution<-solveOLS(S,B, solution, constrain = constrain) #first solve OLS, use this solution to find a starting point for the weights
     return(list(weights = solution, converged = T))
-  }
-  if(is.null(solution)) {
-    solution <- numeric(dim(S)[2])
-    solution[] <- 1/length(solution) #actually, just ignore the OLS solution
   }
   #solution <- runif(length(solution))*2 / length(solution) # random initialization
   names(solution) <- colnames(S)
