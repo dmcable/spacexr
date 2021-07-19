@@ -52,6 +52,10 @@ check_cell_types <- function(cell_types) {
     stop('Reference: names(cell_types) is null. Please enter cell barcodes as names')
   if(min(unlist(lapply(levels(cell_types),nchar))) == 0)
     stop('Reference: levels(cell_types) contains a cell type with an empty name "". Please ensure all cell type names are nonempty strings.')
+  cell_type_names <- levels(cell_types)
+  prohibited_character = '/'
+  if(any(grepl(prohibited_character, my_list)))
+    stop(paste0('Reference: levels(cell_types) contains a cell type with name containing prohibited character ', prohibited_character,'. Please rename this cell type.'))
 }
 
 convert_old <- function(old_reference) {
