@@ -39,34 +39,42 @@ gather_results <- function(RCTD, results) {
 }
 
 
-
-#' Computes expected counts for each pixel for each cell type and each gene.
-#' @param gene_list A list of genes for which to compute decomposed gene expression.
-#' @param puck a \code{\linkS4class{SpatialRNA}} object to decompose.
-#' @param weights_doublet a matrix of cell type weights outputed by RCTD, i.e. accessible by myRCTD@results$weights_doublet
-#' @param cell_type_info accessible by myRCTD@cell_type_info$info or myRCTD@cell_type_info$renorm. A list of three elements: (1) \code{cell_type_means} (a
-#' data_frame (genes by cell types) for mean normalized expression) (2) \code{cell_type_names} (a list of cell type names) and (3) the number of cell types
-#' @return Returns a \code{\linkS4class{Reference}} object containing the decomposed cells for each pixel and
-#' cell type
+#' Decomposes SpatialRNA data into individual cells
+#'
+#' Applied to the output of \code{\link{gather_results}}.
+#' Singlet pixels are left unchanged, and doublet_certain conditions are
+#' decomposed into single cells.
+#'
+#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @param puck an object of type \linkS4class{SpatialRNA}
+#' @param weights_doublet a dataframe of predicted weights in doublet mode
+#' @param results_df a dataframe of RCTD results
+#' @param gene_list a list of genes to be used for the decomposition
+#' @param cell_type_info cell type information and profiles of each cell, calculated from the scRNA-seq
+#' reference (see \code{\link{get_cell_type_info}})
+#' @return An object of type \linkS4class{SpatialRNA} representing the decomposed cells
 #' @export
-get_decomposed_data <- function(gene_list, puck, weights_doublet, cell_type_info) {
-  first_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
-  second_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
-  rownames(first_DGE) = rownames(weights); rownames(second_DGE) = rownames(weights)
+get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, cell_type_info) {
+  doublets <- results_df[results_df$spot_class == "doublet_certain",]
+  first_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))
+  second_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))
+  rownames(first_DGE) = rownames(doublets); rownames(second_DGE) = rownames(doublets)
   colnames(first_DGE) = gene_list; colnames(second_DGE) = gene_list
-  for(ind in 1:dim(weights)[1]) {
-    barcode = rownames(weights)[ind]
-    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights[barcode,], gene_list, cell_type_info, colnames(weights)[1],colnames(weights)[2])
+  for(ind in 1:dim(doublets)[1]) {
+    print(ind)
+    barcode = rownames(doublets)[ind]
+    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights_doublet[barcode,], gene_list, cell_type_info, results_df[barcode,"first_type"],results_df[barcode,"second_type"])
     first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
   }
-  norm1 <- sweep(first_DGE, 1, weights[rownames(weights),1] * puck@nUMI[rownames(first_DGE)], '/')
-  norm2 <- sweep(second_DGE, 1, weights[rownames(weights),2] * puck@nUMI[rownames(second_DGE)], '/')
-  all_DGE <- rbind(norm1, norm2)
-  cell_type_labels <- unlist(list(rep(colnames(weights)[1], dim(weights)[1]), rep(colnames(weights)[2], dim(weights)[1])))
-  nUMI <- c(weights[rownames(weights),1] *puck@nUMI[rownames(first_DGE)], weights[rownames(weights),2]*puck@nUMI[rownames(second_DGE)])
-  rownames(all_DGE) = 1:dim(all_DGE)[1]; names(cell_type_labels) <- 1:dim(all_DGE)[1]; names(nUMI) <- 1:dim(all_DGE)[1]
-  ref_d <- Reference(t(all_DGE), factor(cell_type_labels), nUMI, require_int = F)
-  return(ref_d)
+  singlet_id <- results_df$spot_class == "singlet"
+  all_DGE <- rbind(first_DGE, second_DGE, t(puck@counts[gene_list, singlet_id]))
+  cell_type_labels <- unlist(list(doublets$first_type, doublets$second_type, results_df[singlet_id, "first_type"]))
+  coords <- rbind(puck@coords[rownames(doublets),c('x','y')], puck@coords[rownames(doublets),c('x','y')], puck@coords[singlet_id,c('x','y')])
+  nUMI <- c(weights_doublet[rownames(doublets),"first_type"] *puck@nUMI[rownames(first_DGE)], weights_doublet[rownames(doublets),"second_type"]*puck@nUMI[rownames(second_DGE)], puck@nUMI[singlet_id])
+  rownames(coords) = 1:dim(coords)[1]; names(nUMI) = 1:dim(coords)[1]
+  rownames(all_DGE) = 1:dim(coords)[1]
+  puck_d <- SpatialRNA(coords, t(all_DGE), nUMI, require_int = F)
+  return(puck_d)
 }
 
 #decompose a doublet into two cells
