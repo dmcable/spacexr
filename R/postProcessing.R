@@ -45,7 +45,7 @@ gather_results <- function(RCTD, results) {
 #' Singlet pixels are left unchanged, and doublet_certain conditions are
 #' decomposed into single cells.
 #'
-#' @param iv Initial Variables: meta data obtained from the \code{\link{init_RCTD}} function
+#' @param results_df a dataframe of RCTD results (see \code{\link{gather_results}})
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param weights_doublet a dataframe of predicted weights in doublet mode
 #' @param results_df a dataframe of RCTD results
