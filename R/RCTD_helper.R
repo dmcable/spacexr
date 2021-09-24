@@ -134,7 +134,7 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
 }
 
 #Decomposing a single bead via doublet search
-process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F, MIN.CHANGE = 0.001) {
+process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F, MIN.CHANGE = 0.001, MAX.TYPES = 4) {
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
   cell_type_profiles = data.matrix(cell_type_profiles)
@@ -144,7 +144,6 @@ process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_d
   conv_all <- results_all$converged
   initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
   candidates <- names(which(all_weights > initial_weight_thresh))
-  MAX_TYPES = 4;
   cell_type_list <- c()
   curr_score <- 1000000
   for(n in 1:MAX_TYPES) {
