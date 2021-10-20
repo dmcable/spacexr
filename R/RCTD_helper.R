@@ -146,7 +146,7 @@ process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_d
   candidates <- names(which(all_weights > initial_weight_thresh))
   cell_type_list <- c()
   curr_score <- 1000000
-  for(n in 1:MAX_TYPES) {
+  for(n in 1:MAX.TYPES) {
     min_score = curr_score
     best_type = NULL
     for(type in candidates) {
