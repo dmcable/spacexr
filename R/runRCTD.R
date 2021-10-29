@@ -89,7 +89,7 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
   return(results)
 }
 
-process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T, MAX_CORES = 8, MIN.CHANGE = 0.001) {
+process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T, MAX_CORES = 8, MIN.CHANGE = 0.001, MAX.TYPES = 4) {
   beads = t(as.matrix(puck@counts[gene_list,]))
   if(MAX_CORES > 1) {
     numCores = parallel::detectCores();
@@ -103,7 +103,7 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
-      result = process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
+      result = process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES)
       result
     }
     parallel::stopCluster(cl)
@@ -111,7 +111,7 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
     #not parallel
     results <- list()
     for(i in 1:(dim(beads)[1])) {
-      results[[i]] <- process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
+      results[[i]] <- process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,], class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES)
     }
   }
   return(results)
@@ -147,7 +147,7 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
     return(RCTD)
   } else if(doublet_mode == "multi") {
     RCTD@results = process_beads_multi(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
-                                  constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG)
+                                  constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, MAX.TYPES = RCTD@config$MAX_MULTI_TYPES)
     return(RCTD)
   } else {
     stop(paste0("fitPixels: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
