@@ -82,6 +82,8 @@ check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T) {
   }
   if(is.null(names(nUMI)))
     stop(paste0(f_name,': names(nUMI) is null. Please enter barcodes as names'))
+  if(any(duplicated(names(nUMI))))
+    stop(paste0(f_name,': names(nUMI) contain duplicated elements. Please ensure barcode names are unique'))
   if(length(nUMI) == 1)
     if(require_2d)
       stop(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. Please format nUMI so that the length is greater than 1.'))
@@ -95,21 +97,17 @@ check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
       tryCatch({
         counts <- as(counts,'matrix')
       }, error = function(e) {
-        stop(paste0(f_name,': could not convert counts to matrix using as(counts,\'matrix\'). Please check that
-             counts is coercible to matrix, such as a matrix, dgCmatrix, or data.frame.'))
+        stop(paste0(f_name,': could not convert counts to matrix using as(counts,\'matrix\'). Please check that counts is coercible to matrix, such as a matrix, dgCmatrix, or data.frame.'))
       })
     counts <- as(counts,"dgCMatrix")
   }
   if(dim(counts)[1] == 1) #check more than one gene
-    stop(paste0(f_name,': the first dimension of counts is 1, indicating only one gene present. Please format counts so that
-           the first dimension is greater than 1.'))
+    stop(paste0(f_name,': the first dimension of counts is 1, indicating only one gene present. Please format counts so that the first dimension is greater than 1.'))
   if(dim(counts)[2] == 1)
     if(require_2d)
-      stop(paste0(f_name,': the second dimension of counts is 1, indicating only one cell present. Please format counts so that
-           the second dimension is greater than 1.'))
+      stop(paste0(f_name,': the second dimension of counts is 1, indicating only one cell present. Please format counts so that the second dimension is greater than 1.'))
     else
-      warning(paste0(f_name,': the second dimension of counts is 1, indicating only one cell/pixel present. If this is unintended,
-        please format counts so that the second dimension is greater than 1.'))
+      warning(paste0(f_name,': the second dimension of counts is 1, indicating only one cell/pixel present. If this is unintended, please format counts so that the second dimension is greater than 1.'))
   if(!is.numeric(counts[1,1]))
     stop(paste0(f_name,': elements of counts are not numeric'))
   if(require_int) {
@@ -120,6 +118,10 @@ check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
     stop(paste0(f_name,': rownames(counts) is null. Please enter gene names as rownames'))
   if(is.null(colnames(counts)))
     stop(paste0(f_name,': colnames(counts) is null. Please enter barcodes as colnames'))
+  if(any(duplicated(rownames(counts))))
+    stop(paste0(f_name,': rownames(counts) contain duplicated elements. Please ensure gene names are unique'))
+  if(any(duplicated(colnames(counts))))
+    stop(paste0(f_name,': colnames(counts) contain duplicated elements. Please ensure barcode names are unique'))
   return(counts)
 }
 
@@ -138,6 +140,8 @@ check_coords <- function(coords) {
     stop('SpatialRNA: coords is not numeric')
   if(is.null(rownames(coords)))
     stop('SpatialRNA: rownames(coords) is null. Please enter barcodes as rownames')
+  if(any(duplicated(rownames(coords))))
+    stop('SpatialRNA: rownames(coords) contain duplicated elements. Please ensure barcode names are unique')
   return(coords)
 }
 

@@ -69,22 +69,3 @@ get_decomposed_data <- function(gene_list, puck, weights_doublet, cell_type_info
   return(ref_d)
 }
 
-#decompose a doublet into two cells
-decompose_doublet_fast <- function(bead, weights, gene_list, cell_type_info, type1, type2) {
-  N_genes = length(gene_list)
-  expect_1 = vector(mode="numeric",length = N_genes)
-  expect_2 = vector(mode="numeric",length = N_genes)
-  variance = vector(mode="numeric",length = N_genes)
-  names(expect_1) = gene_list; names(expect_2) = gene_list; names(variance) = gene_list
-  epsilon = 1e-10
-  for(ind in which(bead > 0)) {
-    gene = gene_list[ind]
-    denom = weights[1] * cell_type_info[[1]][gene,type1] + weights[2] * cell_type_info[[1]][gene,type2] + epsilon
-    posterior_1 = (weights[1] * cell_type_info[[1]][gene,type1] + epsilon / 2) / denom
-    expect_1[[ind]] = posterior_1 * bead[gene]
-    expect_2[[ind]] = bead[gene] - posterior_1 * bead[gene]
-    variance[[ind]] = posterior_1 * bead[gene] * (1 - posterior_1)
-  }
-  return(list(expect_1 = expect_1, expect_2 = expect_2, variance = variance))
-}
-
