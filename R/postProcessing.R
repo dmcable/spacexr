@@ -38,6 +38,25 @@ gather_results <- function(RCTD, results) {
   return(RCTD)
 }
 
+get_decomposed_data_full_doublet <- function(gene_list, puck, weights, ct_info) {
+  first_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
+  second_DGE <- Matrix(0, nrow = dim(weights)[1], ncol = length(gene_list))
+  rownames(first_DGE) = rownames(weights); rownames(second_DGE) = rownames(weights)
+  colnames(first_DGE) = gene_list; colnames(second_DGE) = gene_list
+  for(ind in 1:dim(weights)[1]) {
+    barcode = rownames(weights)[ind]
+    doub_res <- decompose_doublet_fast(puck@counts[gene_list,barcode], weights[barcode,], gene_list, ct_info, colnames(weights)[1],colnames(weights)[2])
+    first_DGE[barcode,] <- doub_res$expect_1; second_DGE[barcode,] <- doub_res$expect_2
+  }
+  norm1 <- sweep(first_DGE, 1, weights[rownames(weights),1] * puck@nUMI[rownames(first_DGE)], '/')
+  norm2 <- sweep(second_DGE, 1, weights[rownames(weights),2] * puck@nUMI[rownames(second_DGE)], '/')
+  all_DGE <- rbind(norm1, norm2)
+  cell_type_labels <- unlist(list(rep(colnames(weights)[1], dim(weights)[1]), rep(colnames(weights)[2], dim(weights)[1])))
+  nUMI <- c(weights[rownames(weights),1] *puck@nUMI[rownames(first_DGE)], weights[rownames(weights),2]*puck@nUMI[rownames(second_DGE)])
+  rownames(all_DGE) = 1:dim(all_DGE)[1]; names(cell_type_labels) <- 1:dim(all_DGE)[1]; names(nUMI) <- 1:dim(all_DGE)[1]
+  ref_d <- Reference(t(all_DGE), factor(cell_type_labels), nUMI, require_int = F)
+  return(ref_d)
+}
 
 #' Decomposes SpatialRNA data into individual cells
 #'
@@ -76,4 +95,3 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
   puck_d <- SpatialRNA(coords, t(all_DGE), nUMI, require_int = F)
   return(puck_d)
 }
-

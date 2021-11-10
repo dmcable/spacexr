@@ -1,6 +1,6 @@
 
 fake_coords <- function(counts) {
-  coords <- data.frame(Matrix(0,nrow=dim(counts)[2],ncol=2))
+  coords <- data.frame(as.matrix(Matrix(0,nrow=dim(counts)[2],ncol=2)))
   colnames(coords) <- c('x','y')
   rownames(coords) <- colnames(counts)
   return(coords)

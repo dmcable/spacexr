@@ -12,7 +12,7 @@
 #' @return Returns a \code{\linkS4class{Reference}} object containing the counts matrix, cell type labels, and UMI vector
 #' from the input files
 #' @export
-Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE) {
+Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE, n_max_cells = 10000) {
   counts <- check_counts(counts, 'Reference', require_2d = T, require_int = require_int)
   if(is.null(nUMI)) {
     nUMI = colSums(counts)
@@ -32,11 +32,11 @@ Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE) {
   if(length(missing_cell_types) > 0)
     warning(paste('Reference: missing cell types with no occurences: ',paste(missing_cell_types,collapse=', ')))
   reference <- new("Reference", cell_types = cell_types[barcodes], counts = counts[,barcodes], nUMI = nUMI[barcodes])
-  n_samples <- 10000; cur_count <- max(table(reference@cell_types))
-  if(cur_count > n_samples) {
+  cur_count <- max(table(reference@cell_types))
+  if(cur_count > n_max_cells) {
     warning(paste0('Reference: number of cells per cell type is ', cur_count, ', larger than maximum allowable of ', n_samples,
-    '. Downsampling number of cells to: ', n_samples))
-    reference <- create_downsampled_data(reference, n_samples = n_samples)
+                   '. Downsampling number of cells to: ', n_max_cells))
+    reference <- create_downsampled_data(reference, n_samples = n_max_cells)
   }
   return(reference)
 }
@@ -58,13 +58,12 @@ check_cell_types <- function(cell_types) {
     stop(paste0('Reference: levels(cell_types) contains a cell type with name containing prohibited character ', prohibited_character,'. Please rename this cell type.'))
 }
 
-
 convert_old_RCTD <- function(oldRCTD) {
-  oldRCTD@reference <- convert_old(oldRCTD@reference)
+  oldRCTD@reference <- convert_old_reference(oldRCTD@reference)
   return(oldRCTD)
 }
 
-convert_old <- function(old_reference) {
+convert_old_reference <- function(old_reference) {
   cell_types <- old_reference@meta.data$liger_ident_coarse
   nUMI <- old_reference@meta.data$nUMI
   names(cell_types) <- rownames(old_reference@meta.data);

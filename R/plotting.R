@@ -367,3 +367,30 @@ plot_class <- function(puck, barcodes_cur, my_class, counter_barcodes = NULL, ti
     plot <- plot + ggplot2::ggtitle(title)
   plot
 }
+
+#' create all RCTD plots
+#' 
+#' @export
+create_RCTD_plots <- function(myRCTD, datadir) {
+  results <- myRCTD@results
+  norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/')
+  cell_type_names <- myRCTD@cell_type_info$info[[2]] #list of cell type names
+  spatialRNA <- myRCTD@spatialRNA
+  resultsdir <- file.path(datadir,'RCTD_Plots') ## you may change this to a more accessible directory on your computer.
+  if(!dir.exists(resultsdir))
+    dir.create(resultsdir)
+  plot_weights(cell_type_names, spatialRNA, resultsdir, norm_weights)
+  # Plots all weights for each cell type as in full_mode. (saved as
+  # 'results/cell_type_weights.pdf')
+  plot_weights_unthreshold(cell_type_names, spatialRNA, resultsdir, norm_weights)
+  # Plots the weights for each cell type as in doublet_mode. (saved as
+  # 'results/cell_type_weights_doublets.pdf')
+  plot_weights_doublet(cell_type_names, spatialRNA, resultsdir, results$weights_doublet,
+                       results$results_df)
+  # Plots the number of confident pixels of each cell type in 'full_mode'. (saved as
+  # 'results/cell_type_occur.pdf')
+  plot_cond_occur(cell_type_names, resultsdir, norm_weights, spatialRNA)
+  # makes a map of all cell types, (saved as
+  # 'results/all_cell_types.pdf')
+  plot_all_cell_types(results$results_df, spatialRNA@coords, cell_type_names, resultsdir)
+}
