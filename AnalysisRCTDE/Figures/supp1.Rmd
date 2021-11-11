@@ -1,0 +1,279 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Benchmarking RCTDE on a simulated spatial transcriptomics dataset
+
+```{r libraries}
+library(DEGLAM)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/de_simulation_helper.R')
+devtools::load_all()
+load_all()
+set_global_Q_all()
+
+ref <- readRDS("../../../RCTD/data/Reference/10xCer/reference.rds")
+resultsdir <- '../../../RCTD/data/Reference/10xCer/de_simulation'
+common_cell_types <- c('Bergmann', 'Purkinje')
+n_cell_types = length(common_cell_types)
+trials = 77 
+n_conditions = 13
+boundary = ceiling(n_conditions / 2) 
+N_samples = (n_cell_types * trials * n_conditions * (n_cell_types - 1))/2
+first_UMI = numeric(N_samples); first_type = character(N_samples); second_type = character(N_samples)
+UMI_tot = 1000; UMI_step = UMI_tot / (n_conditions-1)
+UMI_tot = round(UMI_step * (n_conditions-1)); UMI1_vec = round(0:(n_conditions-1)*UMI_step)
+nUMI = ref@nUMI
+UMI1_vec = round(0:(n_conditions-1)*UMI_step)
+UMI1 <- rep(UMI1_vec,each = trials)
+UMI_vect <- rep(UMI_tot, N_samples)
+cell_type_names <- levels(ref@cell_types)
+```
+
+### Run RCTD on simulated data (the first step of RCTDE)
+
+```{r markers, eval = FALSE}
+puck.original <- SpatialRNA(NULL, ref@counts, nUMI = ref@nUMI, T)
+print('create.RCTD: getting regression differentially expressed genes: ')
+cell_type_info <- list(info = process_cell_type_info(ref, cell_type_names, CELL_MIN = 25), renorm = NULL)
+gene_list= get_de_genes(cell_type_info$info, puck.original)
+puck <- generate_sim_puck(common_cell_types, gene_list, ref)
+reference <- restrict_reference_cell_types(ref, common_cell_types) # only relevant cell types
+myRCTD <- create.RCTD(puck, reference, max_cores = 1)
+myRCTD <- run.RCTD(myRCTD)
+saveRDS(myRCTD, file.path(resultsdir, 'myRCTD.rds'))
+```
+
+### Load in RCTD results
+
+```{r load-res}
+myRCTD <- readRDS(file.path(resultsdir, 'myRCTD.rds'))
+puck <- myRCTD@originalSpatialRNA
+sigma_init <- as.character(100*myRCTD@internal_vars$sigma)
+results <- myRCTD@results
+norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/')
+beta <- as.matrix(norm_weights)
+cell_type_info <- myRCTD@cell_type_info$info
+```
+
+### Run RCTDE on null and non-null DE case
+
+```{r nonnull, eval = FALSE}
+gene_list <- rownames(myRCTD@spatialRNA@counts)
+N_genes <- 15
+for(non_null in c(T,F)) {
+  high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+  if(T)
+    high_genes <- high_genes[which(cell_type_info[[1]][high_genes, common_cell_types][,1] < 3e-2 & cell_type_info[[1]][high_genes, common_cell_types][,2] < 3e-2)]
+
+  set.seed(123)
+  cur_gene_list <- sample(high_genes,N_genes)
+  if(!non_null) {
+    REPLICATES <- 500
+    cur_gene_list <- sample(high_genes, N_genes)
+  } else {
+    REPLICATES <- 100
+  }
+  e_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list)))
+  s_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list)))
+  de_ground_truth <- c(1,1)
+  if(non_null) {
+    de_vals <- (((1:length(cur_gene_list)) - 1)/(length(cur_gene_list) - 1))*2-1
+  } else {
+    de_vals <- rep(0, length(cur_gene_list))
+  }
+  for(i in 1:length(cur_gene_list)) {
+    print(i)
+    de_gene <- cur_gene_list[i]
+    de_ground_truth[2] <- exp(de_vals[i])
+    de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+                         UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect) 
+    e_all[,, i] <- de_res$e_res
+    s_all[,,i] <- de_res$s_res
+  }
+  if(non_null) {
+    saveRDS(e_all, file.path(resultsdir, 'non_null_mean/e_all.rds'))
+    saveRDS(s_all, file.path(resultsdir, 'non_null_mean/s_all.rds'))
+  } else {
+    saveRDS(e_all, file.path(resultsdir, 'null_mean/e_all.rds'))
+    saveRDS(s_all, file.path(resultsdir, 'null_mean/s_all.rds'))
+  }
+}
+```
+
+### Plot null DE estimation results
+
+```{r fig-5, fig.height = 6, fig.width = 6, fig.align = 'center'}
+gene_list <- rownames(myRCTD@spatialRNA@counts) 
+high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+N_genes <- 15
+REPLICATES <- 500
+non_null <- F
+set.seed(123)
+cur_gene_list <- sample(high_genes,N_genes)
+if(!non_null) {
+  cur_gene_list <- sample(high_genes, N_genes)
+} 
+de_vals <- rep(0, length(cur_gene_list))
+if(non_null) {
+  e_all <- readRDS(file.path(resultsdir, 'non_null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'non_null_mean/s_all.rds'))
+} else {
+  e_all <- readRDS(file.path(resultsdir, 'null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'null_mean/s_all.rds'))
+}
+se <- apply(e_all[,2,], 2,sd)/sqrt(REPLICATES)
+results <- colMeans(e_all[,2,])
+plot_df <- data.frame(cur_gene_list[1:length(results)], results, se, de_vals)
+colnames(plot_df) <- c('gene', 'mean', 'se', 'de')
+if(! non_null) {
+  p <- ggplot(plot_df,aes(x=gene, y = mean)) + geom_point() + geom_errorbar(aes(x=gene,ymin = mean-1.96*se, ymax = mean + 1.96*se), width = .2)+ geom_hline(yintercept = 0) + theme_classic() + ggrepel::geom_label_repel(aes(label = gene),nudge_x = 0.15,na.rm = TRUE) 
+  p
+} else {
+  p <- ggplot(plot_df,aes(x=de, y = mean)) + geom_point() + geom_errorbar(aes(ymin = mean-1.96*se, ymax = mean + 1.96*se), width = 0.05) + geom_line(aes(x = de, y = de)) + theme_classic() + ggrepel::geom_label_repel(aes(label = gene),nudge_x = 0.15,na.rm = TRUE) 
+  p
+}
+```
+
+### Plot p-value enrichment
+
+```{r fig-6, fig.height = 4, fig.width = 4, fig.align = 'center'}
+z_all <- e_all / s_all
+p_res <- (2*(1 - pnorm(abs(z_all))))
+alpha_vals = c(.0025,.005,.01, .02, .03, .05, .1, .2)
+enrichment = numeric(length(alpha_vals))
+se = numeric(length(alpha_vals))
+N_trials <- length(p_res)
+for(i in 1:length(alpha_vals)) {
+  alpha <- alpha_vals[i]
+  p_curr <- (sum(p_res < alpha) / (N_trials))
+  enrichment[i] <- p_curr / alpha
+  se[i] <- sqrt(p_curr*(1-p_curr)/N_trials)/alpha
+}
+plot_df <- data.frame(alpha_vals, enrichment, se)
+p1 <- ggplot(plot_df, aes(x=alpha_vals,y = log(enrichment,2))) + geom_point() + ylim(c(-1.5,1.5)) + theme_classic() + geom_hline(yintercept = 0, linetype = 'dotted') + geom_errorbar(aes(ymin = log(enrichment - 1.96*se,2), ymax = log(enrichment + 1.96*se,2)), width = .005) + xlab('Significance level') + ylab('Log ratio of observed vs expected false positive rate')
+p1
+```
+
+
+### Plot standard error prediction
+
+```{r fig-7, fig.height = 6, fig.width = 6, fig.align = 'center'}
+errors <- sweep(e_all,3,de_vals,'-')
+vars <- s_all^2
+errors <- errors[order(vars)]^2
+vars <- vars[order(vars)] 
+bin_size <- 500
+N_bins <- length(vars) / bin_size
+pred_list <- numeric(N_bins)
+obs_list <- numeric(N_bins)
+se_list <- numeric(N_bins)
+for(i in 1:N_bins) {
+  offset <- bin_size * (i-1)
+  pred_list[i] <- mean(vars[(1 + offset):(100+offset)])
+  obs_list[i] <- mean(errors[(1 + offset):(100+offset)])
+  se_list[i] <- sd(errors[(1 + offset):(100+offset)])/sqrt(bin_size)
+}
+plot_df <- data.frame(pred_list, obs_list, se_list)
+colnames(plot_df) <- c('pred', 'obs', 'se')
+p <- ggplot(plot_df) + geom_point(aes(sqrt(pred), sqrt(obs))) + geom_errorbar(aes(x = sqrt(pred), ymin = sqrt(obs - 1.96*se), ymax = sqrt(obs + 1.96*se))) + geom_line(aes(x = sqrt(pred), y = sqrt(pred))) + theme_classic()
+p 
+```
+
+### Run power analysis
+
+```{r power, eval = FALSE}
+gene_list <- rownames(myRCTD@spatialRNA@counts)
+high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+high_genes <- high_genes[which(cell_type_info[[1]][high_genes, common_cell_types][,1] < 3e-2 & cell_type_info[[1]][high_genes, common_cell_types][,2] < 3e-2)]
+
+REPLICATES <- 100 
+DE_CONDITIONS <- 7
+de_vals <- (((1:DE_CONDITIONS) - 1)/(DE_CONDITIONS - 1))*2-1
+de_ground_truth <- c(1,1)
+cur_gene_list <- high_genes
+NUM_CELLS <- c(250, 500, 1000)
+e_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list), length(NUM_CELLS), DE_CONDITIONS))
+s_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list), length(NUM_CELLS), DE_CONDITIONS))
+dimnames(e_all) <- list(NULL,NULL,high_genes,NULL,NULL)
+dimnames(s_all) <- list(NULL,NULL,high_genes,NULL,NULL)
+for(k in 1:DE_CONDITIONS) {
+  print(paste("DE",k))
+  for(j in 1:length(NUM_CELLS)) {
+    print(paste('Ncells',j))
+    for(i in 1:length(cur_gene_list)) {
+      print(paste('gene',i))
+      de_gene <- cur_gene_list[i]
+      de_ground_truth[2] <- exp(de_vals[k])
+      de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+                           UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect,
+                           subset_cells = NUM_CELLS[j], regularize_expr = T)
+      e_all[,, i, j , k] <- de_res$e_res
+      s_all[,,i, j, k] <- de_res$s_res
+    }
+  }
+}
+saveRDS(e_all, file.path(resultsdir, 'power/e_all.rds'))
+saveRDS(s_all, file.path(resultsdir, 'power/s_all.rds'))
+```
+
+### Plot power analysis
+
+```{r fig-8, fig.height = 10, fig.width = 12, fig.align = 'center'}
+NUM_CELLS <- c(250, 500, 1000)
+DE_CONDITIONS <- 7
+de_vals <- (((1:DE_CONDITIONS) - 1)/(DE_CONDITIONS - 1))*2-1
+gene_list <- rownames(myRCTD@spatialRNA@counts)
+high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+high_genes <- high_genes[which(cell_type_info[[1]][high_genes, common_cell_types][,1] < 3e-2 & cell_type_info[[1]][high_genes, common_cell_types][,2] < 3e-2)]
+e_all <- readRDS(file.path(resultsdir, 'power/e_all.rds'))
+s_all <- readRDS(file.path(resultsdir, 'power/s_all.rds'))
+z_all <- e_all / s_all 
+p_all <- 2*(1 - pnorm(abs(z_all)))
+alpha <- 0.01
+power_estimates <- apply(p_all[,2,,,] < 0.01,c(2,3,4),mean)
+purk_expr <- log(cell_type_info[[1]][high_genes,'Purkinje'])
+plot_df <- data.frame(purk_expr, rowMeans(power_estimates[,1,]))
+colnames(plot_df) <- c('expr','power')
+R2 <- cor(plot_df$expr, plot_df$power)^2
+p1 <- ggplot(plot_df, aes(x = expr, y = power)) + geom_point() + ggtitle(paste('R2=',R2)) + ylim(c(0,1)) + theme_classic()
+my_order <- order(purk_expr)
+pre_df <- as.data.frame(t(power_estimates[my_order,1,]))
+pre_df$de <- de_vals
+pre_df$ncell <- NUM_CELLS[1]
+plot_df1 <- reshape2::melt(pre_df, id = c('de', 'ncell'))
+pre_df <- as.data.frame(t(power_estimates[my_order,2,]))
+pre_df$de <- de_vals
+pre_df$ncell <- NUM_CELLS[2]
+plot_df2 <- reshape2::melt(pre_df, id = c('de', 'ncell'))
+pre_df <- as.data.frame(t(power_estimates[my_order,3,]))
+pre_df$de <- de_vals
+pre_df$ncell <- NUM_CELLS[3]
+plot_df3 <- reshape2::melt(pre_df, id = c('de', 'ncell'))
+plot_df <- rbind(plot_df1, plot_df2, plot_df3)
+norm_purk_expr <- purk_expr - min(purk_expr)
+norm_purk_expr <- norm_purk_expr / max(norm_purk_expr)
+plot_df <- rbind(plot_df,
+                 data.frame('de' = 0, 'ncell' = "Expression", 'variable' = high_genes,'value' = norm_purk_expr))
+plot_df$ncell <- factor(plot_df$ncell, levels = c('Expression','250','500','1000'))
+plot_df$label = round(plot_df$value, 2)
+plot_df$label[plot_df$ncell == 'Expression'] <- NA
+plot_df$de <- plot_df$de*log(exp(1),2)
+my_labels <- names(table(plot_df$de))
+p2 <- ggplot(plot_df[plot_df$ncell != 'Expression',], aes(y = variable, x = de, fill = value)) + facet_wrap(ncell ~., nrow = 1) + geom_raster() + theme_classic() +
+  scale_fill_continuous("Power",high = "#132B43", low = "#56B1F7") + geom_text(aes(label = label), size = 2, color = 'white') + scale_x_continuous(breaks=round(as.numeric(my_labels),2)) + ylab("Gene") + xlab("Cell type A differential expression") + theme(axis.ticks.y = element_blank(), axis.text.y = element_blank())
+p3 <- ggplot(plot_df[plot_df$ncell == 'Expression',], aes(y = variable, x = de, fill = value)) + facet_wrap(ncell ~., nrow = 1) + geom_raster() + theme_classic() + scale_x_continuous(breaks=round(as.numeric(my_labels),2)) +scale_fill_continuous("Log cell type A expression",high = pals::brewer.reds(20)[20], low = pals::brewer.reds(20)[2], breaks = c(0,1), labels =round(c(min(purk_expr), max(purk_expr))*log(exp(1),2),2)) + xlab("") + ylab("Gene")+ theme(axis.ticks.y = element_blank(), axis.text.y = element_blank())
+ggarrange(p2,p3,nrow = 1, widths = c(3.3,1))
+```

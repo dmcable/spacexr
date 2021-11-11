@@ -4,9 +4,9 @@ make_all_de_plots <- function(myRCTD, datadir, cell_types_present = NULL) {
   if(!dir.exists(datadir))
     dir.create(datadir)
   make_de_plots_quant(myRCTD, datadir)
+  make_de_plots_genes(myRCTD, datadir)
   write_de_summary(myRCTD, datadir)
   if(myRCTD@internal_vars_de$test_mode == 'direct') {
-    post_filter_genes(myRCTD, datadir, cell_types_present = cell_types_present)
     make_de_plots_spatial(myRCTD, datadir)
   } else {
     make_de_plots_regions(myRCTD, datadir) #multi
@@ -20,12 +20,20 @@ make_de_plots_quant <- function(myRCTD, datadir) {
     res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
     if(myRCTD@internal_vars_de$test_mode == 'direct') {
       plot_sig_genes_quant(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
-                             res_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits, 
+                             res_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits,
                              which(myRCTD@internal_vars_de$cell_types == cell_type), myRCTD)
     } else { #multi
       plot_sig_genes_quant_regions(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
                            res_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits, which(myRCTD@internal_vars_de$cell_types == cell_type))
     }
+  }
+}
+
+make_de_plots_genes <- function(myRCTD, datadir) {
+  for(cell_type in myRCTD@internal_vars_de$cell_types) {
+    res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
+    plot_sig_genes(cell_type, myRCTD@internal_vars_de$all_barc, myRCTD@internal_vars_de$my_beta,
+                 myRCTD@spatialRNA, res_genes, myRCTD@internal_vars_de$test_mode, datadir)
   }
 }
 
@@ -68,6 +76,28 @@ write_de_summary <- function(myRCTD, datadir) {
   }
 }
 
+plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, test_mode, datadir) {
+  if(!dir.exists(file.path(datadir,'de_plots')))
+    dir.create(file.path(datadir,'de_plots'))
+  gene_list_sig <- rownames(res_genes)
+  if(test_mode == 'multi')
+    sing_thresh <- 0.8
+  else
+    sing_thresh <- 0.999
+  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > sing_thresh))
+  plots <- list()
+  if(length(gene_list_sig) > 0 & length(barcodes_sing) > 0) {
+    for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
+      gene = gene_list_sig[i]
+      Y <- puck@counts[gene, all_barc]
+      plots[[i]] <- plot_puck_continuous(puck, barcodes_sing, Y, ylimit = c(0,5), title = paste(gene,": log_fc=",round(res_genes[gene,'log_fc'],2),', p=',res_genes[gene,'p_val']))
+    }
+    pdf(file.path(datadir,paste0("de_plots/de_genes_",stringr::str_replace(cell_type,'/','_'),".pdf")))
+    invisible(lapply(plots, print))
+    dev.off()
+  }
+}
+
 plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, test_mode, datadir) {
   if(!dir.exists(file.path(datadir,'prediction_plots')))
     dir.create(file.path(datadir,'prediction_plots'))
@@ -96,9 +126,9 @@ plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, res_g
   gene_list_sig <- rownames(res_genes)
   barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
   MULT = 500
-  
+
   barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
-  
+
   plots <- list()
   if(length(gene_list_sig) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
@@ -120,6 +150,24 @@ plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, res_g
   }
 }
 
+#'
+#' @export
+plot_gene_two_regions <- function(puck, all_barc, my_beta, X2, res_genes, gene, cell_type, min_UMI = 200) {
+  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+  MULT = 500
+  barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= min_UMI])
+  Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
+  my_title = paste(gene,": log_fc=",round(res_genes[gene,'log_fc'],2),', p=',res_genes[gene,'p_val'])
+  my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
+  my_class[(X2[barc_plot,2] <= 0.2) & (Y_plot[barc_plot] == 0)] <- 1
+  my_class[(X2[barc_plot,2] <= 0.2) & (Y_plot[barc_plot] > 0)] <- 3
+  my_class[(X2[barc_plot,2] > 0.2) & (Y_plot[barc_plot] == 0)] <- 2
+  my_class[(X2[barc_plot,2] > 0.2) & (Y_plot[barc_plot] > 0)] <- 4
+  p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
+  suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
+  return(p3)
+}
+
 plot_sig_genes_regions <- function(cell_type, all_barc, my_beta, puck, res_genes, plotdir, X2) {
   gene_list_sig <- rownames(res_genes)
   barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.8))
@@ -130,7 +178,7 @@ plot_sig_genes_regions <- function(cell_type, all_barc, my_beta, puck, res_genes
   MULT = 500
   NR <- dim(X2)[2]
   barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
-  region_ids <- unlist(lapply(barc_plot, 
+  region_ids <- unlist(lapply(barc_plot,
                               function(barcode) which(as.logical(X2[barcode,]))))
   names(region_ids) <- barc_plot
   plots <- list()
@@ -159,14 +207,14 @@ plot_sig_genes_quant <- function(cell_type, all_barc, my_beta, puck, res_genes, 
   MULT = 500
   NR = 5;
   cur_barc <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
-  D <- dim(X2)[2] 
+  D <- dim(X2)[2]
   plots <- list()
   if(length(gene_list_sig) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
       gene = gene_list_sig[i]
       my_title = paste(gene,": log_fc=",round(res_genes[gene,'log_fc'],2),', p=',res_genes[gene,'p_val'])
       p3 <- plot_quant_df(myRCTD, gene_fits, myRCTD@internal_vars_de$cell_types, cell_type, gene, NR = NR)
-      plots[[i]] <- p3 + ggplot2::ggtitle(my_title) 
+      plots[[i]] <- p3 + ggplot2::ggtitle(my_title)
     }
     pdf(file.path(plotdir,paste0("de_plots_quant/de_genes_",stringr::str_replace(cell_type,'/','_'),".pdf")))
     invisible(lapply(plots, print))
@@ -190,10 +238,10 @@ plot_sig_genes_quant_regions <- function(cell_type, all_barc, my_beta, puck, res
   MULT = 500
   NR = dim(X2)[2];
   cur_barc <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
-  region_ids <- unlist(lapply(cur_barc, 
+  region_ids <- unlist(lapply(cur_barc,
                               function(barcode) which(as.logical(X2[barcode,]))))
   names(region_ids) <- cur_barc
-  
+
   plots <- list()
   if(length(gene_list_sig) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
@@ -255,6 +303,7 @@ bin_quant_df <- function(quant_df, NR = 5) {
   results_df <- data.frame(gene = character(), region = integer(), model = integer(),
                            N = integer(), Y = numeric(), pred = numeric(), se = numeric())
   model <- 1
+  gene <- 'gene'
   Threshes <- (0:NR)/NR
   for(cat in 1:NR) {
     cur_barcs <- rownames(quant_df)[quant_df$region >= Threshes[cat] & quant_df$region <= Threshes[cat + 1]]
@@ -264,7 +313,7 @@ bin_quant_df <- function(quant_df, NR = 5) {
     se <- sqrt(mean(quant_df[cur_barcs,'var'])/n)
     de<-data.frame(gene, cat, model, n, Y, pred, se)
     names(de)<-c('gene','region', 'model','N','Y','pred', 'se')
-    results_df <- bind_rows(results_df, de)
+    results_df <- dplyr::bind_rows(results_df, de)
   }
   return(results_df)
 }
@@ -275,7 +324,7 @@ plot_quant_df <- function(myRCTD, gene_fits, cell_types, cell_type, gene, NR = 5
   final_df[,c('Y','se','pred')] <- final_df[,c('Y','se','pred')] * 500 #scale to counts per 500
   final_df$region <- (final_df$region - 1) / (NR - 1)
   p <- ggplot(final_df, aes(x = region, y = pmax(Y, 10^(-8)))) + geom_point() + geom_line(aes(y = pred))+
-    geom_errorbar(aes(ymin = pmax(Y - 1.96*se,10^(-8)), ymax = (Y + 1.96*se)), width = 0.05) + 
+    geom_errorbar(aes(ymin = pmax(Y - 1.96*se,10^(-8)), ymax = (Y + 1.96*se)), width = 0.05) +
     theme_classic() + ylab('Average expression') + xlab('Predictive variable') + scale_x_continuous(breaks = c(0,0.5,1), labels = c(0,0.5,1), limits = c(-0.05,1.05))
   return(p)
 }

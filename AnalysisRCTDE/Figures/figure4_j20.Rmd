@@ -1,0 +1,188 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# RCTDE on the Slide-seq J20 Hippocampus
+
+### Load in RCTDE Results and calculate significant genes
+
+```{r prelude}
+library(DEGLAM)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+library(fields)
+library(stringr)
+load_all()
+# Load in spatialRNA data and Reference data
+pwd = getwd()
+datadir <- '../../../RCTD/data/SpatialRNA/Puck_210605/23'
+IM_DIR <- '../../../RCTD/data/Images/Plaque/210715/Processed/'
+ALIGN_DIR <- '../../../RCTD/data/Images/Plaque/210715/AlignmentResults/'
+myRCTD <- readRDS(file.path(datadir, 'myRCTDde_thresh.rds'))   
+cell_types <- myRCTD@internal_vars_de$cell_types
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/merge_de_helper.R')
+```
+
+### Save plaque image
+
+```{r plaque-img, eval = F} 
+IMAGE_NUMBER = 6
+aligned <- readRDS(file.path(ALIGN_DIR,paste0('aligned_',IMAGE_NUMBER)))
+plaque_img <- as.cimg(raster(paste0(IM_DIR,'C2-AVG_slide ',IMAGE_NUMBER,'.tif')))
+cur_im <- pmin(pmax(plaque_img-100,0),500)
+my_m <- aligned@tools$Staffli@transformations[[6]][1:2,1:2]
+my_m <- my_m/sqrt(sum(my_m[1:2,1]^2))
+final_im <- imager::mirror(imrotate(cur_im,acos(my_m[1,1])*180/pi + 90),'x')
+plot(final_im)
+save.image(final_im, file.path(datadir,'rotated_plaque_img.png'))
+```
+
+### Plot predictive-variable and cell types
+
+```{r fig-0, fig.height = 12, fig.width = 8, fig.align='center'}
+
+my_barc <- rownames(myRCTD@results$results_df)
+p1 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , myRCTD@internal_vars_de$X2[,2], 
+                     title ='') + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ geom_segment(aes(x = 1400, y = 2300, xend = 1784.6, yend = 2300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Plaque density", labels = c(0,1),breaks = c(0,1), limits = c(0,1))
+results_df <- myRCTD@results$results_df
+puck <- myRCTD@spatialRNA
+barcodes = rownames(results_df[results_df$spot_class != "reject" & puck@nUMI >= 100,])
+my_table = puck@coords[barcodes,]
+my_table$class = results_df[barcodes,]$first_type
+n_levels = myRCTD@cell_type_info$info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = myRCTD@cell_type_info$info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Ependymal"] <- "#D55E00"
+my_pal_curr["Interneuron"] <- "#E69F00"
+my_pal_curr["CA1"] <- "#56B4E9"
+my_pal_curr["Denate"] <- "#009E73"
+my_pal_curr["Oligodendrocyte"] <- "#EFCB00"
+my_pal_curr["CA3"] <- "#0072B2"
+my_pal_curr["Microglia_Macrophages"] <- "#000000"
+my_pal_curr["Astrocyte"] <- "#CC79A7"
+my_pal_curr["Choroid"] <- my_pal["Oligodendrocyte"]
+my_pal_curr["Entorihinal"] <- my_pal["CA3"]
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .1, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres], breaks = cell_types, labels = cell_types)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ geom_segment(aes(x = 1400, y = 2300, xend = 1784.6, yend = 2300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+ggarrange(p1,p2,nrow = 2)
+```
+
+### Load RCTDE results
+
+```{r de-load}
+datadir_list <- c('../../../RCTD/data/SpatialRNA/Puck_210605/21', '../../../RCTD/data/SpatialRNA/Puck_210605/22',
+                  '../../../RCTD/data/SpatialRNA/Puck_210605/23', '../../../RCTD/data/SpatialRNA/Puck_210605/24')
+resultsdir <- '../../../RCTD/data/SpatialRNA/Puck_210605/JointResults2/'
+RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde_thresh.rds')))
+cell_types <- RCTDde_list[[1]]@internal_vars_de$cell_types
+cell_types_present <- cell_types
+```
+
+```{r de-population, eval = FALSE}
+myRCTD <- RCTDde_list[[1]]
+de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
+plot_results <- T
+if(!dir.exists(resultsdir))
+  dir.create(resultsdir)
+de_pop_all <- list()
+gene_final_all <- list()
+for(cell_type in cell_types) {
+  res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, resultsdir, cell_types_present, plot_results = plot_results, q_thresh = 0.01, p_thresh = 1)
+  de_pop_all[[cell_type]] <- res$de_pop
+  gene_final_all[[cell_type]] <- res$gene_final
+}
+saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all_thresh.rds'))
+saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all_thresh.rds'))
+```
+
+```{r de-population-load}
+de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all_thresh.rds'))
+gene_final_all <- readRDS(file.path(resultsdir, 'gene_final_all_thresh.rds'))
+```
+
+### Make volcano plot
+
+```{r fig-2, fig.height = 6, fig.width = 8, fig.align='center'}
+
+plot_df_list <- list()
+myRCTD <- RCTDde_list[[1]]
+for(cell_type in cell_types[c(1,2,3,6)]) {
+  de_pop <- de_pop_all[[cell_type]]
+  gene_big <- Reduce(intersect, lapply(RCTDde_list, 
+                                       function(myRCTD) get_gene_list_type_wrapper(myRCTD, cell_type, cell_types_present)))
+  cell_type_means <- myRCTD@cell_type_info$info[[1]][gene_big,cell_types_present]
+  cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
+  p_vals <- 2*(1-pnorm(abs(de_pop[gene_big,'Z_est'])))
+  names(p_vals) <- gene_big
+  plot_df <- data.frame(gene_big, cell_type, de_pop[gene_big,'mean_est'], -log(pmax(p_vals,1e-16),10),  gene_big %in% gene_final_all[[cell_type]])
+  colnames(plot_df) <- c('gene', 'ct', 'mean', 'y', 'sig')
+  plot_df_list[[cell_type]] <- plot_df
+}
+plot_df <- bind_rows(plot_df_list)
+plot_df$label <- plot_df$gene
+plot_df$label[!plot_df$sig] <- NA
+clutter_factor <- 2
+plot_df$label[plot_df$ct %in% c('CA1', 'CA3')][round((1:floor(length(plot_df$ct %in% c('CA1', 'CA3'))/clutter_factor))*clutter_factor)] <- NA # reduce clutter
+if(length(grep("mt-",plot_df$gene)))
+  plot_df <- plot_df[plot_df$gene[-grep("mt-",plot_df$gene)],]
+p <- ggplot(plot_df, aes(x=mean*log(exp(1),2), y = y, color = ct, alpha = sig)) + geom_point() + theme_classic() + 
+  geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
+  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = F) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE by RCTDE') + ylab('RCTDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") ) +  ggplot2::scale_color_manual("Cell type",values = my_pal_curr[c('Astrocyte','CA1','CA3','Microglia_Macrophages')], breaks = c('Astrocyte','CA1','CA3','Microglia_Macrophages'), labels = c('Astrocyte','CA1','CA3','Microglia/Macrophages')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
+p
+```
+
+### Make spatial gene plots
+
+```{r plot-spatial fig-4, fig.height = 10, fig.width = 6, fig.align='center'}
+myRCTD <- RCTDde_list[[3]]
+X2 <- myRCTD@internal_vars_de$X2
+gene_fits <- myRCTD@de_results$gene_fits
+all_barc <- myRCTD@internal_vars_de$all_barc
+my_beta <- myRCTD@internal_vars_de$my_beta
+puck <- myRCTD@spatialRNA
+for(j in c(1,2)) {
+  if(j == 1) {
+    cell_type <- 'Astrocyte'
+    gene = 'Gfap'
+  } else {
+    cell_type <- 'Microglia_Macrophages'
+    gene = 'Ctsd'
+  }
+  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+  MULT = 500
+  density_thresh <- 0.5
+  barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
+  Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
+  if(gene == 'Gfap')
+    ge_thresh <- 1
+  else
+    ge_thresh <- 3
+  my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
+  my_class[(X2[barc_plot,2] <= density_thresh) & (Y_plot[barc_plot] <= ge_thresh)] <- 1
+  my_class[(X2[barc_plot,2] <= density_thresh) & (Y_plot[barc_plot] > ge_thresh)] <- 3
+  my_class[(X2[barc_plot,2] > density_thresh) & (Y_plot[barc_plot] <= ge_thresh)] <- 2
+  my_class[(X2[barc_plot,2] > density_thresh) & (Y_plot[barc_plot] > ge_thresh)] <- 4
+  p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class)) + ggtitle(gene)
+  suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ geom_segment(aes(x = 1400, y = 2300, xend = 1784.6, yend = 2300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()))
+  if(gene == 'Gfap')
+    p1 <- p3
+  else
+    p2 <- p3
+}
+ggarrange(p1,p2, nrow = 2)
+```

@@ -86,6 +86,9 @@ setClass("Reference",
 #' Note that in multi-mode, results consists of a list of results for each pixel, which contains all_weights (weights from full mode),
 #' cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and
 #' sub_weights (proportions of cell types on multi mode).
+#' @slot de_results results of the RCTDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
+#' whereas `res_gene_list` is a list, for each cell type, of significant genes detected by RCTDE.
+#' @slot internal_vars_de a list of variables that are used internally by RCTDE
 #' @export
 #' @import Matrix
 #' @import doParallel

@@ -1,0 +1,349 @@
+---
+output:  
+  html_document:
+    keep_md: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# Benchmarking RCTDE on a simulated spatial transcriptomics dataset
+
+```{r libraries}
+library(DEGLAM)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/de_simulation_helper.R')
+devtools::load_all()
+load_all()
+set_global_Q_all()
+
+ref <- readRDS("../../../RCTD/data/Reference/10xCer/reference.rds")
+resultsdir <- '../../../RCTD/data/Reference/10xCer/de_simulation'
+common_cell_types <- c('Bergmann', 'Purkinje')
+n_cell_types = length(common_cell_types)
+trials = 77 
+n_conditions = 13
+boundary = ceiling(n_conditions / 2) 
+N_samples = (n_cell_types * trials * n_conditions * (n_cell_types - 1))/2
+first_UMI = numeric(N_samples); first_type = character(N_samples); second_type = character(N_samples)
+UMI_tot = 1000; UMI_step = UMI_tot / (n_conditions-1)
+UMI_tot = round(UMI_step * (n_conditions-1)); UMI1_vec = round(0:(n_conditions-1)*UMI_step)
+nUMI = ref@nUMI
+UMI1_vec = round(0:(n_conditions-1)*UMI_step)
+UMI1 <- rep(UMI1_vec,each = trials)
+UMI_vect <- rep(UMI_tot, N_samples)
+cell_type_names <- levels(ref@cell_types)
+```
+
+### Run RCTD on simulated data (the first step of RCTDE)
+
+```{r markers, eval = FALSE}
+puck.original <- SpatialRNA(NULL, ref@counts, nUMI = ref@nUMI, T)
+print('create.RCTD: getting regression differentially expressed genes: ')
+cell_type_info <- list(info = process_cell_type_info(ref, cell_type_names, CELL_MIN = 25), renorm = NULL)
+gene_list= get_de_genes(cell_type_info$info, puck.original)
+puck <- generate_sim_puck(common_cell_types, gene_list, ref)
+reference <- restrict_reference_cell_types(ref, common_cell_types) # only relevant cell types
+myRCTD <- create.RCTD(puck, reference, max_cores = 1)
+myRCTD <- run.RCTD(myRCTD)
+saveRDS(myRCTD, file.path(resultsdir, 'myRCTD.rds'))
+```
+
+### Load in RCTD results
+
+```{r load-res}
+myRCTD <- readRDS(file.path(resultsdir, 'myRCTD.rds'))
+puck <- myRCTD@originalSpatialRNA
+sigma_init <- as.character(100*myRCTD@internal_vars$sigma)
+results <- myRCTD@results
+norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/')
+beta <- as.matrix(norm_weights)
+cell_type_info <- myRCTD@cell_type_info$info
+```
+
+### Run RCTDE on contamination simulation
+
+```{r contamination, eval = FALSE}
+de_gt_vals <- exp((-3:3)/5)
+gt_val <- 1
+COND <- length(de_gt_vals) # number of conditions for DE
+REPLICATES <- 100
+alpha_res <- array(0, dim = c(REPLICATES, 2, COND))
+dec_res <- array(0, dim = c(REPLICATES, 2, COND))
+sing_res <- array(0, dim = c(REPLICATES, 2, COND))
+bulk_res <- matrix(0, nrow = REPLICATES, ncol = COND)
+thresh <- 5 #flip 50% of them
+region_base <- c(rep(0, floor(N_samples/2)), rep(1, ceiling(N_samples/2)))
+region <- region_base
+N_int <- 10
+region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < thresh]
+de_gene <- 'Nrxn3'
+for(condi in 1:COND) {
+  de_ground_truth <- c(gt_val, de_gt_vals[condi])
+  de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+                       UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta,UMI_vect,
+                       other_methods = T, region_orig = region) 
+  alpha_res[,, condi] <- de_res$e_res
+  bulk_res[,condi] <- de_res$bulk_de
+  dec_res[, ,condi] <- de_res$dec_de
+  sing_res[,,condi] <- de_res$sing_de
+}
+saveRDS(alpha_res,file.path(resultsdir, 'other_methods_contamination/alpha_res.rds'))
+saveRDS(dec_res,file.path(resultsdir, 'other_methods_contamination/dec_res.rds'))
+saveRDS(bulk_res,file.path(resultsdir, 'other_methods_contamination/bulk_res.rds'))
+saveRDS(sing_res,file.path(resultsdir, 'other_methods_contamination/sing_res.rds'))
+```
+
+### Plot contamination simulation results
+
+```{r fig-2, fig.height = 8, fig.width = 5, fig.align = 'center'}
+alpha_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/alpha_res.rds'))
+dec_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/dec_res.rds'))
+bulk_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/bulk_res.rds'))
+sing_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/sing_res.rds'))
+REPLICATES <- 100
+de_gt_vals <- exp((-3:3)/5)
+gt_val <- 1
+plot_df <- as.data.frame(cbind( log(gt_val), log(de_gt_vals), apply(alpha_res,3:2,mean), apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd), apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
+colnames(plot_df) <- c('log_fc_b', 'log_fc_p', 'rctde_b', 'rctde_p', 'dec_b', 'dec_p', 'bulk','sing_b','sing_p', 'sd_rctde_b','sd_rctde_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b','sd_sing_p')
+graph_df <- plot_df %>% 
+  select(log_fc_p, rctde_b, sd_rctde_b) %>% 
+  rename(estimate=rctde_b, sd=sd_rctde_b) %>%
+  mutate(type = 'rctde_b') %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, rctde_p, sd_rctde_p) %>% 
+              rename(estimate=rctde_p, sd=sd_rctde_p) %>%
+              mutate(type = 'rctde_p')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, dec_b, sd_dec_b) %>% 
+              rename(estimate=dec_b, sd=sd_dec_b) %>%
+              mutate(type = 'dec_b')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, dec_p, sd_dec_p) %>% 
+              rename(estimate=dec_p, sd=sd_dec_p) %>%
+              mutate(type = 'dec_p')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, bulk, sd_bulk) %>% 
+              rename(estimate=bulk, sd=sd_bulk) %>%
+              mutate(type = 'bulk')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, sing_p, sd_sing_p) %>% 
+              rename(estimate=sing_p, sd=sd_sing_p) %>%
+              mutate(type = 'sing_p')) %>%
+bind_rows(plot_df %>% 
+              select(log_fc_p, sing_b, sd_sing_b) %>% 
+              rename(estimate=sing_b, sd=sd_sing_b) %>%
+              mutate(type = 'sing_b'))
+graph_df[,1:3] <- graph_df[,1:3]*log(exp(1),2) #scale to log 2
+p1 <- ggplot(graph_df[graph_df$type %in% c('rctde_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=1,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type A DE')+ xlab('Differential expression in cell type A') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00', '#EFCB00'), breaks = c('bulk', 'dec_p' ,'rctde_p', 'sing_p'), labels = c('Bulk','Decompose','RCTDE','Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('rctde_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)+ ylab('Estimated cell type B DE')+ xlab('Differential expression in the other cell type')+ ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'rctde_b', 'sing_b'), labels = c('Bulk','Decompose','RCTDE', 'Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+ggarrange(p1,p2, nrow = 2)
+```
+
+### Run RCTDE on cell type proportion simulation
+
+```{r proportion, eval = FALSE}
+de_ground_truth <- c(1,1)
+de_gene <- 'Astn2'
+de_gt_vals <- 2:8 #cell type proportions
+N_int <- 10
+region_base <- c(rep(0, floor(N_samples/2)), rep(1, ceiling(N_samples/2)))
+COND <- length(de_gt_vals) # number of conditions for DE
+REPLICATES <- 100
+alpha_res <- array(0, dim = c(REPLICATES, 2, COND))
+dec_res <- array(0, dim = c(REPLICATES, 2, COND))
+sing_res <- array(0, dim = c(REPLICATES, 2, COND))
+bulk_res <- matrix(0, nrow = REPLICATES, ncol = COND)
+for(condi in 1:COND) {
+  print(condi)
+  thresh <- de_gt_vals[condi]
+  region <- region_base
+  region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < thresh]
+  de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+                       UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect, 
+                       other_methods = T,region_orig = region) 
+  alpha_res[,, condi] <- de_res$e_res
+  bulk_res[,condi] <- de_res$bulk_de
+  dec_res[, ,condi] <- de_res$dec_de
+  sing_res[,,condi] <- de_res$sing_de
+}
+saveRDS(alpha_res,file.path(resultsdir, 'other_methods_proportion/alpha_res.rds'))
+saveRDS(dec_res,file.path(resultsdir, 'other_methods_proportion/dec_res.rds'))
+saveRDS(bulk_res,file.path(resultsdir, 'other_methods_proportion/bulk_res.rds'))
+saveRDS(sing_res,file.path(resultsdir, 'other_methods_proportion/sing_res.rds'))
+```
+
+### Plot proportion simulation results
+
+```{r fig-3, fig.height = 8, fig.width = 5, fig.align = 'center'}
+REPLICATES <- 100
+de_ground_truth <- c(1,1)
+de_gt_vals <- 2:8
+alpha_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/alpha_res.rds'))
+dec_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/dec_res.rds'))
+bulk_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/bulk_res.rds'))
+sing_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/sing_res.rds'))
+N_int <- 10
+ct_prop <- de_gt_vals / N_int
+plot_df <- as.data.frame(cbind(ct_prop, log(de_ground_truth[1]), log(de_ground_truth[2]), apply(alpha_res,3:2,mean), apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd), apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
+colnames(plot_df) <- c('ct_prop','log_fc_b', 'log_fc_p', 'rctde_b', 'rctde_p', 'dec_b', 'dec_p', 'bulk', 'sing_b', 'sing_p', 'sd_rctde_b','sd_rctde_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b', 'sd_sing_p')
+graph_df <- plot_df %>% 
+  select(ct_prop, rctde_b, sd_rctde_b) %>% 
+  rename(estimate=rctde_b, sd=sd_rctde_b) %>%
+  mutate(type = 'rctde_b') %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, rctde_p, sd_rctde_p) %>% 
+              rename(estimate=rctde_p, sd=sd_rctde_p) %>%
+              mutate(type = 'rctde_p')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, dec_b, sd_dec_b) %>% 
+              rename(estimate=dec_b, sd=sd_dec_b) %>%
+              mutate(type = 'dec_b')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, dec_p, sd_dec_p) %>% 
+              rename(estimate=dec_p, sd=sd_dec_p) %>%
+              mutate(type = 'dec_p')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, bulk, sd_bulk) %>% 
+              rename(estimate=bulk, sd=sd_bulk) %>%
+              mutate(type = 'bulk')) %>%
+bind_rows(plot_df %>% 
+              select(ct_prop, sing_p, sd_sing_p) %>% 
+              rename(estimate=sing_p, sd=sd_sing_p) %>%
+              mutate(type = 'sing_p')) %>%
+bind_rows(plot_df %>% 
+              select(ct_prop, sing_b, sd_sing_b) %>% 
+              rename(estimate=sing_b, sd=sd_sing_b) %>%
+              mutate(type = 'sing_b'))
+graph_df[,2:3] <- graph_df[,2:3]*log(exp(1),2) #scale to log 2
+graph_df$ct_prop <- 2*(graph_df$ct_prop - 0.5)
+p1 <- ggplot(graph_df[graph_df$type %in% c('rctde_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)  + ylab('Estimated cell type A DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_p' ,'rctde_p', 'sing_p'), labels = c('Bulk','Decompose','RCTDE','Single')) + scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('rctde_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type B DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'rctde_b','sing_b'), labels = c('Bulk','Decompose','RCTDE','Single'))+ scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+ggarrange(p1,p2, nrow = 2)
+```
+
+### Run RCTDE on null and non-null DE case
+
+```{r nonnull, eval = FALSE}
+gene_list <- rownames(myRCTD@spatialRNA@counts)
+N_genes <- 15
+for(non_null in c(T,F)) {
+  high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+  if(T)
+    high_genes <- high_genes[which(cell_type_info[[1]][high_genes, common_cell_types][,1] < 3e-2 & cell_type_info[[1]][high_genes, common_cell_types][,2] < 3e-2)]
+
+  set.seed(123)
+  cur_gene_list <- sample(high_genes,N_genes)
+  if(!non_null) {
+    REPLICATES <- 500
+    cur_gene_list <- sample(high_genes, N_genes)
+  } else {
+    REPLICATES <- 100
+  }
+  e_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list)))
+  s_all <- array(0, dim = c(REPLICATES,2,length(cur_gene_list)))
+  de_ground_truth <- c(1,1)
+  if(non_null) {
+    de_vals <- (((1:length(cur_gene_list)) - 1)/(length(cur_gene_list) - 1))*2-1
+  } else {
+    de_vals <- rep(0, length(cur_gene_list))
+  }
+  for(i in 1:length(cur_gene_list)) {
+    print(i)
+    de_gene <- cur_gene_list[i]
+    de_ground_truth[2] <- exp(de_vals[i])
+    de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+                         UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect) 
+    e_all[,, i] <- de_res$e_res
+    s_all[,,i] <- de_res$s_res
+  }
+  if(non_null) {
+    saveRDS(e_all, file.path(resultsdir, 'non_null_mean/e_all.rds'))
+    saveRDS(s_all, file.path(resultsdir, 'non_null_mean/s_all.rds'))
+  } else {
+    saveRDS(e_all, file.path(resultsdir, 'null_mean/e_all.rds'))
+    saveRDS(s_all, file.path(resultsdir, 'null_mean/s_all.rds'))
+  }
+}
+```
+
+### Plot non-null DE estimation results
+
+```{r fig-4, fig.height = 4, fig.width = 4, fig.align = 'center'}
+gene_list <- rownames(myRCTD@spatialRNA@counts) 
+high_genes <- gene_list[which(cell_type_info[[1]][gene_list, common_cell_types][,1] > 3e-4 & cell_type_info[[1]][gene_list, common_cell_types][,2] > 3e-4)]
+
+N_genes <- 15
+REPLICATES <- 100
+non_null <- T
+if(T)
+  high_genes <- high_genes[which(cell_type_info[[1]][high_genes, common_cell_types][,1] < 3e-2 & cell_type_info[[1]][high_genes, common_cell_types][,2] < 3e-2)]
+
+set.seed(123)
+cur_gene_list <- sample(high_genes,N_genes)
+if(!non_null) {
+  cur_gene_list <- sample(high_genes, N_genes)
+}
+de_vals <- (((1:length(cur_gene_list)) - 1)/(length(cur_gene_list) - 1))*2-1
+if(non_null) {
+  e_all <- readRDS(file.path(resultsdir, 'non_null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'non_null_mean/s_all.rds'))
+} else {
+  e_all <- readRDS(file.path(resultsdir, 'null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'null_mean/s_all.rds'))
+}
+se <- apply(e_all[,2,], 2,sd)/sqrt(REPLICATES)
+results <- colMeans(e_all[,2,])
+plot_df <- data.frame(cur_gene_list[1:length(results)], results, se, de_vals)
+colnames(plot_df) <- c('gene', 'mean', 'se', 'de')
+plot_df[,2:4] <- plot_df[,2:4]*log(exp(1),2) # scale to log 2
+if(! non_null) {
+  p <- ggplot(plot_df) + geom_point(aes(x=gene, y = mean)) + geom_errorbar(aes(x=gene,ymin = mean-1.96*se, ymax = mean + 1.96*se))
+  p
+} else {
+  p <- ggplot(plot_df,aes(x=de, y = mean)) + geom_point() + geom_errorbar(aes(ymin = mean-1.96*se, ymax = mean + 1.96*se), width = 0.05) + geom_line(aes(x = de, y = de)) + theme_classic() + xlab('True cell type A DE') + ylab('Estimated cell type A DE')
+  p
+}
+```
+
+### Plot observed vs expected false positive rate
+
+```{r fig-6, fig.height = 4, fig.width = 4, fig.align = 'center'}
+REPLICATES <- 500
+non_null <- F
+set.seed(123)
+cur_gene_list <- sample(high_genes,N_genes)
+if(!non_null) {
+  cur_gene_list <- sample(high_genes, N_genes)
+} 
+de_vals <- rep(0, length(cur_gene_list))
+if(non_null) {
+  e_all <- readRDS(file.path(resultsdir, 'non_null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'non_null_mean/s_all.rds'))
+} else {
+  e_all <- readRDS(file.path(resultsdir, 'null_mean/e_all.rds'))
+  s_all <- readRDS(file.path(resultsdir, 'null_mean/s_all.rds'))
+}
+z_all <- e_all / s_all
+p_res <- (2*(1 - pnorm(abs(z_all))))
+alpha_vals = c(.0025,.005,.01, .02, .03, .05, .1, .2)
+enrichment = numeric(length(alpha_vals))
+se = numeric(length(alpha_vals))
+N_trials <- length(p_res)
+for(i in 1:length(alpha_vals)) {
+  alpha <- alpha_vals[i]
+  p_curr <- (sum(p_res < alpha) / (N_trials))
+  enrichment[i] <- p_curr / alpha
+  se[i] <- sqrt(p_curr*(1-p_curr)/N_trials)/alpha
+}
+plot_df <- data.frame(alpha_vals, enrichment, se)
+p2 <- ggplot(plot_df, aes(x=alpha_vals,y = enrichment*alpha_vals)) + geom_point()  + theme_classic() + geom_abline(a=0, b = 1, linetype = 'dotted') + geom_errorbar(aes(ymin = alpha_vals*(enrichment - 1.96*se), ymax = alpha_vals*(enrichment + 1.96*se)), width = .005) + xlab('Significance level') + ylab('Observed FPR')
+p2
+```

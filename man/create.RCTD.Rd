@@ -18,7 +18,8 @@ create.RCTD(
   UMI_min_sigma = 300,
   class_df = NULL,
   CELL_MIN_INSTANCE = 25,
-  cell_type_names = NULL
+  cell_type_names = NULL,
+  MAX_MULTI_TYPES = 4
 )
 }
 \arguments{
@@ -48,6 +49,8 @@ number of available cores.}
 \item{CELL_MIN_INSTANCE}{minimum number of cells required per cell type. Default 25, can be lowered if desired.}
 
 \item{cell_type_names}{A list of cell types to be included from the reference. If NULL, uses all cell types}
+
+\item{MAX_MULTI_TYPES}{(multi-mode only) Default 4, max number of cell types per pixel}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
