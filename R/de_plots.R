@@ -1,6 +1,9 @@
+#' Makes all RCTDE plots on RCTD object, after running RCTDE
 #'
+#' @param myRCTD RCTD object containing \code{de_results}, after running RCTDE
+#' @param datadir output directory
 #' @export
-make_all_de_plots <- function(myRCTD, datadir, cell_types_present = NULL) {
+make_all_de_plots <- function(myRCTD, datadir) {
   if(!dir.exists(datadir))
     dir.create(datadir)
   make_de_plots_quant(myRCTD, datadir)
@@ -150,7 +153,10 @@ plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, res_g
   }
 }
 
+#' Makes a spatial plot of differential expression for a particular gene
 #'
+#' @param puck RCTD \code{SpatialRNA} object
+#' @param gene gene to be plotted
 #' @export
 plot_gene_two_regions <- function(puck, all_barc, my_beta, X2, res_genes, gene, cell_type, min_UMI = 200) {
   barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
