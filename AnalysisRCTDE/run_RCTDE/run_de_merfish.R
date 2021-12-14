@@ -2,7 +2,7 @@ library(Matrix)
 library(doParallel)
 library(ggplot2)
 library(dplyr)
-library(DEGLAM)
+library(RCTD)
 library(GSA)
 library(xlsx)
 library(readr)
@@ -68,16 +68,16 @@ counts <- Matrix(counts)
 nUMI <- colSums(counts)
 
 # Clear massive variables not going to be used again. Anything >1GB
-# rm(merfish_data) 
+# rm(merfish_data)
 
-puck = SpatialRNA(coords,counts,nUMI) 
+puck = SpatialRNA(coords,counts,nUMI)
 
 # Examine spatialRNA object (optional)
 print(dim(puck@counts)) # 140 genes x 6111 cells
 hist(log(puck@nUMI,2))
 puck_barcodes <- colnames(puck@counts)
-plot_puck_continuous(puck, puck_barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
-                     title ='plot of nUMI') 
+plot_puck_continuous(puck, puck_barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))),
+                     title ='plot of nUMI')
 saveRDS(puck, file.path(resultsdir,'puck.rds'))
 # Load in reference data and then create Reference Object
 # 27998x31299 genes x barcodes
@@ -119,7 +119,7 @@ reference <- Reference(counts, cell_types, nUMI)
 saveRDS(reference, file.path(resultsdir,'reference.rds'))
 # Create and run RCTD
 cell_type_names <- levels(cell_types)[2:13] # remove ambiguous, unstable
-myRCTD <- create.RCTD(puck, reference, max_cores = 4, gene_cutoff = 0.000, fc_cutoff = 0, gene_cutoff_reg = 0, 
+myRCTD <- create.RCTD(puck, reference, max_cores = 4, gene_cutoff = 0.000, fc_cutoff = 0, gene_cutoff_reg = 0,
                       fc_cutoff_reg = 0, cell_type_names = cell_type_names)
 saveRDS(myRCTD, file.path(resultsdir,'myRCTD_pre.rds'))
 # Save/Load RCTD object
@@ -146,10 +146,11 @@ for(i in 1:length(barcodes)) {
   distance = abs(curr_x - midline_x)
   explanatory.variable[i]=distance
 }
+print(max(abs(explanatory.variable))) #896.1267
 explanatory.variable = explanatory.variable / max(explanatory.variable)
 hist(explanatory.variable) # Observe the distribution of explanatory.variable
-plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts), explanatory.variable, # ylimit = c(0,round(quantile(myRCTD@spatialRNA@nUMI,0.9))), 
-                     title ='plot of explanatory variable') 
+plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts), explanatory.variable, # ylimit = c(0,round(quantile(myRCTD@spatialRNA@nUMI,0.9))),
+                     title ='plot of explanatory variable')
 
 
 # run DE
@@ -164,7 +165,7 @@ saveRDS(myRCTD,file.path(resultsdir,'myRCTDde.rds'))
 ### try quadratic
 X2 <- myRCTD@internal_vars_de$X2
 X2 <- cbind(X2, X2[,2]^2)
-myRCTDQ <- find_de_genes(myRCTD, myRCTD@internal_vars_de$X1, X2, myRCTD@internal_vars_de$all_barc, cell_types, resultsdirQ, 
+myRCTDQ <- find_de_genes(myRCTD, myRCTD@internal_vars_de$X1, X2, myRCTD@internal_vars_de$all_barc, cell_types, resultsdirQ,
                          cell_types_present = cell_types_present)
 gene_fitsQ <- myRCTDQ@de_results$gene_fits
 resultsdirQ <- paste0(pwd,'/results/ResultsMerfish/Quadratic/')

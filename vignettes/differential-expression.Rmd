@@ -1,11 +1,11 @@
 ---
 title: "Applying RCTDE to Spatial Transcriptomics Data"
 author: "Dylan Cable"
-date: "November 10th, 2021"
+date: "December 15th, 2021"
 output:
-  pdf_document: default
   html_document:
     keep_md: yes
+  pdf_document: default
   rmarkdown::html_vignette:
     keep_md: yes
 vignette: |
@@ -66,11 +66,9 @@ myRCTD <- run.RCTD(myRCTD, doublet_mode = 'doublet')
 saveRDS(myRCTD,file.path(savedir,'myRCTD.rds'))
 ```
 
-## Create predictive variable
+## Create predictive variable / covariate
 
-Now that we have successfully run RCTD, we can create a predictive variable used for predicting differential
-expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general
-one should set the predictive variable to biologically relevant predictors of gene expression such as spatial position.
+Now that we have successfully run RCTD, we can create a predictive variable (i.e. covariate) used for predicting differential expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the predictive variable to biologically relevant predictors of gene expression such as spatial position.
 The predictive variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object.
 
 Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high predictive variable) to see whether RCTDE can detect this differentially expressed gene.

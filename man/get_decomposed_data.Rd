@@ -28,6 +28,10 @@ reference (see \code{\link{get_cell_type_info}})}
 An object of type \linkS4class{SpatialRNA} representing the decomposed cells
 }
 \description{
+Warning: in the current RCTD version, this function is deprecated, and is no longer supported.
+For differential expression tasks, we instead recommend the RCTDE method.
+}
+\details{
 Applied to the output of \code{\link{gather_results}}.
 Singlet pixels are left unchanged, and doublet_certain conditions are
 decomposed into single cells.

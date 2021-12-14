@@ -60,6 +60,9 @@ get_decomposed_data_full_doublet <- function(gene_list, puck, weights, ct_info) 
 
 #' Decomposes SpatialRNA data into individual cells
 #'
+#' Warning: in the current RCTD version, this function is deprecated, and is no longer supported.
+#' For differential expression tasks, we instead recommend the RCTDE method.
+#'
 #' Applied to the output of \code{\link{gather_results}}.
 #' Singlet pixels are left unchanged, and doublet_certain conditions are
 #' decomposed into single cells.
@@ -72,8 +75,8 @@ get_decomposed_data_full_doublet <- function(gene_list, puck, weights, ct_info) 
 #' @param cell_type_info cell type information and profiles of each cell, calculated from the scRNA-seq
 #' reference (see \code{\link{get_cell_type_info}})
 #' @return An object of type \linkS4class{SpatialRNA} representing the decomposed cells
-#' @export
 get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, cell_type_info) {
+  warning("In the current RCTD version, get_decomposed_data is deprecated, and is no longer supported. For differential expression tasks, we instead recommend the RCTDE method.")
   doublets <- results_df[results_df$spot_class == "doublet_certain",]
   first_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))
   second_DGE <- Matrix(0, nrow = dim(doublets)[1], ncol = length(gene_list))

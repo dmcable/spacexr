@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy 
 ### Setup
 
 ```{r fig-1, fig.height = 6, fig.width = 6, fig.align = 'center'}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -22,7 +22,7 @@ library(ggpubr)
 library(reshape2)
 library(dplyr)
 library(ggrepel)
-load_all()
+devtools::load_all()
 id <- '08'
 puck_no <- paste0('190926_', id)
 datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
@@ -44,7 +44,6 @@ RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde.r
 ```{r de-population, eval = FALSE}
 myRCTD <- RCTDde_list[[1]]
 de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
-de_pop <- get_de_pop(cell_type, de_results_list)
 plot_results <- F
 if(!dir.exists(resultsdir))
   dir.create(resultsdir)
@@ -94,5 +93,30 @@ plot_df$mean <- plot_df$mean * log(exp(1),2) #convert to log scale
 p <- ggplot(plot_df, aes(x=mean, y = y, color = ct)) + geom_point() + theme_classic()  +
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
   geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = FALSE) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE') + ylab('RCTDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") )
+p
+```
+
+```{r fig-3, fig.height = 6, fig.width = 6, fig.align='center'}
+plot_df <- data.frame('cell_type' = character(), 'sig_p' = numeric())
+for(cell_type in cell_types[c(2,3,4)]) {
+  de_pop <- de_pop_all[[cell_type]]
+  gene_big <- Reduce(intersect, lapply(RCTDde_list, 
+                                         function(myRCTD) get_gene_list_type_wrapper(myRCTD, cell_type, cell_types_present)))
+  plot_df <- rbind(plot_df, data.frame('cell_type' = cell_type, 'sig_p' = de_pop[gene_big, 'sig_p']))
+} 
+
+p <- ggplot(plot_df, aes(sig_p, fill = cell_type, color = cell_type)) + geom_density(alpha = 0.3) + theme_classic() + ylab('Density of genes') + scale_fill_discrete("Cell type") + scale_color_discrete("Cell type") + xlab('Standard deviation of batch effect across replicates')
+p
+```
+
+```{r fig-4, fig.height = 6, fig.width = 6, fig.align='center'}
+
+plot_df <- data.frame('rep' = integer(), 'sig_g' = numeric())
+for(rep_num in 1:3) {
+  myRCTD <- RCTDde_list[[rep_num]]
+  plot_df <- rbind(plot_df, data.frame('rep' = rep_num, 'sig_g' = as.numeric(myRCTD@de_results$gene_fits$sigma_g)/100))
+} 
+plot_df$rep <- factor(plot_df$rep)
+p <- ggplot(plot_df, aes(sig_g, fill = rep, color = rep)) + geom_density(alpha = 0.3) + theme_classic() + ylab('Density of genes') + scale_fill_discrete("Replicate") + scale_color_discrete("Replicate") + xlab('Gene specific overdispersion magnitude')
 p
 ```

@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy 
 ### Pre-process testes data
 
 ```{r preprocess}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -22,8 +22,8 @@ library(ggpubr)
 library(reshape2)
 library(dplyr)
 library(ggrepel)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/testes_helper.R')
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisRCTDE/helper_functions/testes_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisRCTDE/helper_functions/merge_de_helper.R')
 devtools::load_all()
 datadir <- '../../../RCTD/data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))
@@ -171,7 +171,7 @@ plot_df <- readRDS(file.path(datadir, 'z_test_plot_df.rds'))
 p1 <- ggplot(plot_df, aes(fill = method, x = cur_cell_types, y = count)) +
   geom_bar(position="dodge", stat="identity") + theme_classic() + ylab('Number of significant genes detected') + scale_fill_manual("Method", breaks = c('RCTD','Z'), labels = c('RCTDE','Z-test'), values = unname(my_pal_curr[c(4,2)])) + scale_x_discrete('Cell Type', breaks = c(1,2,4), labels = c('ES','RS','SPC'))
 p2 <- ggplot(plot_df, aes(fill = method, x = cur_cell_types, y = n_total)) +
-  geom_bar(position="dodge", stat="identity") + theme_classic()
+  geom_bar(position="dodge", stat="identity") + theme_classic()  + ylab('Number of pixels used for each cell type') + scale_fill_manual("Method", breaks = c('RCTD','Z'), labels = c('RCTDE','Z-test'), values = unname(my_pal_curr[c(4,2)])) + scale_x_discrete('Cell Type', breaks = c(1,2,4), labels = c('ES','RS','SPC'))
 ggarrange(p1,p2, nrow = 2)
 
 ```
@@ -259,7 +259,7 @@ gene_list <- rownames(info_1)[info_1$first_region == region]
 cell_type <- '1'; region <- 4
 gene_thresh <- 45; gene <- 'Tnp1'
 make_ct_region_plot(cur_cell_types, cell_type, region, my_beta, X2, gene_thresh, puck, gene_list, sing_thresh = 0.8) + new_scale_color()+
-  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dotted') + scale_color_manual(values = c("black", "red",'blue','green'))
+  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dashed') + scale_color_manual('Stage', values = c('#E69F00','#CC79A7', '#EFCB00',"#000000"), labels = c('I-III','IV-VI', 'VII-VIII', 'IX-XII'))+ geom_segment(aes(x = 1300, y = 1000, xend = 1684.6, yend = 1000), color = "black")+labs(color='') +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
 ```
 
 ### Find and plot cyclic genes

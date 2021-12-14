@@ -5,7 +5,7 @@ library(shiny)
 library(imager)
 library(raster)
 library(rgdal)
-library(DEGLAM)
+library(RCTD)
 ###CONSTANTS
 IM_DIR <- '../RCTD/data/Images/Plaque/210715/Processed/'
 ALIGN_DIR <- '../RCTD/data/Images/Plaque/210715/AlignmentResults/'
@@ -21,11 +21,11 @@ source('analysis/helper_functions/alzheimers_helper.R')
 # define fns
 
 plot_puck_continuous(puck,rownames(puck@coords), puck@nUMI, ylimit = c(0,1500))
-X_SHIFT <- 800; Y_SHIFT <- 0 # 1:(800, 0), 2: (300,1000), 3:(750,750), 4:(0,400) 
+X_SHIFT <- 800; Y_SHIFT <- 0 # 1:(800, 0), 2: (300,1000), 3:(750,750), 4:(0,400)
 saveRDS(c(X_SHIFT, Y_SHIFT), file = file.path(datadir, 'xy_shift.rds'))
-create_slideseq_im(cell_type_list = c('CA1','CA3','Dentate'), puck_no, datadir, puck, myRCTD,  
+create_slideseq_im(cell_type_list = c('CA1','CA3','Dentate'), puck_no, datadir, puck, myRCTD,
                    X_SHIFT = X_SHIFT, Y_SHIFT = Y_SHIFT, oligo = F);
-create_slideseq_im(cell_type_list = c('Oligodendrocytes'), puck_no, datadir, puck, myRCTD,  
+create_slideseq_im(cell_type_list = c('Oligodendrocytes'), puck_no, datadir, puck, myRCTD,
                    X_SHIFT = X_SHIFT, Y_SHIFT = Y_SHIFT, oligo = T);
 #create dapi (repeat for both)
 IMAGE_NUMBER = 5

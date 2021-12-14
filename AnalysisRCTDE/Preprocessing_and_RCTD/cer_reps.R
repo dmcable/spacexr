@@ -1,5 +1,5 @@
 library(Matrix)
-library(DEGLAM)
+library(RCTD)
 library(doParallel)
 datadir <- '../RCTD/data/SpatialRNA/Puck_190926_11/'
 puck <- read.SpatialRNA(datadir)

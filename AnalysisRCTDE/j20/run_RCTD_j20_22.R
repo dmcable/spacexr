@@ -1,5 +1,5 @@
 library(Matrix)
-library(DEGLAM)
+library(RCTD)
 library(doParallel)
 library(ggplot2)
 

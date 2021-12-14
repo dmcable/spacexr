@@ -7,7 +7,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -28,8 +28,8 @@ load_all()
 ```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
 # Load in DE results and cluster
 pwd = getwd()
-datadir <- paste0('../../data/tumor','/')
-resultsdir <- paste0('../../results/ResultsTumorNonparam','/')
+datadir <- paste0('../../../DEGLAM/data/tumor','/')
+resultsdir <- paste0('../../../DEGLAM/results/ResultsTumorNonparam','/')
 new_X <- readRDS(file.path(resultsdir, 'new_X.rds'))
 orig_new_coords <- readRDS(file.path(resultsdir, 'orig_new_coords.rds'))
 myRCTDde <- readRDS(file.path(resultsdir,'myRCTDde.rds'))
@@ -67,7 +67,7 @@ if(F) {
 
 ```{r} 
 p <- list()
-resultsdir_par <- paste0('../../results/ResultsTumor','/')
+resultsdir_par <- paste0('../../../DEGLAM/results/ResultsTumor','/')
 myRCTDpar = readRDS(paste0(resultsdir_par,'myRCTDde.rds'))
 res_genes <- myRCTDpar@de_results$res_gene_list$CAF
 over_genes <- tolower(rownames(res_genes[res_genes$log_fc > 0,]))
@@ -114,20 +114,21 @@ plot_df[plot_df$variable == 'R2_vals', 'group'] <- plot_df[plot_df$variable == '
 plot_df[plot_df$variable == 'u_vals', 'value'] <- -plot_df[plot_df$variable == 'u_vals', 'value']
 p1 <- ggplot(data = plot_df, aes(group, value, group = group)) +
   geom_col(aes(fill = variable), position = position_stack(reverse = TRUE)) +
-  geom_hline(yintercept = 0) + ylim(c(-1,1)) + theme_classic() + scale_fill_manual("", breaks = c('o_vals','u_vals','R2_vals'), labels = c('Genes overexpressed near Myeloid cells','Genes underexpressed near Myeloid cells','R^2'), values = c("#D55E00", "#009E73", "#0072B2")) + ylab('') + scale_x_continuous("Cluster", breaks = (1:N_CLUST)*3 - 0.5, labels = levels(plot_df$sub_grp))+ theme(legend.position="top") + guides(fill=guide_legend(nrow=2,byrow=F))
+  geom_hline(yintercept = 0) + ylim(c(-1,1)) + theme_classic() + scale_fill_manual("", breaks = c('o_vals','u_vals','R2_vals'), labels = c('Genes overexpressed near Myeloid cells','Genes underexpressed near Myeloid cells','Signed R^2'), values = c("#D55E00", "#009E73", "#0072B2")) + ylab('') + scale_x_continuous("Cluster", breaks = (1:N_CLUST)*3 - 0.5, labels = levels(plot_df$sub_grp))+ theme(legend.position="top") + guides(fill=guide_legend(nrow=2,byrow=F))
 
 ggarrange(p1,p2, nrow = 2)
 ```
 
-### Plot Nolc1
+### Plot one EMT gene
 
 ```{r fig-2, fig.height = 8, fig.width = 6, fig.align='center'}
-gene <- 'Nolc1'
+gene <- 'Kpnb1'
 
 CANCER_LOC <- names(which(myRCTDde@internal_vars_de$my_beta[,'CAF'] > 0.999))
+barc_list <- CANCER_LOC
 tot_pred <- Pred_mat[gene,CANCER_LOC]
 max_expr <- (unname(500*quantile(tot_pred, 0.999)))
-Y_norm <- myRCTDde@spatialRNA@counts['Nolc1',CANCER_LOC] / myRCTDde@spatialRNA@nUMI[CANCER_LOC]
+Y_norm <- myRCTDde@spatialRNA@counts[gene,CANCER_LOC] / myRCTDde@spatialRNA@nUMI[CANCER_LOC]
 p1 <- plot_puck_continuous(myRCTDde@spatialRNA, barc_list, tot_pred*500, ylimit = c(-.01,.01 + max_expr)) +scale_colour_gradientn("",colors = pals::brewer.blues(20)[2:20], breaks = c(0,max_expr), labels = c(0, round(max_expr,2)), limits = c(-.01,.01 + max_expr))+ ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ 
   scale_y_continuous(limits = c(1100,3750)) + scale_x_continuous( limits = c(2300,4800))+ geom_segment(aes(x = 2400, y = 1300, xend = 2784.6, yend = 1300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
 p2 <- plot_puck_continuous(myRCTDde@spatialRNA, barc_list, Y_norm*500, ylimit = c(-0.01,.01 + max_expr)) +
@@ -172,7 +173,7 @@ ggplot(plot_df, aes(x=factor(Var2),y=value,fill=Cell_type)) + geom_bar(stat = 'i
 
 ```{r fig-0.5, fig.height = 6, fig.width = 6, fig.align='center'}
 gene <- 'Krt18'
-
+cell_type <- 'CAF'
 barc_list <- names(which(myRCTDde@internal_vars_de$my_beta[,cell_type] > 0.999))
 gene_sig_list <- rownames(myRCTDde@de_results$res_gene_list[[2]])
 gene_sig_list <- sig_gene_list[-grep("^(Rps|Rpl|mt-)",gene_sig_list)]
@@ -205,5 +206,7 @@ for(gene in gene_list_all) {
 over_mat <- data.frame(over_mat)
 over_mat$R2 <- (over_mat$mse_0 - over_mat$mse_1) / over_mat$mse_0
 over_ind <- which((over_mat$mse_0 - over_mat$var_poisson > 0.01) & rownames(over_mat) %in% sig_gene_list)
-hist(pmax(pmin(over_mat[over_ind,'R2_adj'],1),0))
+plot_df <- data.frame(pmax(pmin(over_mat[over_ind,'R2_adj'],1),0))
+colnames(plot_df) <- c('x')
+ggplot(plot_df, aes(x=x)) + geom_histogram() + theme_classic() + xlim(c(-0.001,1)) + xlab("Adjusted R Squared") + ylab('Number of genes')
 ```

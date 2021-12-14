@@ -1,4 +1,4 @@
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(ggplot2)
 library(devtools)

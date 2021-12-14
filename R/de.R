@@ -351,7 +351,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, all_barc, sigma_i
     doParallel::registerDoParallel(cl)
     environ = c('estimate_effects_trust', 'solveIRWLS.effects_trust', 'Q_mat', 'K_val','X_vals','delta',
                 'calc_log_l_vec', 'calc_Q_k','get_d1_d2', 'calc_Q_all','psd','construct_hess_fast',
-                'choose_sigma_gene', 'estimate_gene_wrapper')
+                'choose_sigma_gene', 'estimate_gene_wrapper', 'check_converged_vec')
     if(sigma_gene)
       environ <- c(environ, 'Q_mat_all')
     out_file = "logs/de_log.txt"

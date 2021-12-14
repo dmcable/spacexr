@@ -7,12 +7,13 @@ choose_sigma_gene <- function(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, ve
     set_likelihood_vars(Q_mat_all[[as.character(sigma_s_best)]], X_vals)
     res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
     prediction <- res$prediction
-    pred_c <- as.vector(prediction * exp((as.numeric(sigma_s_best) / 100)^2/2))
+    adj_factor <- exp((as.numeric(sigma_s_best) / 100)^2/2)
+    pred_c <- as.vector(prediction * adj_factor)
     res_val <- numeric(length(sigma_vals))
     names(res_val) <- sigma_vals
     for(sigma_s in sigma_vals) {
       set_likelihood_vars(Q_mat_all[[as.character(sigma_s)]], X_vals)
-      res_val[as.character(sigma_s)] <- (calc_log_l_vec(pred_c / exp((as.numeric(sigma_s) / 100)^2/2), as.vector(t(Y))))
+      res_val[as.character(sigma_s)] <- (calc_log_l_vec(pred_c / adj_factor, as.vector(t(Y))))
     }
     sigma_s_best <- names(which.min(res_val))
     if(sigma_s_best == last_sigma) {
@@ -53,14 +54,16 @@ construct_hess_fast <- function(X1,X2,lambda,lambda_k, K, d1_d2, d1_lam) {
 }
 
 solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FALSE, n.iter = 200, MIN_CHANGE = .001, PRECISION.THRESHOLD = .01){
+  lam_threshold = 1e-8; init_val <- -5; MIN_ITERATIONS <- 6
+  beta_succ <- 1.1; beta_fail <- 0.5; gamma <- 0.1
+  epsilon_2 <- 1e-5; delta <- 0.1 #trust region radius
   L1 <- dim(X1)[2]; L2 <- dim(X2)[2]
   n_cell_types = dim(my_beta)[2]
   alpha1 <- numeric(dim(X1)[2])
-  delta <- 0.1 #trust region radius
   alpha2 <- matrix(0,nrow = dim(X2)[2], ncol = n_cell_types) # initialize it to be the previous cell type means
-  alpha2[1,] <- -5
+  alpha2[1,] <- init_val
   if(test_mode == 'multi') {
-    alpha2[,] <- -5 # multi mode
+    alpha2[,] <- init_val # multi mode
   }
   pred_decrease_vals <- numeric(n.iter)
   Y[Y > K_val] <- K_val
@@ -70,8 +73,7 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
   prev_ll <- calc_log_l_vec(lambda,Y)
   error_vec <- (1:dim(my_beta)[2]) == 0
   for(itera in 1:n.iter) {
-    threshold = 1e-8
-    lambda[lambda < threshold] <- threshold
+    lambda[lambda < lam_threshold] <- lam_threshold
     d1_d2 <- get_d1_d2(Y, lambda)
     grad_1 <- d1_d2$d1_vec %*% sweep(X1, 1,lambda,'*')
     d1_lam <- sweep(lambda_k, 1, d1_d2$d1_vec, '*')
@@ -85,7 +87,6 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
     epsilon <- 1e-7; D_mat <- D_mat + epsilon * diag(length(d_vec))
     A <- cbind(diag(dim(D_mat)[2]), -diag(dim(D_mat)[2]))
     bzero <- rep(-delta,2*dim(D_mat)[2])
-    #print(max(abs(bzero)))
     solution <-  quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
     predicted_decrease = -(0.5*t(solution) %*% D_mat_o %*% solution - sum(d_vec_o*solution))
 
@@ -99,23 +100,23 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
 
     true_decrease = prev_ll - log_l
     pred_decrease_vals[itera] <- predicted_decrease
-    if(true_decrease >= 0.1 * predicted_decrease) {
-      delta = 1.1*delta
+    if(true_decrease >= gamma * predicted_decrease) {
+      delta = beta_succ*delta
       alpha1 <- alpha1_new
       alpha2 <- alpha2_new
       lambda_k <- lambda_k_new
       lambda <- lambda_new
       prev_ll <- log_l
     } else {
-      delta = min(1,0.5*delta)
+      delta = min(1,beta_fail*delta)
     }
-    if(delta < MIN_CHANGE || (itera > 5 && max(pred_decrease_vals[(itera - 5):itera]) < min(MIN_CHANGE,1e-5))) {
+    if(delta < MIN_CHANGE || (itera >= MIN_ITERATIONS &&
+                              max(pred_decrease_vals[
+                                (itera - MIN_ITERATIONS+1):itera]) < min(MIN_CHANGE,epsilon_2))) {
       break
     }
   }
-
-  threshold = 1e-8
-  lambda[lambda < threshold] <- threshold
+  lambda[lambda < lam_threshold] <- lam_threshold
   d1_d2 <- get_d1_d2(Y, lambda)
   d1_lam <- sweep(lambda_k, 1, d1_d2$d1_vec, '*')
   H <- construct_hess_fast(X1,X2,lambda,lambda_k, K, d1_d2, d1_lam)
@@ -126,17 +127,11 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
     I <- solve(H)
   }
   precision <- abs(solve(D_mat) %*% d_vec)
-  cell_type_ind <- get_cell_type_ind(X1,X2, dim(my_beta)[2])
-  converged_vec <- (1:dim(my_beta)[2]) == 0
-  if(itera < n.iter) {
-    converged_vec <- !converged_vec
-    converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
-  }
-  converged_vec <- converged_vec & (!error_vec)
-  names(converged_vec) <- colnames(my_beta)
+  converged_vec <- check_converged_vec(X1,X2,my_beta, itera, n.iter,
+                                       error_vec, precision, PRECISION.THRESHOLD)
   names(error_vec) <- colnames(my_beta)
   return(list(alpha1 = alpha1, alpha2 = alpha2, converged = any(converged_vec), I = I, d = d_vec_o,
-              n.iter = itera, log_l = prev_ll, precision = precision, prediction = lambda, 
+              n.iter = itera, log_l = prev_ll, precision = precision, prediction = lambda,
               converged_vec = converged_vec, error_vec = error_vec))
 }
 

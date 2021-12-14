@@ -34,7 +34,7 @@ Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE, n_max
   reference <- new("Reference", cell_types = cell_types[barcodes], counts = counts[,barcodes], nUMI = nUMI[barcodes])
   cur_count <- max(table(reference@cell_types))
   if(cur_count > n_max_cells) {
-    warning(paste0('Reference: number of cells per cell type is ', cur_count, ', larger than maximum allowable of ', n_samples,
+    warning(paste0('Reference: number of cells per cell type is ', cur_count, ', larger than maximum allowable of ', n_max_cells,
                    '. Downsampling number of cells to: ', n_max_cells))
     reference <- create_downsampled_data(reference, n_samples = n_max_cells)
   }
@@ -69,6 +69,11 @@ convert_old_reference <- function(old_reference) {
   names(cell_types) <- rownames(old_reference@meta.data);
   names(nUMI) <- rownames(old_reference@meta.data);
   Reference(old_reference@assays$RNA@counts, cell_types, nUMI)
+}
+
+coerce_deglam_reference <- function(old_reference) {
+  return(Reference(old_reference@counts, old_reference@cell_types,
+                   old_reference@nUMI, n_max_cells = max(table(old_reference@cell_types)) + 1))
 }
 
 restrict_reference <- function(reference, barcodes) {

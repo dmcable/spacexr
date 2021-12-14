@@ -1,9 +1,9 @@
 ---
 output:
-  pdf_document: default
-  word_document: default
   html_document:
     keep_md: yes
+  word_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 
 ```{r prelude}
 # Load in spatialRNA data and Reference data
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -26,11 +26,11 @@ library(dplyr)
 library(ggrepel)
 library(fields)
 library(stringr)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisRCTDE/helper_functions/merge_de_helper.R')
 load_all()
 pwd = getwd()
-datadir <- paste0('../../data/moffitt','/')
-resultsdir <- paste0('../../results/ResultsMerfish','/')
+datadir <- paste0('../../../DEGLAM/data/moffitt','/')
+resultsdir <- paste0('../../../DEGLAM/results/ResultsMerfish','/')
 myRCTD = readRDS(paste0(resultsdir,'myRCTDde.rds'))
 myRCTDQ <- readRDS(file.path(resultsdir,'myRCTDQ.rds'))
 cell_types_present <- myRCTD@internal_vars_de$cell_types_present
@@ -167,4 +167,32 @@ cur_gene_list <- c('Syt2','Ano3','Etv1','Man1a','Htr2c')
 p3 <- ggplot2::ggplot(results_df[results_df$gene %in% cur_gene_list,],mapping = ggplot2::aes(x=region,y=log(Y,2), color = gene, linetype = model)) + ggplot2::geom_point() + ggplot2::theme_classic() +
   ggplot2::geom_line(ggplot2::aes(region,log(pred,2))) + ggplot2::geom_errorbar(aes(ymin = log(Y - 1.96*se,2), ymax = log(Y + 1.96*se,2)), width = 0.05) + facet_wrap(cell_type ~.) + xlab('Distance from midline') + ylab('Log gene expression') + labs(linetype = 'Model') + scale_color_manual("Gene", breaks = cur_gene_list, labels = cur_gene_list, values = unname(my_pal_curr[c(1,4,6,7,9)]))
 p3
+```
+
+### Make spatial gene plots
+
+```{r plot-spatial, fig.height = 5, fig.width = 6, fig.align='center'}
+X2 <- myRCTD@internal_vars_de$X2
+gene_fits <- myRCTD@de_results$gene_fits
+all_barc <- myRCTD@internal_vars_de$all_barc
+my_beta <- myRCTD@internal_vars_de$my_beta
+puck <- myRCTD@spatialRNA
+
+cell_type <- "Inhibitory"
+gene = 'Slc18a2'
+barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+MULT = 500
+density_thresh <- 0.5
+barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
+Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
+ge_thresh <- 10
+my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
+my_class[(X2[barc_plot,2] <= density_thresh) & (Y_plot[barc_plot] <= ge_thresh)] <- 2
+my_class[(X2[barc_plot,2] <= density_thresh) & (Y_plot[barc_plot] > ge_thresh)] <- 4
+my_class[(X2[barc_plot,2] > density_thresh) & (Y_plot[barc_plot] <= ge_thresh)] <- 1
+my_class[(X2[barc_plot,2] > density_thresh) & (Y_plot[barc_plot] > ge_thresh)] <- 3
+p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class)) + ggtitle(gene)
+suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00"))+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ geom_segment(aes(x = 1934.6, y = -4000, xend = 2184.6, yend = -4000), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()))
+p3
+#ggarrange(p1,p2, nrow = 2)
 ```

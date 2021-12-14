@@ -1,8 +1,8 @@
 ---
 output:  
-  pdf_document: default
   html_document:
     keep_md: true
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 ### Load in RCTDE Results and calculate significant genes
 
 ```{r prelude}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -28,8 +28,8 @@ library(GSA)
 load_all()
 # Load in spatialRNA data and Reference data
 pwd = getwd()
-datadir <- paste0('../../data/tumor','/')
-resultsdir <- paste0('../../results/ResultsTumor','/')
+datadir <- paste0('../../../DEGLAM/data/tumor','/')
+resultsdir <- paste0('../../../DEGLAM/results/ResultsTumor','/')
 myRCTD = readRDS(paste0(resultsdir,'myRCTDde.rds'))
 cell_types = c("CAF","hepatocyte 2","vascular smooth mc")
 cell_types_present = c("CAF","hepatocyte 2","vascular smooth mc", 'monocyte/DC')
@@ -107,7 +107,7 @@ gene_sets = lapply(gene_sets, tolower)
 n_sets = length(gene_sets)
 #### new GSA
 NUM_GENE_THRESH <- 5
-Q_THRESH <- 0.1
+Q_THRESH <- 0.05
 N_samp <- 100000
 log_fc_thresh <- 0.4
 data_res <- matrix(0, n_sets, 3)
@@ -145,6 +145,7 @@ colnames(final_df) <- c('n', 'p', 'Z')
 final_df$name <- gene_set_names[sig_gene_sets]
 final_df$q <- q_vals[q_vals < Q_THRESH]
 saveRDS(final_df, file.path(resultsdir, 'gsa_results.rds'))
+final_df <- readRDS(file.path(resultsdir, 'gsa_results.rds'))
 ```
 
 ### Make volcano plot
@@ -161,8 +162,11 @@ plot_df <- data.frame(log_fc, -log(p_vals,10))
 colnames(plot_df) <- c('log_fc','p_val')
 MAX_P_VAL <- -log(max(res_genes$p_val),10)
 plot_df$gene <- rownames(plot_df)
-plot_df$label <- plot_df$gene
-plot_df$label[!(plot_df$label %in% rownames(res_genes))] <- NA
+#plot_df$label <- plot_df$gene
+#plot_df$label[!(plot_df$label %in% rownames(res_genes))] <- NA
+plot_df$sig <- (rownames(plot_df) %in% rownames(res_genes))
+plot_df$label <- NA
+plot_df[c('Dpysl3', 'Col7a1','Col6a1','Col6a2','Lrp1','Inhba','Pmepa1','Timp3','Lrp1','Mgp','S100a13','Krt19','Krt79','S100a1','Ccl2','Spred1','Ecm1','Nfkb1','S100a10','S100a6','Krt18','Krt8','Krt14','Krtcap2'), 'label'] <- c('Dpysl3', 'Col7a1','Col6a1','Col6a2','Lrp1','Inhba','Pmepa1','Timp3','Lrp1','Mgp','S100a13','Krt19','Krt79','S100a1','Ccl2','Spred1','Ecm1','Nfkb1','S100a10','S100a6','Krt18','Krt8','Krt14','Krtcap2')
 plot_df$log_fc <- plot_df$log_fc*log(exp(1),2)
 plot_df$group <- 'reg'
 gene_sets = GSA.read.gmt(file.path(datadir,'hallmark_genesets.gmt'))
@@ -174,10 +178,9 @@ gene_sets = lapply(gene_sets, tolower)
 my_genes <- gene_list_type[tolower(gene_list_type) %in% gene_sets[[30]]]
 my_gl <-  intersect(my_genes,rownames(res_genes))
 plot_df[rownames(plot_df) %in% my_gl, 'group'] <- 'emt'
-plot_df$sig <- !is.na(plot_df$label)
 p <- ggplot(plot_df, aes(x=log_fc, y = p_val, color = group, alpha = sig)) + geom_point() + theme_classic()  +
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
-  geom_label_repel(data = plot_df[plot_df$group != 'emt',],aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 3, label.padding = 0.1, max.overlaps = 15)+ xlab('Estimated cell type-specific DE by RCTDE') + ylab('RCTDE p-value') + scale_color_manual("", labels = c('EMT', 'Other'), values = c('#D55E00','black')) + geom_label_repel(data = plot_df[plot_df$group == 'emt',],aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 3, label.padding = 0.1, max.overlaps = 15)+ xlab('Estimated cell type-specific DE by RCTDE') + ylab('RCTDE p-value') + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
+  geom_label_repel(data = plot_df,aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15)+ xlab('Estimated cell type-specific DE by RCTDE') + ylab('RCTDE p-value') + scale_color_manual("", labels = c('EMT', 'Other'), values = c('#D55E00','black')) + xlab('Estimated cell type-specific DE by RCTDE') + ylab('RCTDE p-value') + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))#+ geom_label_repel(data = plot_df[plot_df$group == 'emt',],aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15) #plot_df[plot_df$group != 'emt',]
 p
 
 ```

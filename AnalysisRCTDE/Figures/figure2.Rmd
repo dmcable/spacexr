@@ -12,14 +12,14 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 # Benchmarking RCTDE on a simulated spatial transcriptomics dataset
 
 ```{r libraries}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(dplyr)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/de_simulation_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisRCTDE/helper_functions/de_simulation_helper.R')
 devtools::load_all()
 load_all()
 set_global_Q_all()

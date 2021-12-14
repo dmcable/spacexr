@@ -27,8 +27,7 @@ knitr::opts_chunk$set(
 )
 ```
 ## Introduction
-Robust Cell Type Decomposition, or RCTD, is an R package for learning cell types from spatial transcriptomics data. In this Vignette, we 
-will assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. Please note that the reference could also be a single-cell dataset or a cell type-specific bulk RNA-seq dataset.
+Robust Cell Type Decomposition, or RCTD, is an statistical method for learning cell types from spatial transcriptomics data. In this Vignette, we will assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. Please note that the reference could also be a single-cell dataset or a cell type-specific bulk RNA-seq dataset.
 
 ## Data Preprocessing
 Let's begin by loading in the data to be usable for RCTD. <br/>
@@ -129,9 +128,7 @@ More specifically, the `results_df` object contains one column per pixel (barcod
 * Next, the `first_type` column gives the first cell type predicted on the bead (for all spot_class conditions except "reject"). 
 * The `second_type column` gives the second cell type predicted on the bead for doublet spot_class conditions (not a confident prediction for "doublet_uncertain").
 
-Finally, the function `get_decomposed_data` can be used to get expected counts of each gene in each cell type, for both doublets and singlets. We note that this only provides the expectation, but the variance may be fairly high. Also, this function makes the assumption that the ratio of gene expression within cell types is approximately the same as the scRNA-seq reference. It should be used as a tool for exploratory data analysis. 
-
-Note that in multi-mode, results consists of a list of results for each pixel, which contains all_weights (weights from full mode), cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and sub_weights (proportions of cell types on multi mode).
+Note that in multi-mode, results consists of a list of results for each pixel, which contains `all_weights` (weights from full-mode), `cell_type_list` (cell types on multi-mode), `conf_list` (which cell types are confident on multi-mode) and `sub_weights` (proportions of cell types on multi-mode).
 
 Note, some of the plots are not displayed here, but rather saved as pdf files in the 'RCTD_Plots' directory.
 

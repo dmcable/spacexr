@@ -21,7 +21,6 @@ solveOLS<-function(S,B, solution, constrain = T){
 
 #solve using WLS with weights dampened by a certain dampening constant
 #if constrain, constrain the weights to sum up to 1
-#eta is alpha in the sparsity paper
 solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE,
                               n.iter = 50, MIN_CHANGE = .001, bulk_mode = F, solution = NULL){
   if(!bulk_mode)

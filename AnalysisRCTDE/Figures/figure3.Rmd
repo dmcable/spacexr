@@ -1,8 +1,8 @@
 ---
 output:  
-  pdf_document: default
   html_document:
     keep_md: true
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy 
 ### Visualize cerebellum regions
 
 ```{r fig-1, fig.height = 6, fig.width = 6, fig.align = 'center'}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -137,7 +137,7 @@ for(cell_type in cell_types) {
   plot_df[plot_df$cell_type == cell_type, 'sig'] <- cur_df$gene %in% gene_final_all[[cell_type]]
 }
 p <- ggplot(plot_df) + geom_point(aes(x = (gene), y = pmin(Z,15), color = cell_type, size = abs(mean), alpha = sig), position = jitter_obj) + 
-   geom_hline(yintercept=0) + theme_classic()+geom_vline(xintercept=v_line_list, linetype = 'dotted') + facet_grid(. ~ max_ct, scales = "free_x", space = "free_x") + ylab('Cell type-specific Z-score') + xlab('Gene')+ labs(color = "Cell Type", size = "Estimated DE Magnitude")+ theme(axis.text.x = element_text(angle=25,hjust = 1)) + ggplot2::scale_color_manual("Cell Type",values = my_pal_curr, breaks = c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes'), labels = c('Astrocytes','Bergmann','Granule','Purkinje','Oligo')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.5,1))
+   geom_hline(yintercept=0) + theme_classic()+geom_vline(xintercept=v_line_list, linetype = 'dotted') + facet_grid(. ~ max_ct, scales = "free_x", space = "free_x") + ylab('Cell type-specific Z-score') + xlab('Gene')+ labs(color = "Cell Type", size = "Estimated DE Magnitude")+ theme(axis.text.x = element_text(size=10,angle=30,hjust = 1)) + ggplot2::scale_color_manual("Cell Type",values = my_pal_curr, breaks = c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes'), labels = c('Astrocytes','Bergmann','Granule','Purkinje','Oligo')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.5,1))
 p
 ```
 ### Plot HCR validation vs RCTDE estimated DE

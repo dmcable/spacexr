@@ -31,15 +31,15 @@ than another sequencing technology.
 After identifying cell types, Robust Cell Type Differential Expression
 (RCTDE) learns cell type-specific differential expresion on spatial
 transcriptomics dataset. RCTDE inputs one or more user-defined
-*predictive variables*, which are biologically-relevant axes along which
+*covariates*, which are biologically-relevant axes along which
 differential expression is hypothesized. These variables can be
-generally defined, but some choices for predictive variables include
-spatial position, cellular microenvironmnet, or cell-to-cell
-interactions. RCTDE then identifies, for each cell type, genes that are
-significantly differentially expressed as a function of the predictive
-variables. Similar to RCTD, RCTDE can operate on spatial data containing
-single cells or cell type mixtures. Differential expression can be
-learned across one or multiple biological replicates or samples.
+generally defined, but some choices for covariates include spatial
+position, cellular microenvironmnet, or cell-to-cell interactions. RCTDE
+then identifies, for each cell type, genes that are significantly
+differentially expressed as a function of the covariates. Similar to
+RCTD, RCTDE can operate on spatial data containing single cells or cell
+type mixtures. Differential expression can be learned across one or
+multiple biological replicates or samples.
 
 Code for generating the figures of our RCTD paper, Robust decomposition
 of cell type mixtures in spatial transcriptomics, is located
@@ -47,8 +47,8 @@ of cell type mixtures in spatial transcriptomics, is located
 *Nature Biotechnology* paper can be found
 [here](https://www.nature.com/articles/s41587-021-00830-w).
 
-Code for generating the figures of our RCTDE paper, INSERT PAPER TITLE,
-is located
+Code for generating the figures of our RCTDE paper, Cell type-specific
+differential expression for spatial transcriptomics, is located
 [here](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE). Our
 paper can be found [here](BIORXIV%20LINK).
 
@@ -84,7 +84,7 @@ possible on your data:
 1.  Open the ‘spatial-transcriptomics.Rmd’ vignette for a complete
     explanation of the RCTD workflow. Expected output of the vignette is
     provided
-    [here](https://raw.githack.com/dmcable/RCTD/dev/vignettes/spatial-transcriptomics.html).
+    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html).
     If you have any questions about how to run RCTD, please first make
     sure you run this Vignette on your computer and make sure you
     understand how it works.
@@ -141,21 +141,22 @@ cell type-specific differential expression:
 
 1.  Open the ‘differential-expression.Rmd’ vignette for a complete
     explanation of the RCTDE workflow. Expected output of the vignette
-    is provided [here](GITHACK%20LINK). If you have any questions about
-    how to run RCTDE, please first make sure you run this Vignette on
-    your computer and make sure you understand how it works.
+    is provided
+    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/differential-expression.html).
+    If you have any questions about how to run RCTDE, please first make
+    sure you run this Vignette on your computer and make sure you
+    understand how it works.
 
 2.  As shown in the vignette, the most important step is to define the
-    predictive variables along which to detect differential expression.
-    This variable should be a numeric vector, with names for each
-    spatial transcriptomics pixel, representing the value of the
-    predictive variable at each pixel. Please standardize the predictive
-    variable between 0 and 1.
+    covariates along which to detect differential expression. This
+    variable should be a numeric vector, with names for each spatial
+    transcriptomics pixel, representing the value of the covariate at
+    each pixel. Please standardize the covariate between 0 and 1.
 
-3.  Run RCTDE. If a single predictive variable is present, the simplest
-    way to run RCTDE is to use the `run.de.single` function as in the
-    vignette. Here you will pass in your predictive variable and the
-    RCTD object containing previously-computed cell type assignments.
+3.  Run RCTDE. If a single covariate is present, the simplest way to run
+    RCTDE is to use the `run.de.single` function as in the vignette.
+    Here you will pass in your covariate and the RCTD object containing
+    previously-computed cell type assignments.
 
 4.  Observed RCTDE results. We recommend making plots representing DE
     results using the `make_all_de_plots` function. Also, DE results can
@@ -165,8 +166,8 @@ cell type-specific differential expression:
 ### Dependencies
 
   - R version \>= 3.5.0.
-  - R packages: readr, pals, ggplot2, Matrix, doParallel, foreach,
-    quadprog, tibble, dplyr, reshape2.
+  - R packages: readr, pals, ggplot2, Matrix, parallel, doParallel,
+    foreach, quadprog, tibble, dplyr, reshape2.
 
 For optimal performance, we recommend at least 4 GB of RAM, and multiple
 cores may be used to speed up runtime.

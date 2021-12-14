@@ -36,7 +36,7 @@ make_de_plots_genes <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
     plot_sig_genes(cell_type, myRCTD@internal_vars_de$all_barc, myRCTD@internal_vars_de$my_beta,
-                 myRCTD@spatialRNA, res_genes, myRCTD@internal_vars_de$test_mode, datadir)
+                 myRCTD@originalSpatialRNA, res_genes, myRCTD@internal_vars_de$test_mode, datadir)
   }
 }
 

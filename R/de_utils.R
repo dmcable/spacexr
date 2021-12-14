@@ -49,7 +49,7 @@ get_l_chi <- function(x2, d, S_inv, points_list, delta = 0 ) {
   return(lambda)
 }
 
-get_gene_list_type <- function(my_beta, all_barc, cell_type, nUMI, gene_list_type, cti_renorm, 
+get_gene_list_type <- function(my_beta, all_barc, cell_type, nUMI, gene_list_type, cti_renorm,
                                cell_types_present, gene_fits, test_mode = 'direct') {
   C = 15
   N_cells <- colSums(my_beta[all_barc,])[cell_type]
@@ -66,7 +66,7 @@ get_gene_list_type <- function(my_beta, all_barc, cell_type, nUMI, gene_list_typ
     n_cell_types <- dim(my_beta)[2]
     n_regions <- dim(gene_fits$con_all)[2] / n_cell_types
     cell_type_ind <- which(colnames(my_beta) == cell_type)
-    my_filter <- unlist(lapply(gene_list_type, function(gene) 
+    my_filter <- unlist(lapply(gene_list_type, function(gene)
       (sum(get_con_regions(gene_fits, gene, n_regions, cell_type_ind, n_cell_types)) >= 2)))
     gene_list_type <- gene_list_type[my_filter]
   } else
@@ -80,10 +80,10 @@ get_con_regions <- function(gene_fits, gene, n_regions, cell_type_ind, n_cell_ty
 
 get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
   gene_list <- rownames(myRCTD@de_results$gene_fits$mean_val)
-  cti_renorm <- get_norm_ref(myRCTD@originalSpatialRNA, myRCTD@cell_type_info$info[[1]], 
+  cti_renorm <- get_norm_ref(myRCTD@originalSpatialRNA, myRCTD@cell_type_info$info[[1]],
                              gene_list, myRCTD@internal_vars$proportions)
-  return(get_gene_list_type(myRCTD@internal_vars_de$my_beta, myRCTD@internal_vars_de$all_barc, cell_type, 
-                   myRCTD@spatialRNA@nUMI, gene_list, cti_renorm, cell_types_present, 
+  return(get_gene_list_type(myRCTD@internal_vars_de$my_beta, myRCTD@internal_vars_de$all_barc, cell_type,
+                   myRCTD@spatialRNA@nUMI, gene_list, cti_renorm, cell_types_present,
                    myRCTD@de_results$gene_fits))
 }
 # Aggregate cell types
@@ -129,7 +129,7 @@ choose_cell_types <- function(myRCTD, all_barc, doublet_mode, cell_type_threshol
     if(length(diff_types) > 0)
       stop(paste0('choose_cell_types: cell types: ',paste(diff_types,collapse = ', '),
                   ' are not valid cell types in this RCTD object (myRCTD@cell_type_info$info[[2]]). Please check that cell_types only has valid cell types.'))
-    
+
   } else {
     cell_types <- cell_types_default
   }
@@ -169,4 +169,16 @@ get_spline_matrix <- function(puck, df = 15) {
   X2[,2:df] <- sweep(X2[,2:df], 2, apply(X2[,2:df],2, sd), '/') #standardize
   rownames(X2) <- names(puck@nUMI)
   return(X2)
+}
+
+check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precision, PRECISION.THRESHOLD) {
+  cell_type_ind <- get_cell_type_ind(X1,X2, dim(my_beta)[2])
+  converged_vec <- (1:dim(my_beta)[2]) == 0
+  if(itera < n.iter) {
+    converged_vec <- !converged_vec
+    converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
+  }
+  converged_vec <- converged_vec & (!error_vec)
+  names(converged_vec) <- colnames(my_beta)
+  return(converged_vec)
 }

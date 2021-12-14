@@ -12,14 +12,14 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 # Benchmarking RCTDE on a simulated spatial transcriptomics dataset
 
 ```{r libraries}
-library(DEGLAM)
+library(RCTD)
 library(Matrix)
 library(devtools)
 library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(dplyr)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/de_simulation_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisRCTDE/helper_functions/de_simulation_helper.R')
 devtools::load_all()
 load_all()
 set_global_Q_all()
@@ -138,8 +138,9 @@ se <- apply(e_all[,2,], 2,sd)/sqrt(REPLICATES)
 results <- colMeans(e_all[,2,])
 plot_df <- data.frame(cur_gene_list[1:length(results)], results, se, de_vals)
 colnames(plot_df) <- c('gene', 'mean', 'se', 'de')
+plot_df[,c('mean','se')] <- plot_df[,c('mean','se')] * log(exp(1),2) # rescale to log 2
 if(! non_null) {
-  p <- ggplot(plot_df,aes(x=gene, y = mean)) + geom_point() + geom_errorbar(aes(x=gene,ymin = mean-1.96*se, ymax = mean + 1.96*se), width = .2)+ geom_hline(yintercept = 0) + theme_classic() + ggrepel::geom_label_repel(aes(label = gene),nudge_x = 0.15,na.rm = TRUE) 
+  p <- ggplot(plot_df,aes(x=gene, y = mean)) + geom_point() + geom_errorbar(aes(x=gene,ymin = mean-1.96*se, ymax = mean + 1.96*se), width = .2)+ geom_hline(yintercept = 0) + theme_classic()  + theme(axis.text.x = element_text(angle=25,hjust = 1)) + xlab('Gene') + ylab('Log RCTDE estimated differential expression')#+ ggrepel::geom_label_repel(aes(label = gene),nudge_x = 0.15,na.rm = TRUE)
   p
 } else {
   p <- ggplot(plot_df,aes(x=de, y = mean)) + geom_point() + geom_errorbar(aes(ymin = mean-1.96*se, ymax = mean + 1.96*se), width = 0.05) + geom_line(aes(x = de, y = de)) + theme_classic() + ggrepel::geom_label_repel(aes(label = gene),nudge_x = 0.15,na.rm = TRUE) 
@@ -188,7 +189,8 @@ for(i in 1:N_bins) {
 }
 plot_df <- data.frame(pred_list, obs_list, se_list)
 colnames(plot_df) <- c('pred', 'obs', 'se')
-p <- ggplot(plot_df) + geom_point(aes(sqrt(pred), sqrt(obs))) + geom_errorbar(aes(x = sqrt(pred), ymin = sqrt(obs - 1.96*se), ymax = sqrt(obs + 1.96*se))) + geom_line(aes(x = sqrt(pred), y = sqrt(pred))) + theme_classic()
+plot_df <- plot_df * log(exp(1),2)
+p <- ggplot(plot_df) + geom_point(aes(sqrt(pred), sqrt(obs))) + geom_errorbar(aes(x = sqrt(pred), ymin = sqrt(obs - 1.96*se), ymax = sqrt(obs + 1.96*se))) + geom_abline() + theme_classic() + xlim(c(0,0.4)) + ylim(c(0,0.4)) + xlab('RCTDE predicted standard error') + ylab('Average observed standard error')
 p 
 ```
 

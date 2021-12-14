@@ -7,9 +7,12 @@
 
 <!-- badges: end -->
 
-Here, we will explain how the analysis occured for our paper ‘INSERT
-TITLE OF THE PAPER’, which introduces and validates the RCTDE method.
-You may access RCTDE within the open-source RCTD R package
+Here, we will explain how the analysis occured for our paper ‘Cell
+type-specific differential expression for spatial transcriptomics’,
+which introduces and validates the Robust Cell Type
+Differential-Expression (RCTDE) method for detecting cell type-specific
+differential expression in spatial transcriptomics. You may access RCTDE
+within our open-source R package
 [here](https://github.com/dmcable/RCTD).
 
 ### DE Simulation
@@ -79,14 +82,14 @@ pixel.
 
 After generating the predictive variable, we run RCTDE on the four
 samples using the scripts
-[run\_DEGLAM\_j20\_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_DEGLAM_j20_21.R),
-[run\_DEGLAM\_j20\_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_DEGLAM_j20_22.R),
-[run\_DEGLAM\_j20\_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_DEGLAM_j20_23.R),
+[run\_RCTD\_j20\_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_21.R),
+[run\_RCTD\_j20\_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_22.R),
+[run\_RCTD\_j20\_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_23.R),
 and
-[run\_DEGLAM\_j20\_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_DEGLAM_j20_24.R).
+[run\_RCTD\_j20\_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_24.R).
 Overall results are shown in Figure 4 - J20 below, which uses helper
 functinos from
-[merge\_de\_helper.R](https://github.com/dmcable/RCTD/tree/master/helper_functions/merge_de_helper.R).
+[merge\_de\_helper.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/helper_functions/merge_de_helper.R).
 
 ### MERFISH Hypothalamus Slide-seq
 
@@ -123,25 +126,25 @@ for the [RCTD package](https://github.com/dmcable/RCTD).
 We provide R Markdown files that were used to create the main figures:
 
   - [Validating RCTDE on simulated
-    data](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure1.html)
+    data](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure2.html)
     (Figure 2)
   - [RCTDE on Slide-seq
-    cerebellum](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure2-platform-effect.html)
+    cerebellum](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure3.html)
     (Figure 3)
   - [RCTDE on Slide-seq J20
-    hippocampus](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure2.html)
+    hippocampus](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure4_j20.html)
     (Figure 4)
   - [RCTDE on Slide-seq
-    testes](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure3.html)
+    testes](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure4_testes.html)
     (Figure 4)
   - [RCTDE on MERFISH
-    hypothalamus](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure4.html)
+    hypothalamus](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure4_merfish.html)
     (Figure 4)
   - [Parametric RCTDE on Slide-seq KP
-    tumor](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure5-all.html)
+    tumor](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure5_parametric.html)
     (Figure 5)
   - [Nonparametric RCTDE on Slide-seq KP
-    tumor](https://raw.githack.com/dmcable/RCTD/master/AnalysisPaper/MainFigures/figure5-interneurons.html)
+    tumor](https://raw.githack.com/dmcable/RCTD/master/AnalysisRCTDE/Figures/figure5_nonparametric.html)
     (Figure 5)
 
 ### Supplementary Figures

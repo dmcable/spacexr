@@ -1,5 +1,5 @@
 library(Matrix)
-library(DEGLAM)
+library(RCTD)
 library(doParallel)
 library(ggplot2)
 library(xlsx)
@@ -22,8 +22,8 @@ full_puck = readRDS(paste0(datadir,'puck.rds'))
 ## Examine SpatialRNA object (optional)
 print(dim(cropped_puck@counts))
 hist(log(cropped_puck@nUMI,2))
-print(head(cropped_puck@coords)) 
-barcodes <- colnames(cropped_puck@counts) 
+print(head(cropped_puck@coords))
+barcodes <- colnames(cropped_puck@counts)
 plot_puck_continuous(cropped_puck, barcodes, cropped_puck@nUMI, ylimit = c(0,round(quantile(cropped_puck@nUMI,0.9))),
                      title ='plot of nUMI cropped_puck')
 plot_puck_continuous(full_puck, colnames(full_puck@counts) , full_puck@nUMI, ylimit = c(0,round(quantile(full_puck@nUMI,0.9))),
@@ -54,8 +54,8 @@ plot_puck_continuous(cropped_puck, cancer_sing, Y, ylimit = c(0,MAX_EXPR),
 
 # Get a list of barcodes for cells of target_type
 # Filter so we have cells in the cropped puck, that are "singlets" or "certain doublets" with first or second type being the target type
-target_df = dplyr::filter(doublet_df, (rownames(doublet_df) %in% barcodes) & 
-                            ((first_type == target_type  & (spot_class != 'reject')) | 
+target_df = dplyr::filter(doublet_df, (rownames(doublet_df) %in% barcodes) &
+                            ((first_type == target_type  & (spot_class != 'reject')) |
                                ((second_type == target_type) & (spot_class == 'doublet_certain'))
                              )
                           )
@@ -67,7 +67,7 @@ explanatory.variable = c(rep(0,length(all_barcodes)))
 names(explanatory.variable) = all_barcodes
 
 # Calculate proximity score by summing the scores across all cells of target type for each cell in cropped_puck
-# Individual scores between a cell and any target cell is calculated as n_i*exp(-d_i/c) 
+# Individual scores between a cell and any target cell is calculated as n_i*exp(-d_i/c)
 # n_i is the weighted nUMI of the target cell; weighted by the proportion that the pixel is the target cell type. singlets are weighted as 1.0
 # d_i is the distance between the current cell and target cell
 # c is a rate constant around 30-50 microns
@@ -87,7 +87,7 @@ names(weighted_nUMIs) = target_barcodes
 for(i in 1:length(weighted_nUMIs)) {
   barcode = target_barcodes[i]
   nUMI = cropped_puck@nUMI[barcode]
-  
+
   spot_class = doublet_df[barcode,"spot_class"]
   first_type = doublet_df[barcode,"first_type"]
   second_type = doublet_df[barcode,"second_type"]
@@ -105,7 +105,7 @@ for(i in 1:length(weighted_nUMIs)) {
 # Use the precomputed components above to compute explanatory.variable
 for(i in 1:length(all_barcodes)) {
   barcode = all_barcodes[i]
-  
+
   exp_dists = exponent_mat[barcode,target_barcodes]
   proximity_score = weighted_nUMIs %*% exp_dists
   explanatory.variable[i]=proximity_score
