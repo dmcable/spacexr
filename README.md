@@ -50,13 +50,14 @@ of cell type mixtures in spatial transcriptomics, is located
 Code for generating the figures of our RCTDE paper, Cell type-specific
 differential expression for spatial transcriptomics, is located
 [here](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE). Our
-paper can be found [here](BIORXIV%20LINK).
+RCTDE paper will be available soon. <!--[here](BIORXIV LINK). -->
 
 ## News and Updates
 
-November, XXX, 2021: Substantial update: releasing RCTD 2.0, now
+December, 15th, 2021: Substantial update: releasing RCTD 2.0, now
 featuring cell type-specific differential expression. The new algorithm,
-called RCTDE, is introduced in our paper [here](BIORXIV%20LINK).
+called RCTDE, is introduced in our new paper which will be available
+soon. <!--[here](BIORXIV LINK). -->
 
 March, 18th, 2021: Our RCTD paper has been published in *Nature
 Biotechnology*

@@ -31,11 +31,11 @@ After identifying cell types, Robust Cell Type Differential Expression (RCTDE) l
 
 Code for generating the figures of our RCTD paper, Robust decomposition of cell type mixtures in spatial transcriptomics, is located [here](https://github.com/dmcable/RCTD/tree/master/AnalysisPaper). Our *Nature Biotechnology* paper can be found [here](https://www.nature.com/articles/s41587-021-00830-w).
 
-Code for generating the figures of our RCTDE paper, Cell type-specific differential expression for spatial transcriptomics, is located [here](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE). Our paper can be found [here](BIORXIV LINK).
+Code for generating the figures of our RCTDE paper, Cell type-specific differential expression for spatial transcriptomics, is located [here](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE). Our RCTDE paper will be available soon. <!--[here](BIORXIV LINK). -->
 
 ## News and Updates
 
-November, XXX, 2021: Substantial update: releasing RCTD 2.0, now featuring cell type-specific differential expression. The new algorithm, called RCTDE, is introduced in our paper [here](BIORXIV LINK).
+December, 15th, 2021: Substantial update: releasing RCTD 2.0, now featuring cell type-specific differential expression. The new algorithm, called RCTDE, is introduced in our new paper which will be available soon. <!--[here](BIORXIV LINK). -->
 
 March, 18th, 2021: Our RCTD paper has been published in *Nature Biotechnology* [here](https://www.nature.com/articles/s41587-021-00830-w). Also, we have just released a new version of RCTD (version 1.2.0) with a different method to input data (please see `SpatialRNA` and `Reference` constructor functions). Please report any bugs associated with this new update.
 
