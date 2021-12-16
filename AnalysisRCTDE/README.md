@@ -48,7 +48,7 @@ The script
 [run\_RCTD\_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/Preprocessing_and_RCTD/run_RCTD_testes.R)
 loads in the testes data and runs RCTD. Next, RCTDE is run using the
 script
-[run\_de\_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_testes.R).
+[run\_de\_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_testes.R).
 For downstream testes analysis (results in Figure 4 - Testes below),
 helper functions are used from
 [testes\_helper.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/helper_functions/testes_helper.R).
@@ -82,11 +82,11 @@ pixel.
 
 After generating the predictive variable, we run RCTDE on the four
 samples using the scripts
-[run\_RCTD\_j20\_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_21.R),
-[run\_RCTD\_j20\_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_22.R),
-[run\_RCTD\_j20\_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_23.R),
+[run\_RCTDE\_j20\_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_21.R),
+[run\_RCTDE\_j20\_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_22.R),
+[run\_RCTDE\_j20\_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_23.R),
 and
-[run\_RCTD\_j20\_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_24.R).
+[run\_RCTDE\_j20\_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_24.R).
 Overall results are shown in Figure 4 - J20 below, which uses helper
 functinos from
 [merge\_de\_helper.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/helper_functions/merge_de_helper.R).
@@ -94,7 +94,7 @@ functinos from
 ### MERFISH Hypothalamus Slide-seq
 
 The script
-[run\_de\_merfish.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_merfish.R)
+[run\_de\_merfish.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_merfish.R)
 runs RCTDE (including RCTD) on the MERFISH hypothalamus data for both
 linear and quadratic models. Results and other analysis are shown in
 Figure 4 - MERFISH below.
@@ -106,13 +106,13 @@ The script
 generates a plot of the KP tumor H\&E annotations.
 
 The script
-[run\_de\_tumor.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_tumor.R)
+[run\_de\_tumor.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_tumor.R)
 runs RCTDE (including RCTD) on the Slide-seq KP tumor data for the
 parametric case (DE as a function of immune cell density). Results and
 other analysis are shown in Figure 5 - parametric below.
 
 The script
-[run\_de\_nonparametric.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_nonparametric.R)
+[run\_de\_nonparametric.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_nonparametric.R)
 runs RCTDE nonparametrically on the tumor data. Results and other
 analysis are shown in Figure 5 - nonparametric below.
 
