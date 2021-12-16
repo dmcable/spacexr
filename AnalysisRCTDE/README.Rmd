@@ -37,7 +37,7 @@ The script [hcr.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/ima
 
 ### Testes Slide-seq
 
-The script [run_RCTD_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/Preprocessing_and_RCTD/run_RCTD_testes.R) loads in the testes data and runs RCTD. Next, RCTDE is run using the script [run_de_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_testes.R).
+The script [run_RCTD_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/Preprocessing_and_RCTD/run_RCTD_testes.R) loads in the testes data and runs RCTD. Next, RCTDE is run using the script [run_de_testes.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_testes.R).
 For downstream testes analysis (results in Figure 4 - Testes below), helper functions are used from [testes_helper.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/helper_functions/testes_helper.R).
 
 ### J20 Hippocampus Slide-seq
@@ -52,23 +52,23 @@ In order to create the RCTDE predictive variable, we must next align the amyloid
 Next, the script [created_pd.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/create_pd.R) creates and saves smoothed versions of the plaque images. Finally, [pd_to_exvar.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/pd_to_exvar.R)
 calculates the plaque density predictive variable at each Slide-seq pixel.
 
-After generating the predictive variable, we run RCTDE on the four samples using the scripts [run_RCTD_j20_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_21.R),
-[run_RCTD_j20_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_22.R), [run_RCTD_j20_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_23.R), and [run_RCTD_j20_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTD_j20_24.R). Overall results are shown in Figure 4 - J20 below,
+After generating the predictive variable, we run RCTDE on the four samples using the scripts [run_RCTDE_j20_21.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_21.R),
+[run_RCTDE_j20_22.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_22.R), [run_RCTDE_j20_23.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_23.R), and [run_RCTDE_j20_24.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/j20/run_RCTDE_j20_24.R). Overall results are shown in Figure 4 - J20 below,
 which uses helper functinos from [merge_de_helper.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/helper_functions/merge_de_helper.R).
 
 ### MERFISH Hypothalamus Slide-seq
 
-The script [run_de_merfish.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_merfish.R) runs RCTDE (including RCTD) on the MERFISH hypothalamus data for both linear
+The script [run_de_merfish.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_merfish.R) runs RCTDE (including RCTD) on the MERFISH hypothalamus data for both linear
 and quadratic models. Results and other analysis are shown in Figure 4 - MERFISH below.
 
 ### KP Tumor Slide-seq 
 
 The script [overlay.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/image_analysis/overlay.R) generates a plot of the KP tumor H&E annotations.
 
-The script [run_de_tumor.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_tumor.R) runs RCTDE (including RCTD) on the Slide-seq KP tumor data for the parametric case
+The script [run_de_tumor.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_tumor.R) runs RCTDE (including RCTD) on the Slide-seq KP tumor data for the parametric case
 (DE as a function of immune cell density). Results and other analysis are shown in Figure 5 - parametric below.
 
-The script [run_de_nonparametric.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTD/run_de_nonparametric.R) runs RCTDE nonparametrically on the tumor data. Results and other analysis 
+The script [run_de_nonparametric.R](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE/run_RCTDE/run_de_nonparametric.R) runs RCTDE nonparametrically on the tumor data. Results and other analysis 
 are shown in Figure 5 - nonparametric below.
 
 ### Running RCTDE
