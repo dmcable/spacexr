@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# INSERT TITLE OF THE PAPER
+# Cell type-specific differential expression for spatial transcriptomics
 
 <!-- badges: start -->
 
