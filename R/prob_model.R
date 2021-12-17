@@ -9,7 +9,6 @@
 set_likelihood_vars <- function(Q_mat_loc, X_vals) {
   Q_mat <<- Q_mat_loc
   N_X <<- dim(Q_mat)[2]
-  delta <<- 1e-5
   X_vals <<- X_vals
   K_val <<- dim(Q_mat)[1] - 3;
 }
@@ -127,7 +126,7 @@ calc_log_l_vec <- function(lambda, Y, return_vec = FALSE) {
 
 
 get_d1_d2 <- function(B, prediction) {
-  bead = B; epsilon = 1e-4; X_max = max(X_vals); delta = 1e-5
+  bead = B; epsilon = 1e-4; X_max = max(X_vals);
   x = pmin(pmax(epsilon, prediction),X_max - epsilon);
   Q_cur <- calc_Q_all(x, bead) #need calc_log_d1 and calc_log_d2
   bead[bead > K_val] = K_val

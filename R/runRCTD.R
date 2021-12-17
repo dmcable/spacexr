@@ -69,7 +69,7 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
       numCores <- MAX_CORES
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="")
     doParallel::registerDoParallel(cl)
-    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'delta')
+    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val')
     results <- foreach::foreach(i = 1:(dim(beads)[1]), .export = environ) %dopar% { #.packages = c("quadprog"),
       #if(i %% 100 == 0)
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
@@ -97,7 +97,7 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
       numCores <- MAX_CORES
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="")
     doParallel::registerDoParallel(cl)
-    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'delta')
+    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val')
     results <- foreach::foreach(i = 1:(dim(beads)[1]), .export = environ) %dopar% { #.packages = c("quadprog"),
       #if(i %% 100 == 0)
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
@@ -165,7 +165,7 @@ decompose_batch <- function(nUMI, cell_type_means, beads, gene_list, constrain =
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="")
     doParallel::registerDoParallel(cl)
     environ = c('decompose_full','solveIRWLS.weights',
-                'solveOLS','solveWLS', 'Q_mat', 'K_val','X_vals','delta')
+                'solveOLS','solveWLS', 'Q_mat', 'K_val','X_vals')
     #for(i in 1:100) {
     weights <- foreach::foreach(i = 1:(dim(beads)[1]), .packages = c("quadprog"), .export = environ) %dopar% {
       #if(i %% 100 == 0)

@@ -10,7 +10,6 @@
 #' @param doublet_mode (default TRUE) if TRUE, used RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param test_mode (default 'direct') if 'direct', tests for DE along a single parameter. If 'multi', then tests for differences
 #' across multiple parameters
-#' @param delta (default 0) non-centrality parameter for differential expression tests
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter
 #' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
@@ -22,7 +21,7 @@
 #' Additionally, the object contains `internal_vars_de`` a list of variables that are used internally by RCTDE
 #' @export
 run.de.single <- function(myRCTD, explanatory.variable, datadir = './', cell_types = NULL, cell_type_threshold = 125,
-                          gene_threshold = 5e-5, doublet_mode = T, test_mode = 'direct', delta = 0, thresh_val = NULL,
+                          gene_threshold = 5e-5, doublet_mode = T, test_mode = 'direct', thresh_val = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01) {
   check_vector(explanatory.variable, 'explanatory.variable', 'run.de.single')
   all_barc = intersect(names(explanatory.variable), colnames(myRCTD@spatialRNA@counts))
@@ -39,7 +38,7 @@ run.de.single <- function(myRCTD, explanatory.variable, datadir = './', cell_typ
   rownames(X2) <- all_barc; rownames(X1) <- all_barc
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
   return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, datadir, gene_threshold = gene_threshold,
-                       doublet_mode = doublet_mode, test_mode = test_mode, delta = delta,
+                       doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, fdr = fdr))
@@ -48,7 +47,7 @@ run.de.single <- function(myRCTD, explanatory.variable, datadir = './', cell_typ
 # run DE nonparametrically
 run.de.nonparam <- function(myRCTD, df = 15, datadir = './', all_barc = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
-                            test_mode = 'direct', delta = 0, thresh_val = NULL, sigma_gene = T,
+                            test_mode = 'direct', thresh_val = NULL, sigma_gene = T,
                             PRECISION.THRESHOLD = 0.01, cell_types_present = NULL) {
   if(is.null(all_barc))
     all_barc <- colnames(myRCTD@spatialRNA@counts)
@@ -62,7 +61,7 @@ run.de.nonparam <- function(myRCTD, df = 15, datadir = './', all_barc = NULL, ce
   rownames(X2) <- all_barc; rownames(X1) <- all_barc
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
   return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, datadir, gene_threshold = gene_threshold,
-                       doublet_mode = doublet_mode, test_mode = test_mode, delta = delta,
+                       doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, add_res_genes = F))
@@ -70,7 +69,7 @@ run.de.nonparam <- function(myRCTD, df = 15, datadir = './', all_barc = NULL, ce
 
 run.de.regions <- function(myRCTD, region_list, datadir = './', cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
-                           test_mode = 'multi', delta = 0, thresh_val = NULL, sigma_gene = T,
+                           test_mode = 'multi', thresh_val = NULL, sigma_gene = T,
                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL) {
   if(!is.list(region_list))
     stop('run.de.regions: error, region_list must be a list')
@@ -96,7 +95,7 @@ run.de.regions <- function(myRCTD, region_list, datadir = './', cell_types = NUL
     X2[region_list[[i]],i] <- 1
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
   return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, datadir, gene_threshold = gene_threshold,
-                       doublet_mode = doublet_mode, test_mode = test_mode, delta = delta,
+                       doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present))
@@ -104,7 +103,7 @@ run.de.regions <- function(myRCTD, region_list, datadir = './', cell_types = NUL
 }
 
 find_de_genes <- function(myRCTD, X1, X2, all_barc, cur_cell_types, datadir = './', gene_threshold = 5e-5,
-                          doublet_mode = T, test_mode = 'direct', delta = 0, thresh_val = NULL,
+                          doublet_mode = T, test_mode = 'direct', thresh_val = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           add_res_genes = T, fdr = .01) {
   if(!(test_mode %in% c('direct', 'multi')))
@@ -136,19 +135,19 @@ find_de_genes <- function(myRCTD, X1, X2, all_barc, cur_cell_types, datadir = '.
                                 PRECISION.THRESHOLD = PRECISION.THRESHOLD)
   if(add_res_genes)
     res_gene_list <- get_res_genes(puck, myRCTD, gene_list_tot, cur_cell_types, my_beta, all_barc, nUMI,
-                            gene_fits, cell_types_present, X2, test_mode, delta, datadir, fdr = fdr)
+                            gene_fits, cell_types_present, X2, test_mode, datadir, fdr = fdr)
   else
     res_gene_list <- NULL
   myRCTD@internal_vars_de <- list(all_barc = all_barc, cell_types = cur_cell_types,
                                   cell_types_present = cell_types_present,
-                                  my_beta = my_beta, X1 = X1, X2 = X2, delta = delta,
+                                  my_beta = my_beta, X1 = X1, X2 = X2,
                                   test_mode = test_mode)
   myRCTD@de_results <- list(gene_fits = gene_fits, res_gene_list = res_gene_list)
   return(myRCTD)
 }
 
 get_res_genes <- function(puck, myRCTD, gene_list_tot, cur_cell_types, my_beta, all_barc, nUMI,
-                          gene_fits, cell_types_present, X2, test_mode, delta, datadir,
+                          gene_fits, cell_types_present, X2, test_mode, datadir,
                           plot_genes = T, param_position = 2, fdr = .01, p_thresh = 1, log_fc_thresh = 0.4) {
   cti_renorm <- get_norm_ref(puck, myRCTD@cell_type_info$info[[1]], intersect(gene_list_tot,rownames(myRCTD@cell_type_info$info[[1]])), myRCTD@internal_vars$proportions)
   res_gene_list <- list()
@@ -160,7 +159,7 @@ get_res_genes <- function(puck, myRCTD, gene_list_tot, cur_cell_types, my_beta, 
                                          param_position = param_position, fdr = fdr, p_thresh = p_thresh, log_fc_thresh = log_fc_thresh)
     else if(test_mode == 'multi') {
       res_genes <- find_sig_genes_multi(cell_type, cur_cell_types, gene_fits, gene_list_type, X2,
-                                        delta = delta, p_thresh = p_thresh, log_fc_thresh = log_fc_thresh)
+                                        p_thresh = p_thresh, log_fc_thresh = log_fc_thresh)
     }
     if(plot_genes)
       plot_sig_genes(cell_type,all_barc,my_beta,puck,res_genes, test_mode, datadir)
@@ -178,12 +177,11 @@ add_res_genes <- function(myRCTD, datadir = './', plot_genes = T, param_position
   X2 <- myRCTD@internal_vars_de$X2
   all_barc <- myRCTD@internal_vars_de$all_barc
   nUMI <- puck@nUMI[all_barc]
-  delta <- myRCTD@internal_vars_de$delta
   test_mode <- myRCTD@internal_vars_de$test_mode
   cell_types_present <- myRCTD@internal_vars_de$cell_types_present
   gene_fits <- myRCTD@de_results$gene_fits
   res_gene_list <- get_res_genes(puck, myRCTD, gene_list_tot, cur_cell_types, my_beta, all_barc, nUMI,
-                                  gene_fits, cell_types_present, X2, test_mode, delta, datadir,
+                                  gene_fits, cell_types_present, X2, test_mode, datadir,
                                  plot_genes = plot_genes, param_position = param_position, fdr = fdr,
                                  p_thresh = p_thresh, log_fc_thresh = log_fc_thresh)
   myRCTD@de_results$res_gene_list <- res_gene_list
@@ -191,7 +189,7 @@ add_res_genes <- function(myRCTD, datadir = './', plot_genes = T, param_position
 }
 
 find_sig_genes_multi <- function(cell_type, cur_cell_types, gene_fits, gene_list_type, X2, fdr = 0.01,
-                                p_thresh = 1, log_fc_thresh = 0.4, delta = 0) {
+                                p_thresh = 1, log_fc_thresh = 0.4) {
   n_regions <- dim(X2)[2]; n_cell_types <- length(cur_cell_types)
   cell_ind = (which(cur_cell_types == cell_type))
   I_mat_ind <- (1:n_regions) + (n_regions*(cell_ind - 1))
@@ -212,7 +210,7 @@ find_sig_genes_multi <- function(cell_type, cur_cell_types, gene_fits, gene_list
       for(i2 in (i1+1):n_regions_con) {
         log_fc <- abs(x[i1] - x[i2])
         sd_cur <- sqrt(var_vals[i1] + var_vals[i2])
-        z_score <- (log_fc - delta) / sd_cur
+        z_score <- (log_fc) / sd_cur
         p_val <- 2*(1-pnorm(z_score))
         if(p_val < ovr_best_p_val) {
           ovr_best_p_val <- p_val
@@ -349,7 +347,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, all_barc, sigma_i
   } else {
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="") #makeForkCluster
     doParallel::registerDoParallel(cl)
-    environ = c('estimate_effects_trust', 'solveIRWLS.effects_trust', 'Q_mat', 'K_val','X_vals','delta',
+    environ = c('estimate_effects_trust', 'solveIRWLS.effects_trust', 'Q_mat', 'K_val','X_vals',
                 'calc_log_l_vec', 'calc_Q_k','get_d1_d2', 'calc_Q_all','psd','construct_hess_fast',
                 'choose_sigma_gene', 'estimate_gene_wrapper', 'check_converged_vec')
     if(sigma_gene)
