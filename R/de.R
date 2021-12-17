@@ -20,7 +20,7 @@
 #' in addition `res_gene_list`, a list, for each cell type, of significant genes detected by RCTDE.
 #' Additionally, the object contains `internal_vars_de`` a list of variables that are used internally by RCTDE
 #' @export
-run.de.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
+run.RCTDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, test_mode = 'direct', thresh_val = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01) {
   check_vector(explanatory.variable, 'explanatory.variable', 'run.de.single')
@@ -34,10 +34,9 @@ run.de.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell
   explanatory.variable <- explanatory.variable - min(explanatory.variable)
   explanatory.variable <- explanatory.variable / max(explanatory.variable) # standardize
   X2 <- cbind(1,explanatory.variable)
-  X1 <- matrix(0,nrow = length(all_barc),ncol=0)
-  rownames(X2) <- all_barc; rownames(X1) <- all_barc
+  rownames(X2) <- all_barc;
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
-  return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, gene_threshold = gene_threshold,
+  return(run.RCTDE(myRCTD, X2, all_barc, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
@@ -45,7 +44,7 @@ run.de.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell
 }
 
 # run DE nonparametrically
-run.de.nonparam <- function(myRCTD, df = 15, all_barc = NULL, cell_types = NULL,
+run.RCTDE.nonparam <- function(myRCTD, df = 15, all_barc = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             test_mode = 'direct', thresh_val = NULL, sigma_gene = T,
                             PRECISION.THRESHOLD = 0.01, cell_types_present = NULL) {
@@ -57,17 +56,16 @@ run.de.nonparam <- function(myRCTD, df = 15, all_barc = NULL, cell_types = NULL,
     stop(paste0('run.de.nonparam: ', length(all_barc),
                 ' common barcode names found between all_barc and myRCTD@spatialRNA. Please ensure that more common barcodes are found'))
   X2 <- get_spline_matrix(myRCTD@spatialRNA, df = df)
-  X1 <- matrix(0,nrow = length(all_barc),ncol=0)
-  rownames(X2) <- all_barc; rownames(X1) <- all_barc
+  rownames(X2) <- all_barc;
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
-  return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, gene_threshold = gene_threshold,
+  return(run.RCTDE(myRCTD, X2, all_barc, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present))
 }
 
-run.de.regions <- function(myRCTD, region_list, cell_types = NULL,
+run.RCTDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                            test_mode = 'multi', thresh_val = NULL, sigma_gene = T,
                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL) {
@@ -89,12 +87,11 @@ run.de.regions <- function(myRCTD, region_list, cell_types = NULL,
   }
   all_barc <- Reduce(union, region_list)
   X2 <- matrix(0, nrow = length(all_barc), ncol = n_regions)
-  X1 <- matrix(0,nrow = length(all_barc),ncol=0)
-  rownames(X2) <- all_barc; rownames(X1) <- all_barc
+  rownames(X2) <- all_barc;
   for(i in 1:n_regions)
     X2[region_list[[i]],i] <- 1
   cell_types <- choose_cell_types(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types)
-  return(find_de_genes(myRCTD, X1, X2, all_barc, cell_types, gene_threshold = gene_threshold,
+  return(run.RCTDE(myRCTD, X2, all_barc, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = test_mode,
                        thresh_val = thresh_val, sigma_gene = sigma_gene,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
@@ -102,12 +99,30 @@ run.de.regions <- function(myRCTD, region_list, cell_types = NULL,
 
 }
 
-find_de_genes <- function(myRCTD, X1, X2, all_barc, cur_cell_types, gene_threshold = 5e-5,
+# cell_type_interactions: default to be vector of True's indicating interactiongs for all parameters
+run.RCTDE <- function(myRCTD, X, all_barc, cur_cell_types, gene_threshold = 5e-5,
+                          doublet_mode = T, test_mode = 'direct', thresh_val = NULL,
+                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
+                          add_res_genes = T, fdr = .01, cell_type_specific = NULL) {
+  X <- check_designmatrix(X, 'run.RCTDE', require_2d = TRUE)
+  if(is.null(cell_type_specific))
+    cell_type_specific <- !logical(dim(X)[2])
+  check_cell_type_specific(cell_type_specific, dim(X)[2])
+  X1 <- X[,!cell_type_specific]; X2 <- X[,cell_type_specific]
+  return(run.RCTDE.general(myRCTD, X1, X2, all_barc, cur_cell_types, gene_threshold = gene_threshold,
+                       doublet_mode = doublet_mode, test_mode = test_mode, thresh_val = thresh_val,
+                       sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+                       cell_types_present = cell_types_present, add_res_genes = add_res_genes, fdr = fdr))
+}
+
+run.RCTDE.general <- function(myRCTD, X1, X2, all_barc, cur_cell_types, gene_threshold = 5e-5,
                           doublet_mode = T, test_mode = 'direct', thresh_val = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           add_res_genes = T, fdr = .01) {
+  X1 <- check_designmatrix(X1, 'run.RCTDE.general')
+  X2 <- check_designmatrix(X2, 'run.RCTDE.general', require_2d = TRUE)
   if(!(test_mode %in% c('direct', 'multi')))
-    stop(c('find_de_genes: not implemented for test_mode = ',test_mode,'. Please set test_mode = "multi" or "direct".'))
+    stop(c('run.RCTDE.general: not valid test_mode = ',test_mode,'. Please set test_mode = "multi" or "direct".'))
   if(is.null(cell_types_present))
     cell_types_present <- cur_cell_types
   puck = myRCTD@originalSpatialRNA
