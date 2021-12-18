@@ -6,11 +6,11 @@ filter_genes <- function(puck, threshold = 5e-5) {
   return(gene_list_tot)
 }
 
-get_beta_doublet <- function(all_barc, cell_type_names, results_df, weights_doublet) {
-  my_beta <- matrix(0, nrow = length(all_barc), ncol = length(cell_type_names))
-  rownames(my_beta) <- all_barc
+get_beta_doublet <- function(barcodes, cell_type_names, results_df, weights_doublet) {
+  my_beta <- matrix(0, nrow = length(barcodes), ncol = length(cell_type_names))
+  rownames(my_beta) <- barcodes
   colnames(my_beta) <- cell_type_names
-  for(barcode in all_barc) {
+  for(barcode in barcodes) {
     if(results_df[barcode, 'spot_class'] %in% c('singlet', 'doublet_certain')) {
       my_beta[barcode, results_df[barcode,'first_type']] <- weights_doublet[barcode,1]
       if(results_df[barcode, 'spot_class'] == "doublet_certain")
@@ -22,10 +22,10 @@ get_beta_doublet <- function(all_barc, cell_type_names, results_df, weights_doub
   return(my_beta)
 }
 
-filter_barcodes_cell_types <- function(all_barc, cur_cell_types, my_beta, thresh = 0.9999) {
-  all_barc <- all_barc[(rowSums(my_beta[all_barc, cur_cell_types]) >= thresh)]
-  my_beta <- my_beta[all_barc,cur_cell_types]
-  return (list(all_barc = all_barc, my_beta = my_beta))
+filter_barcodes_cell_types <- function(barcodes, cell_types, my_beta, thresh = 0.9999) {
+  barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types]) >= thresh)]
+  my_beta <- my_beta[barcodes,cell_types]
+  return (list(barcodes = barcodes, my_beta = my_beta))
 }
 
 get_p_chi <- function(x2, d, S_inv, points_list, delta = 0 ) {
@@ -49,20 +49,20 @@ get_l_chi <- function(x2, d, S_inv, points_list, delta = 0 ) {
   return(lambda)
 }
 
-get_gene_list_type <- function(my_beta, all_barc, cell_type, nUMI, gene_list_type, cti_renorm,
-                               cell_types_present, gene_fits, test_mode = 'direct') {
+get_gene_list_type <- function(my_beta, barcodes, cell_type, nUMI, gene_list_type, cti_renorm,
+                               cell_types_present, gene_fits, test_mode = 'individual') {
   C = 15
-  N_cells <- colSums(my_beta[all_barc,])[cell_type]
-  UMI_list <- nUMI[names(which(my_beta[all_barc,cell_type] >= .99))]
+  N_cells <- colSums(my_beta[barcodes,])[cell_type]
+  UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .99))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[all_barc,cell_type] >= .80))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .80))]
   UMI_m <- median(UMI_list)
   expr_thresh <-  C / (N_cells * UMI_m)
   gene_list_type <- setdiff(gene_list_type,gene_list_type[which(cti_renorm[gene_list_type,cell_type] < expr_thresh)])
   cell_type_means <- cti_renorm[gene_list_type,cell_types_present]
   cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
   gene_list_type <- gene_list_type[which(cell_prop[gene_list_type,cell_type] > 0.5)]
-  if(test_mode == 'multi') {
+  if(test_mode == 'categorical') {
     n_cell_types <- dim(my_beta)[2]
     n_regions <- dim(gene_fits$con_all)[2] / n_cell_types
     cell_type_ind <- which(colnames(my_beta) == cell_type)
@@ -74,35 +74,35 @@ get_gene_list_type <- function(my_beta, all_barc, cell_type, nUMI, gene_list_typ
   return(gene_list_type)
 }
 
-get_con_regions <- function(gene_fits, gene, n_regions, cell_type_ind, n_cell_types) {
-  matrix(gene_fits$con_all[gene,], nrow = n_regions, ncol = n_cell_types)[,cell_type_ind]
+get_con_regions <- function(gene_fits, gene, X2, cell_type_ind, n_cell_types) {
+  matrix(gene_fits$con_all[gene,], nrow = dim(X2)[2], ncol = n_cell_types)[,cell_type_ind]
 }
 
 get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
   gene_list <- rownames(myRCTD@de_results$gene_fits$mean_val)
   cti_renorm <- get_norm_ref(myRCTD@originalSpatialRNA, myRCTD@cell_type_info$info[[1]],
                              gene_list, myRCTD@internal_vars$proportions)
-  return(get_gene_list_type(myRCTD@internal_vars_de$my_beta, myRCTD@internal_vars_de$all_barc, cell_type,
+  return(get_gene_list_type(myRCTD@internal_vars_de$my_beta, myRCTD@internal_vars_de$barcodes, cell_type,
                    myRCTD@spatialRNA@nUMI, gene_list, cti_renorm, cell_types_present,
                    myRCTD@de_results$gene_fits))
 }
 # Aggregate cell types
 #' @export
-aggregate_cell_types <- function(myRCTD, all_barc, doublet_mode = T) {
+aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
   if(doublet_mode) {
-    return(table(myRCTD@results$results_df[all_barc,]$first_type[myRCTD@results$results_df[all_barc,]$spot_class %in% c('singlet','doublet_certain')]) +
-             +     table(myRCTD@results$results_df[all_barc,]$second_type[myRCTD@results$results_df[all_barc,]$spot_class %in% c('doublet_certain')]))
+    return(table(myRCTD@results$results_df[barcodes,]$first_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('singlet','doublet_certain')]) +
+             +     table(myRCTD@results$results_df[barcodes,]$second_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('doublet_certain')]))
   } else {
-    return(colSums(myRCTD@results$weights[all_barc,]))
+    return(colSums(myRCTD@results$weights[barcodes,]))
   }
 }
 
-get_param_names <- function(X1,X2, cur_cell_types) {
+get_param_names <- function(X1,X2, cell_types) {
   cnames <- c()
   if(dim(X1)[2] > 0)
     cnames <- unlist(lapply(1:dim(X1)[2], function(x) paste0('1_',x)))
-  for(k in 1:length(cur_cell_types))
-    cnames <- c(cnames, unlist(lapply(1:dim(X2)[2], function(x) paste0('2_',x,'_',cur_cell_types[k]))))
+  for(k in 1:length(cell_types))
+    cnames <- c(cnames, unlist(lapply(1:dim(X2)[2], function(x) paste0('2_',x,'_',cell_types[k]))))
   return(cnames)
 }
 
@@ -114,8 +114,8 @@ get_cell_type_ind <- function(X1,X2, n_cell_types) {
   return(cnames)
 }
 
-choose_cell_types <- function(myRCTD, all_barc, doublet_mode, cell_type_threshold, cell_types) {
-  cell_type_count <- aggregate_cell_types(myRCTD, all_barc, doublet_mode = doublet_mode)
+choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types) {
+  cell_type_count <- aggregate_cell_types(myRCTD, barcodes, doublet_mode = doublet_mode)
   cell_types_default <- names(which(cell_type_count >= cell_type_threshold))
   passed_cell_types = !is.null(cell_types)
   if(passed_cell_types) {

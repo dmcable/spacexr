@@ -9,7 +9,7 @@ make_all_de_plots <- function(myRCTD, datadir) {
   make_de_plots_quant(myRCTD, datadir)
   make_de_plots_genes(myRCTD, datadir)
   write_de_summary(myRCTD, datadir)
-  if(myRCTD@internal_vars_de$test_mode == 'direct') {
+  if(myRCTD@internal_vars_de$test_mode == 'individual') {
     make_de_plots_spatial(myRCTD, datadir)
   } else {
     make_de_plots_regions(myRCTD, datadir) #multi
@@ -21,7 +21,7 @@ make_de_plots_quant <- function(myRCTD, datadir) {
     dir.create(file.path(datadir,'de_plots_quant'))
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
-    if(myRCTD@internal_vars_de$test_mode == 'direct') {
+    if(myRCTD@internal_vars_de$test_mode == 'individual') {
       plot_sig_genes_quant(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
                              res_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits,
                              which(myRCTD@internal_vars_de$cell_types == cell_type), myRCTD)
@@ -36,7 +36,7 @@ make_de_plots_genes <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
     plot_sig_genes(cell_type, myRCTD@internal_vars_de$all_barc, myRCTD@internal_vars_de$my_beta,
-                 myRCTD@originalSpatialRNA, res_genes, myRCTD@internal_vars_de$test_mode, datadir)
+                 myRCTD@originalSpatialRNA, res_genes, myRCTD@internal_vars_de$doublet_mode, datadir)
   }
 }
 
@@ -60,13 +60,14 @@ make_de_plots_regions <- function(myRCTD, datadir) {
   }
 }
 
-make_de_plots_predictions <- function(myRCTD, datadir, test_mode = 'direct') {
+make_de_plots_predictions <- function(myRCTD, datadir, test_mode = 'individual') {
   if(!dir.exists(file.path(datadir,'prediction_plots')))
     dir.create(file.path(datadir,'prediction_plots'))
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     res_genes <- myRCTD@de_results$res_gene_list[[cell_type]]
     #res_genes <- res_genes[1:min(75,dim(res_genes)[1]),]
-    plot_prediction_genes(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,res_genes,test_mode, datadir)
+    plot_prediction_genes(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,
+                          myRCTD@originalSpatialRNA,res_genes,myRCTDde@internal_vars_de$doublet_mode, datadir)
   }
 }
 
@@ -79,11 +80,11 @@ write_de_summary <- function(myRCTD, datadir) {
   }
 }
 
-plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, test_mode, datadir) {
+plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, doublet_mode, datadir) {
   if(!dir.exists(file.path(datadir,'de_plots')))
     dir.create(file.path(datadir,'de_plots'))
   gene_list_sig <- rownames(res_genes)
-  if(test_mode == 'multi')
+  if(!doublet_mode)
     sing_thresh <- 0.8
   else
     sing_thresh <- 0.999
@@ -101,12 +102,12 @@ plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, test_m
   }
 }
 
-plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, test_mode, datadir) {
+plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, res_genes, doublet_mode, datadir) {
   if(!dir.exists(file.path(datadir,'prediction_plots')))
     dir.create(file.path(datadir,'prediction_plots'))
   MULT <- 500
   gene_list_sig <- rownames(res_genes)
-  if(test_mode == 'multi')
+  if(!doublet_mode)
     sing_thresh <- 0.8
   else
     sing_thresh <- 0.999
@@ -129,9 +130,7 @@ plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, res_g
   gene_list_sig <- rownames(res_genes)
   barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
   MULT = 500
-
   barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
-
   plots <- list()
   if(length(gene_list_sig) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)

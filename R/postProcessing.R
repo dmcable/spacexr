@@ -98,3 +98,7 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
   puck_d <- SpatialRNA(coords, t(all_DGE), nUMI, require_int = F)
   return(puck_d)
 }
+
+import_weights <- function(myRCTD, weights) {
+  myRCTD@results <- weights
+}
