@@ -27,11 +27,11 @@ make_de_plots_quant <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
     if(myRCTD@internal_vars_de$test_mode == 'individual') {
-      plot_sig_genes_quant(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
+      plot_sig_genes_quant(cell_type,myRCTD@internal_vars_de$barcodes,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
                              sig_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits,
                              which(myRCTD@internal_vars_de$cell_types == cell_type), myRCTD)
     } else { #multi
-      plot_sig_genes_quant_regions(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
+      plot_sig_genes_quant_regions(cell_type,myRCTD@internal_vars_de$barcodes,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
                            sig_genes,datadir,myRCTD@internal_vars_de$X2, myRCTD@de_results$gene_fits, which(myRCTD@internal_vars_de$cell_types == cell_type))
     }
   }
@@ -45,7 +45,7 @@ make_de_plots_quant <- function(myRCTD, datadir) {
 make_de_plots_genes <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
-    plot_sig_genes(cell_type, myRCTD@internal_vars_de$all_barc, myRCTD@internal_vars_de$my_beta,
+    plot_sig_genes(cell_type, myRCTD@internal_vars_de$barcodes, myRCTD@internal_vars_de$my_beta,
                  myRCTD@originalSpatialRNA, sig_genes, myRCTD@internal_vars_de$doublet_mode, datadir)
   }
 }
@@ -61,7 +61,7 @@ make_de_plots_spatial <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
     #sig_genes <- sig_genes[1:min(75,dim(sig_genes)[1]),]
-    plot_sig_genes_two_regions(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,sig_genes,datadir,myRCTD@internal_vars_de$X2)
+    plot_sig_genes_two_regions(cell_type,myRCTD@internal_vars_de$barcodes,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,sig_genes,datadir,myRCTD@internal_vars_de$X2)
   }
 }
 
@@ -76,7 +76,7 @@ make_de_plots_regions <- function(myRCTD, datadir) {
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
     #sig_genes <- sig_genes[1:min(75,dim(sig_genes)[1]),]
-    plot_sig_genes_regions(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,sig_genes,datadir,myRCTD@internal_vars_de$X2)
+    plot_sig_genes_regions(cell_type,myRCTD@internal_vars_de$barcodes,myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,sig_genes,datadir,myRCTD@internal_vars_de$X2)
   }
 }
 
@@ -86,7 +86,7 @@ make_de_plots_predictions <- function(myRCTD, datadir, test_mode = 'individual')
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
     #sig_genes <- sig_genes[1:min(75,dim(sig_genes)[1]),]
-    plot_prediction_genes(cell_type,myRCTD@internal_vars_de$all_barc,myRCTD@internal_vars_de$my_beta,
+    plot_prediction_genes(cell_type,myRCTD@internal_vars_de$barcodes,myRCTD@internal_vars_de$my_beta,
                           myRCTD@originalSpatialRNA,sig_genes,myRCTDde@internal_vars_de$doublet_mode, datadir)
   }
 }
@@ -105,7 +105,7 @@ write_de_summary <- function(myRCTD, datadir) {
   }
 }
 
-plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes, doublet_mode, datadir) {
+plot_sig_genes <- function(cell_type, barcodes, my_beta, puck, sig_genes, doublet_mode, datadir) {
   if(!dir.exists(file.path(datadir,'de_plots')))
     dir.create(file.path(datadir,'de_plots'))
   gene_list_sig <- rownames(sig_genes)
@@ -113,12 +113,12 @@ plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes, double
     sing_thresh <- 0.8
   else
     sing_thresh <- 0.999
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > sing_thresh))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > sing_thresh))
   plots <- list()
   if(length(gene_list_sig) > 0 & length(barcodes_sing) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
       gene = gene_list_sig[i]
-      Y <- puck@counts[gene, all_barc]
+      Y <- puck@counts[gene, barcodes]
       plots[[i]] <- plot_puck_continuous(puck, barcodes_sing, Y, ylimit = c(0,5), title = paste(gene,": log_fc=",round(sig_genes[gene,'log_fc'],2),', p=',sig_genes[gene,'p_val']))
     }
     pdf(file.path(datadir,paste0("de_plots/de_genes_",stringr::str_replace(cell_type,'/','_'),".pdf")))
@@ -127,7 +127,7 @@ plot_sig_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes, double
   }
 }
 
-plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes, doublet_mode, datadir) {
+plot_prediction_genes <- function(cell_type, barcodes, my_beta, puck, sig_genes, doublet_mode, datadir) {
   if(!dir.exists(file.path(datadir,'prediction_plots')))
     dir.create(file.path(datadir,'prediction_plots'))
   MULT <- 500
@@ -136,7 +136,7 @@ plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes,
     sing_thresh <- 0.8
   else
     sing_thresh <- 0.999
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > sing_thresh))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > sing_thresh))
   plots <- list()
   if(length(gene_list_sig) > 0 & length(barcodes_sing) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
@@ -151,9 +151,9 @@ plot_prediction_genes <- function(cell_type, all_barc, my_beta, puck, sig_genes,
   }
 }
 
-plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, sig_genes, plotdir, X2) {
+plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2) {
   gene_list_sig <- rownames(sig_genes)
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.999))
   MULT = 500
   barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
   plots <- list()
@@ -177,13 +177,25 @@ plot_sig_genes_two_regions <- function(cell_type, all_barc, my_beta, puck, sig_g
   }
 }
 
-# Makes a spatial plot of differential expression for a particular gene
-plot_gene_two_regions <- function(puck, all_barc, my_beta, X2, sig_genes, gene, cell_type, min_UMI = 200) {
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+#' Makes a spatial plot of gene expression for a particular gene
+#' This plot is colored by two discrete regions.
+#'
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running RCTDE
+#' @param gene gene to be plotted
+#' @param cell_type cell_type to be plotted (only single cell type pixels)
+#' @param min_UMI minimum UMI for pixels that are included
+#' @export
+plot_gene_two_regions <- function(myRCTD, gene, cell_type, min_UMI = 200) {
+  puck <- myRCTD@spatialRNA
+  barcodes <- myRCTD@internal_vars_de$barcodes
+  my_beta <- myRCTD@internal_vars_de$my_beta
+  X2 <- myRCTD@internal_vars_de$X2
+  sig_gene_df <- myRCTD@de_results$sig_gene_list[[cell_type]]
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.999))
   MULT = 500
   barc_plot <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= min_UMI])
   Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
-  my_title = paste(gene,": log_fc=",round(sig_genes[gene,'log_fc'],2),', p=',sig_genes[gene,'p_val'])
+  my_title = paste(gene,": log_fc=",round(sig_gene_df[gene,'log_fc'],2),', p=',sig_gene_df[gene,'p_val'])
   my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
   my_class[(X2[barc_plot,2] <= 0.2) & (Y_plot[barc_plot] == 0)] <- 1
   my_class[(X2[barc_plot,2] <= 0.2) & (Y_plot[barc_plot] > 0)] <- 3
@@ -194,9 +206,9 @@ plot_gene_two_regions <- function(puck, all_barc, my_beta, X2, sig_genes, gene, 
   return(p3)
 }
 
-plot_sig_genes_regions <- function(cell_type, all_barc, my_beta, puck, sig_genes, plotdir, X2) {
+plot_sig_genes_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2) {
   gene_list_sig <- rownames(sig_genes)
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.8))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.8))
   if(length(barcodes_sing) < 10) {
     warning(paste0('plot_sig_genes_regions: Not plotting because less than 10 singlet barcodes found for cell type ',cell_type))
     return()
@@ -227,9 +239,9 @@ plot_sig_genes_regions <- function(cell_type, all_barc, my_beta, puck, sig_genes
   }
 }
 
-plot_sig_genes_quant <- function(cell_type, all_barc, my_beta, puck, sig_genes, plotdir, X2, gene_fits, cell_type_ind, myRCTD) {
+plot_sig_genes_quant <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2, gene_fits, cell_type_ind, myRCTD) {
   gene_list_sig <- rownames(sig_genes)
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.999))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.999))
   MULT = 500
   NR = 5;
   cur_barc <- intersect(barcodes_sing,colnames(puck@counts)[puck@nUMI >= 200])
@@ -254,9 +266,9 @@ predict_RCTDE <- function(cell_type_ind, gene_fits, gene, X2_mat) {
   return(predictions * exp(sigma^2/2))
 }
 
-plot_sig_genes_quant_regions <- function(cell_type, all_barc, my_beta, puck, sig_genes, plotdir, X2, gene_fits, cell_type_ind) {
+plot_sig_genes_quant_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2, gene_fits, cell_type_ind) {
   gene_list_sig <- rownames(sig_genes)
-  barcodes_sing <- names(which(my_beta[all_barc,cell_type] > 0.8))
+  barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.8))
   if(length(barcodes_sing) < 10) {
     warning(paste0('plot_sig_genes_quant_regions: Not plotting because less than 10 singlet barcodes found for cell type ',cell_type))
     return()

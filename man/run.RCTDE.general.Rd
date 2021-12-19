@@ -24,6 +24,8 @@ run.RCTDE.general(
 )
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{X1}{a matrix containing the covariates shared across all cell types. The rownames represent pixel names and
 should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 explaining differential expression and need to be linearly independent.}
@@ -59,8 +61,6 @@ to consider for gene expression contamination during the step filtering out mark
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.}

@@ -24,6 +24,8 @@ run.RCTDE(
 )
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{X}{a matrix containing the covariates for running RCTDE. The rownames represent pixel names and
 should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 explaining differential expression and need to be linearly independent.}
@@ -55,8 +57,6 @@ to consider for gene expression contamination during the step filtering out mark
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

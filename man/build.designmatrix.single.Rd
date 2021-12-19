@@ -4,13 +4,13 @@
 \alias{build.designmatrix.single}
 \title{Constructs a design matrix for running RCTDE with a single explanatory variable}
 \usage{
-build.designmatrix.single(explanatory.variable, myRCTD)
+build.designmatrix.single(myRCTD, explanatory.variable)
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{explanatory.variable}{a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
 are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 }
 \value{
 A design matrix containing the covariates for running RCTDE. The rownames represent pixel names and

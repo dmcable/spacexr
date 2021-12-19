@@ -77,6 +77,9 @@ You can install the current version of RCTD from
 devtools::install_github("dmcable/RCTD", build_vignettes = TRUE)
 ```
 
+If you would like installation to be faster, you can skip the build
+vignettes step above by setting `build_vignettes = FALSE`.
+
 ## Quick Guide to Getting Started with RCTD
 
 In this section, we aim to explain how to use RCTD as quickly as

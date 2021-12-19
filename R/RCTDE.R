@@ -5,7 +5,7 @@
 #' likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
 #' genes with significant nonzero DE.
 #'
-#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
 #' @param cell_types the cell types used for RCTDE. If null, cell types will be chosen with aggregate occurences of
@@ -43,7 +43,7 @@ run.RCTDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 #' basis functions spanning the space of smooth functions. Uses maximum likelihood estimation to estimate
 #' DE and standard errors for each gene and each cell type. Selects genes with significant nonzero DE.
 #'
-#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param df (default 15) the degrees of freedom, or number of basis functions to be used in the model.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for RCTDE. If null, cell types will be chosen with aggregate occurences of
@@ -83,7 +83,7 @@ run.RCTDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 #' likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
 #' genes with significant nonzero DE. Tests for differences in gene expression across regions.
 #'
-#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param region_list a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object
 #' @param cell_types the cell types used for RCTDE. If null, cell types will be chosen with aggregate occurences of
@@ -123,7 +123,7 @@ run.RCTDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' genes with significant nonzero DE. The type of test is determined by \code{test_mode}, and the parameters tested
 #' is determined by \code{params_to_test}.
 #'
-#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param X a matrix containing the covariates for running RCTDE. The rownames represent pixel names and
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 #' explaining differential expression and need to be linearly independent.
@@ -176,7 +176,7 @@ run.RCTDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
 #' genes with significant nonzero DE. The type of test is determined by \code{test_mode}, and the parameters tested
 #' is determined by \code{params_to_test}.
 #'
-#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param X1 a matrix containing the covariates shared across all cell types. The rownames represent pixel names and
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 #' explaining differential expression and need to be linearly independent.

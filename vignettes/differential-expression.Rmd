@@ -3,9 +3,9 @@ title: "Applying RCTDE to Spatial Transcriptomics Data"
 author: "Dylan Cable"
 date: "December 15th, 2021"
 output:
+  pdf_document: default
   html_document:
     keep_md: yes
-  pdf_document: default
   rmarkdown::html_vignette:
     keep_md: yes
 vignette: |
@@ -90,12 +90,12 @@ myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@co
 
 ## Running RCTDE
 
-After creating the predictive variable, we are now ready to run RCTDE using the `run.de.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the predictive variable, we are now ready to run RCTDE using the `run.RCTDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
 ```{r DEgenes}
 #de
 myRCTD@config$max_cores <- 2
-myRCTD <- run.de.single(myRCTD, explanatory.variable, datadir, gene_threshold = .01, 
+myRCTD <- run.RCTDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
                         sigma_gene = T, cell_type_threshold = 10, fdr = 0.25) 
 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde.rds'))
@@ -108,7 +108,7 @@ After running RCTDE, it is time to examine RCTDE results (notice the Z_score, lo
 ```{r rctde_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'
 cell_type <- '10'
-results_de <- myRCTD@de_results$res_gene_list[[cell_type]]
+results_de <- myRCTD@de_results$sig_gene_list[[cell_type]]
 print(results_de)
 sig_gene <- change_gene
 print(paste("following results hold for", sig_gene))
@@ -117,21 +117,18 @@ print(myRCTD@de_results$gene_fits$con_mat[sig_gene, ])
 print('estimated DE')
 print(myRCTD@de_results$gene_fits$mean_val[sig_gene, ]) 
 print('standard errors for non-intercept terms')
-print(myRCTD@de_results$gene_fits$I_mat[sig_gene, c(2,4)]) 
+print(myRCTD@de_results$gene_fits$s_mat[sig_gene, c(2,4)]) 
 ```
 
 Finally, we will plot RCTDE results in the `savedir` directory!
 
-The following plot shows a spatial visualization of the Lsamp gene, which was determined to be differentially
-expressed.
+The following plot shows a spatial visualization of the Lsamp gene, which was determined to be differentially expressed.
 
 The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types.
 
 ```{r results,  fig.width = 8, fig.height=8}
 myRCTD <- readRDS(file.path(savedir,'myRCTDde.rds'))
-plot_gene_two_regions(myRCTD@spatialRNA, myRCTD@internal_vars_de$all_barc, myRCTD@internal_vars_de$my_beta,
-                      myRCTD@internal_vars_de$X2,
-                      results_de, sig_gene, cell_type, min_UMI = 10)
+plot_gene_two_regions(myRCTD, sig_gene, cell_type, min_UMI = 10)
 make_all_de_plots(myRCTD, savedir)
 ```
 

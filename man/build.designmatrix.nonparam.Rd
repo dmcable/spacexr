@@ -7,11 +7,11 @@
 build.designmatrix.nonparam(myRCTD, barcodes = NULL, df = 15)
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{barcodes}{(default NULL) the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the design matrix.}
 
 \item{df}{(default 15) the degrees of freedom, or number of basis functions to be used in the design matrix}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 }
 \value{
 A design matrix containing the covariates for running RCTDE. The rownames represent pixel names and

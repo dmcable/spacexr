@@ -7,10 +7,10 @@
 build.designmatrix.regions(myRCTD, region_list)
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{region_list}{a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 }
 \value{
 A design matrix containing the covariates for running RCTDE. The rownames represent pixel names and

@@ -19,6 +19,8 @@ run.RCTDE.regions(
 )
 }
 \arguments{
+\item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
 \item{region_list}{a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object}
 
@@ -42,8 +44,6 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
-
-\item{RCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the RCTDE algorithm. Contains objects \code{de_results},
