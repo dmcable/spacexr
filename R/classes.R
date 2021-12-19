@@ -62,7 +62,7 @@ setClass("Reference",
   )
 )
 
-#' An S4 class used to run the RCTD algorithm
+#' An S4 class used to run the RCTD and RCTDE algorithms
 #'
 #' Created using the \code{\link{create.RCTD}} function, a user can run RCTD using the \code{\link{run.RCTD}} function.
 #'
@@ -86,6 +86,7 @@ setClass("Reference",
 #' Note that in multi-mode, results consists of a list of results for each pixel, which contains all_weights (weights from full mode),
 #' cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and
 #' sub_weights (proportions of cell types on multi mode).
+#'
 #' @slot de_results results of the RCTDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
 #' whereas `res_gene_list` is a list, for each cell type, of significant genes detected by RCTDE.
 #' @slot internal_vars_de a list of variables that are used internally by RCTDE
@@ -120,8 +121,28 @@ setClass("RCTD",
 )
 
 
+#' An S4 class used to store multiple replicates as \code{\linkS4class{SpatialRNA}} objects.
+#'
+#' By storing multiple \code{\linkS4class{SpatialRNA}} replicates in this one object, it is convenient
+#' to run RCTD and RCTDE across all replicates. Finally, multiple replicates can be combined with population-level
+#' differential expression inference using the \code{\link{RCTDE.population.inference}} function
+#'
+#' Created using the \code{\link{create.RCTD.replicates}} or \code{\link{merge.RCTD.objects}} functions.
+#' One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run RCTDE using the
+#' \code{\link{run.RCTDE.replicates}} function.
+#'
 #' @export
-#' @slot RCTD.reps dog
+#' @slot RCTD.reps a list of \code{\linkS4class{RCTD}} objects, one for each replicate
+#' @slot population_de_results A list, indexed by cell type, of dataframes summarizing population-level
+#' differential expression for each genes. Relevant columns include: tau, variance across replicates;
+#' log_fc_est, the estimated differential expresison; sd_est, the standard error of estimated DE
+#' @slot population_sig_gene_list A list, indexed by cell type, of vectors of significant genes
+#' @slot population_sig_gene_df A list, indexed by cell type, of dataframe summarizing population-level
+#' differential expression for each signifcant gene, similar to \code{population_de_results}. Additionally,
+#' contains p (representing p-values) and q_val (representing q-values).
+#' @slot groups_ids a named integer vector (length number of replicates) containing the group id for each replicate.
+#' Names represent the replicate names, and replicates of the same group will be expected to be more similar than
+#' replicates across groups
 #' @import Matrix
 #' @import doParallel
 #' @import foreach

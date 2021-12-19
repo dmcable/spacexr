@@ -368,8 +368,10 @@ plot_class <- function(puck, barcodes_cur, my_class, counter_barcodes = NULL, ti
   plot
 }
 
-#' create all RCTD plots
-#' 
+#' Create all plots for an RCTD object after cell types have been assigned
+#'
+#' @param myRCTD a \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param datadir directory where plots should be saved
 #' @export
 create_RCTD_plots <- function(myRCTD, datadir) {
   results <- myRCTD@results

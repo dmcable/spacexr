@@ -3,7 +3,7 @@
 \docType{class}
 \name{RCTD-class}
 \alias{RCTD-class}
-\title{An S4 class used to run the RCTD algorithm}
+\title{An S4 class used to run the RCTD and RCTDE algorithms}
 \description{
 Created using the \code{\link{create.RCTD}} function, a user can run RCTD using the \code{\link{run.RCTD}} function.
 }

@@ -2,12 +2,12 @@
 % Please edit documentation in R/RCTD.R
 \name{create.RCTD}
 \alias{create.RCTD}
-\title{Creates an  \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Seurat} object and a \code{\linkS4class{SpatialRNA}} object}
+\title{Creates an \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Reference} object and a \code{\linkS4class{SpatialRNA}} object}
 \usage{
 create.RCTD(
   spatialRNA,
   reference,
-  max_cores = 8,
+  max_cores = 4,
   test_mode = FALSE,
   gene_cutoff = 0.000125,
   fc_cutoff = 0.5,
@@ -19,13 +19,15 @@ create.RCTD(
   class_df = NULL,
   CELL_MIN_INSTANCE = 25,
   cell_type_names = NULL,
-  MAX_MULTI_TYPES = 4
+  MAX_MULTI_TYPES = 4,
+  keep_reference = F,
+  cell_type_info = NULL
 )
 }
 \arguments{
 \item{spatialRNA}{a \code{\linkS4class{SpatialRNA}} object to run RCTD on}
 
-\item{reference}{a \code{\linkS4class{Seurat}} object scRNA-seq reference used for RCTD}
+\item{reference}{a \code{\linkS4class{Reference}} object scRNA-seq reference used for RCTD}
 
 \item{max_cores}{for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for
 number of available cores.}
@@ -51,10 +53,14 @@ number of available cores.}
 \item{cell_type_names}{A list of cell types to be included from the reference. If NULL, uses all cell types}
 
 \item{MAX_MULTI_TYPES}{(multi-mode only) Default 4, max number of cell types per pixel}
+
+\item{keep_reference}{(Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object}
+
+\item{cell_type_info}{Default NULL, option to pass in \code{cell_type_info} directly}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 }
 \description{
-Creates an  \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Seurat} object and a \code{\linkS4class{SpatialRNA}} object
+Creates an \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Reference} object and a \code{\linkS4class{SpatialRNA}} object
 }

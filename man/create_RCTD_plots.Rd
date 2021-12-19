@@ -2,10 +2,15 @@
 % Please edit documentation in R/plotting.R
 \name{create_RCTD_plots}
 \alias{create_RCTD_plots}
-\title{create all RCTD plots}
+\title{Create all plots for an RCTD object after cell types have been assigned}
 \usage{
 create_RCTD_plots(myRCTD, datadir)
 }
+\arguments{
+\item{myRCTD}{a \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
+
+\item{datadir}{directory where plots should be saved}
+}
 \description{
-create all RCTD plots
+Create all plots for an RCTD object after cell types have been assigned
 }

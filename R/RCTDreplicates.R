@@ -1,3 +1,31 @@
+#' Creates an \code{\linkS4class{RCTD.replicates}} object across multiple \code{\linkS4class{SpatialRNA}} replicates
+#'
+#' Applies the \code{\link{create.RCTD}} function for each \code{\linkS4class{SpatialRNA}} replicate inputted using a
+#' scRNA-seq reference \code{Reference} object.
+#'
+#' @param spatialRNA.replicates a list of multiple \code{\linkS4class{SpatialRNA}} objects to run RCTD on
+#' @param reference a \code{\linkS4class{Reference}} object scRNA-seq reference used for RCTD
+#' @param replicate_names a \code{character} vector of names for each replicate provided in \code{spatialRNA.replicates}
+#' @param group_ids (default constant across replicates) a named integer vector (length number of replicates) containing the group id for each replicate.
+#' Names represent the replicate names, and replicates of the same group will be expected to be more similar than
+#' replicates across groups
+#' @param gene_cutoff minimum normalized gene expression for genes to be included in the platform effect normalization step.
+#' @param fc_cutoff minimum log-fold-change (across cell types) for genes to be included in the platform effect normalization step.
+#' @param gene_cutoff_reg minimum normalized gene expression for genes to be included in the RCTD step.
+#' @param fc_cutoff_reg minimum log-fold-change (across cell types) for genes to be included in the RCTD step.
+#' @param UMI_min minimum UMI per pixel included in the analysis
+#' @param UMI_max maximum UMI per pixel included in the analysis
+#' @param UMI_min_sigma minimum UMI per pixel for the \link{choose_sigma_c} function
+#' @param max_cores for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for
+#' number of available cores.
+#' @param class_df (optional) if not NULL, then a dataframe mapping each cell type to a cell class, so that RCTD will report confidence on the class level.
+#' @param CELL_MIN_INSTANCE minimum number of cells required per cell type. Default 25, can be lowered if desired.
+#' @param cell_type_names A list of cell types to be included from the reference. If NULL, uses all cell types
+#' @param MAX_MULTI_TYPES (multi-mode only) Default 4, max number of cell types per pixel
+#' @param cell_type_info Default NULL, option to pass in \code{cell_type_info} directly
+#' @param keep_reference (Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object
+#' @return an \code{\linkS4class{RCTD.replicates}} object, which is ready to run the \code{\link{run.RCTD.replicates}} function
+#' @export
 create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_names, group_ids = NULL, max_cores = 4, test_mode = FALSE,
                                    gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002,
                                    fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
@@ -34,6 +62,20 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
   new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = group_ids)
 }
 
+#' Runs the RCTD pipeline on a \code{\linkS4class{RCTD.replicates}} object
+#'
+#' For each \code{\linkS4class{SpatialRNA}} replicate in the \code{RCTD.replicates} object, runs the \code{\link{run.RCTD}}
+#' function to assign cell types.
+#'
+#' If in doublet mode, fits at most two cell types per pixel. It classifies each pixel as 'singlet' or 'doublet' and searches for the cell types
+#' on the pixel. If in full mode, can fit any number of cell types on each pixel. In multi mode, cell types are added using a greedy algorithm,
+#' up to a fixed number.
+#'
+#' @param RCTD.replicates an \code{\linkS4class{RCTD.replicates}} object created using the \code{\link{create.RCTD.replicates}} function.
+#' @param doublet_mode \code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.
+#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the RCTD algorithm. Please see \code{\linkS4class{RCTD.replicates}}
+#' and \code{\linkS4class{RCTD}} documentation for more information on interpreting the content of this object.
+#' @export
 run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
   if(!(doublet_mode %in% c('doublet','multi','full')))
     stop(paste0("run.RCTD.replicates: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
@@ -44,8 +86,34 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
   return(RCTD.replicates)
 }
 
+#' Runs RCTDE on a \code{\linkS4class{RCTD.replicates}} object
+#'
+#' Identifies cell type specific differential expression (DE) as a function of the explanatory variable
+#' for each replicate. The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
+#' likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
+#' genes with significant nonzero DE.
+#'
+#' @param RCTD.replicates an \code{\linkS4class{RCTD.replicates}} object with annotated cell types e.g. from the \code{\link{run.RCTD.replicates}} function.
+#' @param explanatory.variable.replicates a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in RCTDE.
+#' Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
+#' @param cell_types the cell types used for RCTDE. Each cell type must occur
+#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
+#' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
+#' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
+#' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
+#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
+#' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
+#' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{RCTDE.population.inference}} function.)
+#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the RCTDE algorithm. See \code{\linkS4class{RCTD.replicates}}
+#' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
+#' @export
 run.RCTDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates, cell_types, cell_type_threshold = 125,
-                                 gene_threshold = 5e-5, doublet_mode = T, test_mode = 'individual', thresh_val = NULL,
+                                 gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, population_de = T) {
   if(is.null(cell_types))
     stop('run.RCTDE.replicates: cell_types must not be null.')
@@ -57,7 +125,7 @@ run.RCTDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     print(paste('run.RCTDE.replicates: running RCTDE for replicate',i))
     RCTD.replicates@RCTD.reps[[i]] <- run.RCTDE.single(
       RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
-                                                    gene_threshold = gene_threshold, doublet_mode = doublet_mode, test_mode = test_mode, thresh_val = thresh_val,
+                                                    gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
                                                     sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr)
 
   }
@@ -66,6 +134,15 @@ run.RCTDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
   return(RCTD.replicates)
 }
 
+#' Creates an \code{\linkS4class{RCTD.replicates}} object across multiple \code{\linkS4class{RCTD}} objects
+#'
+#' @param RCTD.reps a list of multiple \code{\linkS4class{RCTD}} objects to merge into one \code{\linkS4class{RCTD.replicates}} object.
+#' @param replicate_names a \code{character} vector of names for each replicate provided in \code{RCTD.reps}
+#' @param group_ids (default constant across replicates) a named integer vector (length number of replicates) containing the group id for each replicate.
+#' Names represent the replicate names, and replicates of the same group will be expected to be more similar than
+#' replicates across groups
+#' @return an \code{\linkS4class{RCTD.replicates}} object, containing each \code{\linkS4class{RCTD}} object in \code{RCTD.reps}
+#' @export
 merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
   if(class(RCTD.reps) != 'list' || any(!unlist(lapply(RCTD.reps, function(x) class(x) == 'RCTD'))))
     stop('merge.RCTD.objects: RCTD.reps must be a list of RCTD objects.')
@@ -84,6 +161,15 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
   new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = groups_ids)
 }
 
+#' Runs population-level differential expression inference for a \code{\linkS4class{RCTD.replicates}} object
+#'
+#' First, RCTDE must have been run on all replicates using e.g. the \code{\link{run.RCTDE.replicates}} function.
+#'
+#' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.
+#' @param use.groups (default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot
+#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the RCTDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
+#' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
+#' @export
 RCTDE.population.inference <- function(RCTD.replicates, use.groups = FALSE) {
   print(paste0('RCTDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
@@ -107,6 +193,13 @@ RCTDE.population.inference <- function(RCTD.replicates, use.groups = FALSE) {
   return(RCTD.replicates)
 }
 
+#' Saves the RCTDE population-level differential expression results for a \code{\linkS4class{RCTD.replicates}} object
+#'
+#' First, RCTDE must have been run on all replicates at the population level using e.g. the \code{\link{run.RCTDE.replicates}} function.
+#'
+#' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object containing population-level DE inference results.
+#' @param resultsdir a directory where to save the significant gene matrices for each cell type.
+#' @export
 save.RCTDE.replicates <- function(RCTD.replicates, resultsdir) {
   if(!dir.exists(resultsdir))
     dir.create(resultsdir)

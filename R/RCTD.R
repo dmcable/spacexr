@@ -15,10 +15,10 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
    return(cell_type_info)
 }
 
-#' Creates an  \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Seurat} object and a \code{\linkS4class{SpatialRNA}} object
+#' Creates an \code{\linkS4class{RCTD}} object from a scRNA-seq reference \code{Reference} object and a \code{\linkS4class{SpatialRNA}} object
 #'
 #' @param spatialRNA a \code{\linkS4class{SpatialRNA}} object to run RCTD on
-#' @param reference a \code{\linkS4class{Seurat}} object scRNA-seq reference used for RCTD
+#' @param reference a \code{\linkS4class{Reference}} object scRNA-seq reference used for RCTD
 #' @param gene_cutoff minimum normalized gene expression for genes to be included in the platform effect normalization step.
 #' @param fc_cutoff minimum log-fold-change (across cell types) for genes to be included in the platform effect normalization step.
 #' @param gene_cutoff_reg minimum normalized gene expression for genes to be included in the RCTD step.
@@ -33,6 +33,7 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
 #' @param cell_type_names A list of cell types to be included from the reference. If NULL, uses all cell types
 #' @param MAX_MULTI_TYPES (multi-mode only) Default 4, max number of cell types per pixel
 #' @param cell_type_info Default NULL, option to pass in \code{cell_type_info} directly
+#' @param keep_reference (Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
 create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
@@ -63,7 +64,7 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
    puck = restrict_puck(puck, colnames(puck@counts))
    if(is.null(class_df))
       class_df <- data.frame(cell_type_info$info[[2]], row.names = cell_type_info$info[[2]]); colnames(class_df)[1] = "class"
-   internal_vars <- list(gene_list_reg = gene_list_reg, gene_list_bulk = gene_list_bulk, proportions = NULL, class_df = class_df)
+   internal_vars <- list(gene_list_reg = gene_list_reg, gene_list_bulk = gene_list_bulk, proportions = NULL, class_df = class_df, cell_types_assigned = F)
    new("RCTD", spatialRNA = puck, originalSpatialRNA = puck.original, reference = reference, config = config, cell_type_info = cell_type_info, internal_vars = internal_vars)
 }
 
