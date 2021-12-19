@@ -49,7 +49,7 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
    if(is.null(cell_type_info))
       cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names = cell_type_names, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
    if(!keep_reference)
-      reference <- NULL
+      reference <- create_downsampled_data(reference, n_samples = 5)
    puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    print('create.RCTD: getting regression differentially expressed genes: ')
    #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
