@@ -1,10 +1,10 @@
 Package: RCTD
 Type: Package
-Title: Robust Cell Type Decomposition: decomposing RNA-seq mixtures into single cell types for spatial transcriptomics
+Title: Robust Cell Type Decomposition: cell type identification and cell type-specific differential expression for spatial transcriptomics
 Version: 2.0.0
 Author: Dylan Cable
 Maintainer: <dcable@mit.edu>
-Description: decomposing RNA-seq mixtures into single cell types for spatial transcriptomics
+Description: cell type identification and cell type-specific differential expression for spatial transcriptomics
 Depends: R (>= 3.5.0)
 License: GNU General Public License v3.0.
 Encoding: UTF-8
