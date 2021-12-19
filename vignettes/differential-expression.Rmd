@@ -66,19 +66,19 @@ myRCTD <- run.RCTD(myRCTD, doublet_mode = 'doublet')
 saveRDS(myRCTD,file.path(savedir,'myRCTD.rds'))
 ```
 
-## Create predictive variable / covariate
+## Create explanatory variable / covariate
 
-Now that we have successfully run RCTD, we can create a predictive variable (i.e. covariate) used for predicting differential expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the predictive variable to biologically relevant predictors of gene expression such as spatial position.
-The predictive variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object.
+Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
+The explanatory variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object.
 
-Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high predictive variable) to see whether RCTDE can detect this differentially expressed gene.
+Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high explanatory variable) to see whether RCTDE can detect this differentially expressed gene.
 
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 ### Create SpatialRNA object
 myRCTD <- readRDS(file.path(savedir,'myRCTD.rds'))
 set.seed(12345)
 explanatory.variable <- runif(length(myRCTD@spatialRNA@nUMI))
-names(explanatory.variable) <- names(myRCTD@spatialRNA@nUMI) # currently random predictive variable 
+names(explanatory.variable) <- names(myRCTD@spatialRNA@nUMI) # currently random explanatory variable 
 print(head(explanatory.variable))
 
 #Differentially upregulate one gene
@@ -90,7 +90,7 @@ myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@co
 
 ## Running RCTDE
 
-After creating the predictive variable, we are now ready to run RCTDE using the `run.RCTDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variable, we are now ready to run RCTDE using the `run.RCTDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
 ```{r DEgenes}
 #de
