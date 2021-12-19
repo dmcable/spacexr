@@ -248,16 +248,17 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
 find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_list_type, X2, params_to_test = 2, fdr = 0.01, p_thresh = 1, log_fc_thresh = 0.4) {
   ct_ind <- which(cell_types == cell_type)
   I_ind = dim(X2)[2]*(ct_ind - 1) + params_to_test
+  log_fc <- gene_fits$all_vals[gene_list_type,params_to_test, ct_ind]
+  s_vec <- gene_fits$s_mat[gene_list_type,I_ind]
+  z_score <- abs(log_fc) / s_vec
   if(length(params_to_test) > 1)
     p_val <- pmin(apply(p_val, 1, min)*length(params_to_test),1)
   else
     p_val <- 2*(1-pnorm(z_score))
   names(p_val) <- gene_list_type
-  log_fc <- gene_fits$all_vals[gene_list_type,params_to_test, ct_ind]
-  s_vec <- gene_fits$s_mat[gene_list_type,I_ind]
-  z_score <- abs(log_fc) / s_vec
   gene_list_sig <- fdr_sig_genes(gene_list_type, p_val, fdr)
-  p_thresh <- min(p_thresh, max(p_val[gene_list_sig]))
+  if(length(gene_list_sig) > 0)
+    p_thresh <- min(p_thresh, max(p_val[gene_list_sig]))
   if(length(params_to_test) > 1) {
     best_mat <- function(gene) {
       index <- which(p_val[gene,] < p_thresh)
@@ -296,7 +297,7 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
     best_ind <- rep(params_to_test, length(gene_list_type))
     names(best_ind) <- gene_list_type
   }
-  res_genes <- data.frame(z_score[gene_list_sig], log_fc[gene_list_sig], s_vec[gene_list_sig], best_ind)
+  res_genes <- data.frame(z_score[gene_list_sig], log_fc[gene_list_sig], s_vec[gene_list_sig], best_ind[gene_list_sig])
   names(res_genes) <- c('Z_score','log_fc', 'se', 'paramindex_best')
   res_genes$conv <- gene_fits$con_mat[gene_list_sig, cell_type]
   res_genes$p_val <- p_val[gene_list_sig]

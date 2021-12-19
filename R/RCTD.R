@@ -105,14 +105,18 @@ export.RCTD <- function(RCTD, datadir) {
    }
 }
 
-check_vector <- function(variable, var_name, f_name) {
+check_vector <- function(variable, var_name, f_name, require_int = FALSE) {
    if(!is.atomic(variable))
       stop(paste0(f_name,': ',var_name,' is not an atomic vector. Please format ',var_name,' as an atomic vector.'))
    if(!is.numeric(variable))
       stop(paste0(f_name,': ',var_name,' is not numeric'))
    if(is.null(names(variable)))
-      stop(paste0(f_name,': names(',var_name,') is null. Please enter barcodes as names'))
+      stop(paste0(f_name,': names(',var_name,') is null. Please enter names'))
    if(length(variable) == 1)
-      stop(paste0(f_name,': the length of ',var_name,' is 1, indicating only one cell present. Please format ',var_name,' so that
+      stop(paste0(f_name,': the length of ',var_name,' is 1, indicating only one element present. Please format ',var_name,' so that
          the length is greater than 1.'))
+   if(require_int) {
+      if(max(abs(variable %% 1)) > 1e-6)
+         stop(paste0(f_name,': variable does not contain integers'))
+   }
 }

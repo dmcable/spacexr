@@ -121,25 +121,24 @@ setClass("RCTD",
 
 
 #' @export
+#' @slot RCTD.reps dog
 #' @import Matrix
 #' @import doParallel
 #' @import foreach
 #' @importClassesFrom Matrix Matrix dgCMatrix
 setClass("RCTD.replicates",
    slots = c(
-      RCTD.reps = list(),
-      reference = "Reference",
-      cell_type_info = 'list',
+      RCTD.reps = 'list',
       population_de_results = 'list',
       population_sig_gene_list = 'list',
-      population_sig_gene_df = 'list'
+      population_sig_gene_df = 'list',
+      group_ids = 'numeric'
    ),
    prototype = list(
       RCTD.reps = list(),
-      reference = NULL,
-      cell_type_info = list(info = NULL, renorm = NULL),
       population_de_results = list(),
       population_sig_gene_list = list(),
-      population_sig_gene_df = list()
+      population_sig_gene_df = list(),
+      group_ids = NA_integer_
    )
 )

@@ -150,11 +150,12 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
 fdr_sig_genes <- function(gene_list_type, p_val, fdr) {
   N_genes_type <- length(gene_list_type)
   thresh <- (1:N_genes_type)/N_genes_type * fdr
-  N_sig <- max(which(p_val[order(p_val)] < thresh))
-  if(N_sig >= 1)
+  if(any(p_val[order(p_val)] < thresh)) {
+    N_sig <- max(which(p_val[order(p_val)] < thresh))
     gene_list_sig <- gene_list_type[order(p_val)[1:N_sig]]
-  else
+  } else {
     gene_list_sig <- c()
+  }
   return(gene_list_sig)
 }
 
