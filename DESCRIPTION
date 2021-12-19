@@ -20,9 +20,8 @@ Imports:
 	quadprog,
 	tibble,
 	dplyr,
-	reshape2
+	reshape2,
+	knitr,
+	rmarkdown
 RoxygenNote: 7.1.1
-Suggests: 
-    knitr,
-    rmarkdown
 VignetteBuilder: knitr
