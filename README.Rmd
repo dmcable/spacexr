@@ -45,7 +45,7 @@ Code for generating the figures of our RCTDE paper, Cell type-specific different
 
 ## News and Updates
 
-December, 22nd, 2021: We are renaming this package (formerly RCTD) as *spacexr* (Spatial eXpression R package). We are also releasing *spacexr* 2.0, now featuring cell type-specific differential expression. The new algorithm, called RCTDE, is introduced in our new paper which will be available soon. <!--[here](BIORXIV LINK). -->
+December, 22nd, 2021: We are renaming this package (formerly RCTD) as *spacexr* (Spatial eXpression R package). We are also releasing *spacexr* 2.0, now featuring cell type-specific differential expression. The new algorithm, called RCTDE, is introduced in our new paper which will be available soon. <!--[here](BIORXIV LINK). --> We are also introducing a feature where RCTD and RCTDE can be run in batch across multiple experimental replicates.
 
 March, 18th, 2021: Our RCTD paper has been published in *Nature Biotechnology* [here](https://www.nature.com/articles/s41587-021-00830-w). Also, we have just released a new version of RCTD (version 1.2.0) with a different method to input data (please see `SpatialRNA` and `Reference` constructor functions). Please report any bugs associated with this new update.
 

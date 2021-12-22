@@ -58,7 +58,9 @@ December, 22nd, 2021: We are renaming this package (formerly RCTD) as
 *spacexr* (Spatial eXpression R package). We are also releasing
 *spacexr* 2.0, now featuring cell type-specific differential expression.
 The new algorithm, called RCTDE, is introduced in our new paper which
-will be available soon. <!--[here](BIORXIV LINK). -->
+will be available soon. <!--[here](BIORXIV LINK). --> We are also
+introducing a feature where RCTD and RCTDE can be run in batch across
+multiple experimental replicates.
 
 March, 18th, 2021: Our RCTD paper has been published in *Nature
 Biotechnology*
