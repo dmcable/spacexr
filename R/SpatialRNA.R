@@ -26,11 +26,41 @@ read.VisiumSpatialRNA <- function (datadir)
   restrict_puck(puck, colnames(puck@counts))
 }
 
+#' Creates a SpatialRNA object from a coords and counts file
+#'
+#' Warning: this function is provided out of convenience for experienced users, but
+#' we can not provide direct support for debugging file input errors. If you are obtaining
+#' errors from this method, we recommend a less error-prone procedure of loading in your
+#' coords and counts matrices in first and then using the `SpatialRNA` constructor function,
+#' which will systematically check for errors in the inputs.
+#'
+#' The coords matrix needs to be formated as columns (barcodes, x, y)
+#'
+#' @param datadir (character) full path to input directory
+#' @param count_file (character) file name of the counts csv file (genes by pixels matrix)
+#' @param coord_file (character) file name of the coords csv file (pixels by (barcodes, x, y) matrix)
+#' @return Returns a \code{\linkS4class{SpatialRNA}} object containing the coordinates and counts
+#' from the input files
+#' @export
+read.SpatialRNA <- function(datadir, count_file = "counts.csv", coords_file = 'coords.csv') {
+  coords <- readr::read_csv(file = paste(datadir,coords_file,sep="/"))
+  counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
+  colnames(coords)[2] = 'x' #renaming xcoord -> x
+  colnames(coords)[3] = 'y' #renaming ycoord -> y
+  counts = tibble::column_to_rownames(counts, var = colnames(counts)[1])
+  #rownames(counts) = counts[,1]
+  coords = tibble::column_to_rownames(coords, var = "barcodes")
+  #rownames(coords) <- coords$barcodes
+  coords$barcodes <- NULL
+  puck = SpatialRNA(coords, as(as(counts,"matrix"),"dgCMatrix"))
+  restrict_puck(puck, colnames(puck@counts))
+}
 
 save.SpatialRNA <- function(puck, save.folder) {
   dir.create(save.folder)
   write.csv(puck@coords, file.path(save.folder,'coords.csv'))
-  white.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
+  write.csv(puck@nUMI, file.path(save.folder,'nUMI.csv'))
+  write.csv(as.matrix(puck@counts), file.path(save.folder,'counts.csv'))
 }
 
 #' constructor of SpatialRNA object

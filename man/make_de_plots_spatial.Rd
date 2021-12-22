@@ -12,5 +12,6 @@ make_de_plots_spatial(myRCTD, datadir)
 \item{datadir}{output directory}
 }
 \description{
-Makes spatial gene RCTDE plots (colored by two discrete regions) on RCTD object, after running RCTDE
+These plots are colored by two discrete regions based on high or low explanatory variable values.
+Bold points represent expressed, whereas unbold points represent pixels not expressing the gene.
 }

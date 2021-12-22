@@ -63,12 +63,12 @@ convert_old_RCTD <- function(oldRCTD) {
   return(oldRCTD)
 }
 
-convert_old_reference <- function(old_reference) {
+convert_old_reference <- function(old_reference, n_max_cells = 10000) {
   cell_types <- old_reference@meta.data$liger_ident_coarse
   nUMI <- old_reference@meta.data$nUMI
   names(cell_types) <- rownames(old_reference@meta.data);
   names(nUMI) <- rownames(old_reference@meta.data);
-  Reference(old_reference@assays$RNA@counts, cell_types, nUMI)
+  Reference(old_reference@assays$RNA@counts, cell_types, nUMI, n_max_cells = n_max_cells)
 }
 
 coerce_deglam_reference <- function(old_reference) {
@@ -107,3 +107,11 @@ create_downsampled_data <- function(reference, cell_types_keep = NULL, n_samples
   reference@nUMI = reference@nUMI[index_keep]
   return(reference)
 }
+
+save.Reference <- function(reference, save.folder) {
+  dir.create(save.folder)
+  write.csv(reference@cell_types, file.path(save.folder,'cell_types.csv'))
+  write.csv(reference@nUMI, file.path(save.folder,'nUMI.csv'))
+  write.csv(as.matrix(reference@counts), file.path(save.folder,'counts.csv'))
+}
+

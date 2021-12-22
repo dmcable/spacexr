@@ -1,17 +1,17 @@
 
 
 process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
-   print("Begin: process_cell_type_info")
-   print(paste("process_cell_type_info: number of cells in reference:", dim(reference@counts)[2]))
-   print(paste("process_cell_type_info: number of genes in reference:", dim(reference@counts)[1]))
+   message("Begin: process_cell_type_info")
+   message(paste("process_cell_type_info: number of cells in reference:", dim(reference@counts)[2]))
+   message(paste("process_cell_type_info: number of genes in reference:", dim(reference@counts)[1]))
    cell_counts = table(reference@cell_types)
-   print(cell_counts)
+   message(cell_counts)
 
    if(min(cell_counts) < CELL_MIN)
       stop(paste0("process_cell_type_info error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
    cell_type_info <- get_cell_type_info(reference@counts, reference@cell_types, reference@nUMI
                                         , cell_type_names = cell_type_names)
-   print("End: process_cell_type_info")
+   message("End: process_cell_type_info")
    return(cell_type_info)
 }
 
@@ -51,12 +51,12 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
    if(!keep_reference)
       reference <- create_downsampled_data(reference, n_samples = 5)
    puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
-   print('create.RCTD: getting regression differentially expressed genes: ')
+   message('create.RCTD: getting regression differentially expressed genes: ')
    #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
    gene_list_reg = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_reg) == 0)
       stop("create.RCTD: Error: 0 regression differentially expressed genes found")
-   print('create.RCTD: getting platform effect normalization differentially expressed genes: ')
+   message('create.RCTD: getting platform effect normalization differentially expressed genes: ')
    gene_list_bulk = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_bulk) == 0)
       stop("create.RCTD: Error: 0 bulk differentially expressed genes found")

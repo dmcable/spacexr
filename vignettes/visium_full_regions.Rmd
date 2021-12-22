@@ -1,0 +1,169 @@
+---
+title: "Applying RCTDE to Spatial Transcriptomics Data: Multiple regions in Visium with full mode RCTD"
+author: "Dylan Cable"
+date: "December 20th, 2021"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+  rmarkdown::html_vignette:
+    keep_md: yes
+vignette: |
+  %\VignetteIndexEntry{visium-full-regions} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup}
+
+library(RCTD)
+library(Matrix)
+library(doParallel)
+library(ggplot2)
+datadir <- system.file("extdata",'SpatialRNA/VisiumVignette',package = 'RCTD') # directory for sample Visium dataset
+if(!dir.exists(datadir))
+  dir.create(datadir)
+savedir <- 'RCTD_results'
+if(!dir.exists(savedir))
+  dir.create(savedir)
+```
+
+```{r, include = TRUE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache = TRUE,
+  out.width = "100%"
+)
+```
+
+## Introduction
+
+Robust Cell Type Differential Expression, or RCTDE, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for differential expression across multiple regions in a toy hippocampus Visium dataset. First, we will first use RCTD to assign cell types to a hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset. We will test for differential expression across three spatial regions.
+
+## Data Preprocessing and running RCTD
+
+First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on full mode. Since full mode can discover any number of cell types per pixel, it is a reasonable choice for technologies such as Visium that can have spatial resolution much larger than single cells. Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
+
+```{r RCTD}
+### Load in/preprocess your data, this might vary based on your file type
+if(!file.exists(file.path(savedir,'myRCTD_visium_full.rds'))) {
+  counts <- as.data.frame(readr::read_csv(file.path(datadir,"counts.csv"))) # load in counts matrix
+  coords <- read.csv(file.path(datadir,"coords.csv"))
+  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
+  rownames(coords) <- coords[,1]; coords[,1] <- NULL # Move first column to rownames
+  nUMI <- colSums(counts) # In this case, total counts per pixel is nUMI
+  puck <- SpatialRNA(coords, counts, nUMI)
+  barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). 
+  plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
+                       title ='plot of nUMI') 
+  refdir <- system.file("extdata",'Reference/Visium_Ref',package = 'RCTD') # directory for the reference
+  counts <- read.csv(file.path(refdir,"counts.csv")) # load in cell types
+  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
+  cell_types <- read.csv(file.path(refdir,"cell_types.csv")) # load in cell types
+  cell_types <- setNames(cell_types[[2]], cell_types[[1]])
+  cell_types <- as.factor(cell_types) # convert to factor data type
+  nUMI <- read.csv(file.path(refdir,"nUMI.csv")) # load in cell types
+  nUMI <- setNames(nUMI[[2]], nUMI[[1]])
+  reference <- Reference(counts, cell_types, nUMI)
+  myRCTD <- create.RCTD(puck, reference, max_cores = 2)
+  myRCTD <- run.RCTD(myRCTD, doublet_mode = 'full')
+  saveRDS(myRCTD,file.path(savedir,'myRCTD_visium_full.rds'))
+}
+```
+
+## Exploring the full mode results
+
+The results of RCTD full mode are stored in `@results$weights`. We next normalize the weights using `normalize_weights` so that they sum to one. Each entry represents the estimated proportion of each cell type on each pixel.
+
+```{r RCTD_results}
+myRCTD <- readRDS(file.path(savedir,'myRCTD_visium_full.rds'))
+barcodes <- colnames(myRCTD@spatialRNA@counts)
+weights <- myRCTD@results$weights
+norm_weights <- normalize_weights(weights)
+cell_types <- c('Denate', 'Neurogenesis','Cajal_Retzius')
+print(head(norm_weights[,cell_types])) # observe weight values
+plot_puck_continuous(myRCTD@spatialRNA, barcodes, norm_weights[,'Denate'], ylimit = c(0,0.5), 
+                     title ='plot of Dentate weights') # plot Dentate weights
+```
+
+## Choose regions
+
+Now that we have successfully run RCTD, we can create a set of regions used for predicting differential expression in RCTDE. In this case, we will create three lists representing membership in the left, middle, or right regions. We construct `region_list` which is a list of these three lists.
+
+```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
+### Create SpatialRNA object
+region_left <- barcodes[which(myRCTD@spatialRNA@coords$x < quantile(myRCTD@spatialRNA@coords$x, 1/3))]
+region_right <- barcodes[which(myRCTD@spatialRNA@coords$x > quantile(myRCTD@spatialRNA@coords$x, 2/3))]
+region_middle <- setdiff(barcodes, union(region_left, region_right))
+region_list <- list(region_left, region_right, region_middle)
+
+# Differentially downregulate one gene
+gene_list <- c('Fth1', 'Bsg')
+myRCTD@originalSpatialRNA@counts <- myRCTD@spatialRNA@counts[gene_list,]
+class_num <- rep(0, length(barcodes)); names(class_num) <- barcodes
+class_num[region_middle] <- 1; class_num[region_right] <- 2 
+plot_class(myRCTD@spatialRNA, barcodes, factor(class_num),  title ='plot of regions') # plot regions
+```
+
+## Running RCTDE
+
+After creating the list of regions, we are now ready to run RCTDE using the `run.RCTDE.regions` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the RCTDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). Please see `?run.RCTDE.regions` for more information on these parameters. 
+
+```{r DEgenes}
+#de
+myRCTD@config$max_cores <- 2
+myRCTD <- run.RCTDE.regions(myRCTD, region_list,cell_types = cell_types, gene_threshold = .01, cell_type_threshold = 10, fdr = 0.25, doublet_mode = F, weight_threshold = 0.1) 
+saveRDS(myRCTD,file.path(savedir,'myRCTDde_visium_regions.rds'))
+```
+
+Equivalently to using the `run.RCTDE.regions` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.regions` function, which constructs the design matrix given a list of regions. After constructing the design matrix, one can use the `run.RCTDE` function to run RCTDE with this general design matrix.
+
+```{r design matrix}
+X <- build.designmatrix.regions(myRCTD,region_list)
+print(head(X))
+barcodes <- rownames(X)
+myRCTD_identical <- run.RCTDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, doublet_mode = F,
+                        cell_type_threshold = 10, fdr = 0.25, weight_threshold = 0.1)
+```
+
+## RCTDE results
+
+After running RCTDE, it is time to examine RCTDE results. We will focus on cell type Dentate. Furthermore, we will examine the original Fth1 gene.
+
+```{r rctde_results,  fig.width = 8, fig.height=8}
+#print results for cell type 'Dentate'
+cell_type <- 'Denate'
+gene <- 'Fth1'
+print(paste("following results hold for", gene))
+print("check for covergence of each cell type")
+print(myRCTD@de_results$gene_fits$con_mat[gene, ]) # did not converge (dataset was too small)
+print('estimated expression for Dentate in each region')
+cell_type_ind <- which(cell_type == cell_types)
+print(myRCTD@de_results$gene_fits$all_vals[gene, , cell_type_ind]) 
+```
+
+### Load in significant genes from another dataset
+
+Unfortunately, this toy dataset did not yield any significant genes. To illustrate the results of a normal dataset, we will
+examine the `myRCTD@de_results$sig_gene_list` object from another dataset. `sig_gene_list` is a list, for each cell type, of dataframes that contain the hypothesis testing results for significant genes. In particular, notice the following columns: p_val (p value), log_fc (log-fold-change between two regions) and X1...X4 (the estimated expression within each region):
+
+```{r load_testes}
+sig_gene_list <- readRDS(file.path(datadir,"testes_sig_gene_list.rds")) # load in counts matrix
+print(head(sig_gene_list$`2`))
+```
+
+Finally, we will plot RCTDE results in the `savedir` directory!
+
+The following plot shows a spatial visualization of the Fth1 gene.
+
+The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types. Typically, one would want to plot one or multiple significant genes. For this toy dataset, no genes were significant.
+
+```{r results,  fig.width = 8, fig.height=8}
+myRCTD <- readRDS(file.path(savedir,'myRCTDde_visium_regions.rds'))
+plot_gene_regions(myRCTD, cell_type, gene, pixel_weight_thresh = 0.15, expr_thresh = 8)
+make_all_de_plots(myRCTD, savedir)
+```
+

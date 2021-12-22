@@ -44,11 +44,11 @@ get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .
     }
     logFC = log(cell_type_info[[1]][gene_list,cell_type] + epsilon) - log(other_mean + epsilon)
     type_gene_list = which((logFC > fc_thresh) & (cell_type_info[[1]][gene_list,cell_type] > expr_thresh)) #| puck_means[gene_list] > expr_thresh)
-    print(paste0("get_de_genes: ", cell_type, " found DE genes: ",length(type_gene_list)))
+    message(paste0("get_de_genes: ", cell_type, " found DE genes: ",length(type_gene_list)))
     total_gene_list = union(total_gene_list, type_gene_list)
   }
   total_gene_list = gene_list[total_gene_list]
-  print(paste0("get_de_genes: total DE genes: ",length(total_gene_list)))
+  message(paste0("get_de_genes: total DE genes: ",length(total_gene_list)))
   return(total_gene_list)
 }
 

@@ -135,7 +135,7 @@ Note, some of the plots are not displayed here, but rather saved as pdf files in
 ```{r results, results = 'hide',  fig.width = 8, fig.height=8}
 results <- myRCTD@results
 # normalize the cell type proportions to sum to 1.
-norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/') 
+norm_weights = normalize_weights(results$weights) 
 cell_type_names <- myRCTD@cell_type_info$info[[2]] #list of cell type names
 spatialRNA <- myRCTD@spatialRNA
 resultsdir <- 'RCTD_Plots' ## you may change this to a more accessible directory on your computer.

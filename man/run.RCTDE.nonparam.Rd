@@ -16,7 +16,8 @@ run.RCTDE.nonparam(
   sigma_gene = T,
   PRECISION.THRESHOLD = 0.01,
   cell_types_present = NULL,
-  fdr = 0.01
+  fdr = 0.01,
+  test_genes_sig = T
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
+
+\item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the RCTDE algorithm. Contains objects \code{de_results},

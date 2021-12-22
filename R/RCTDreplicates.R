@@ -43,13 +43,13 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
   if(is.null(group_ids))
     group_ids <- rep(1, length(spatialRNA.replicates))
   if(length(group_ids) != length(replicate_names))
-    stop('create.RCTD.replicates: group_ids and replicate_names must both be the same length as the total number of replciates.')
+    stop('create.RCTD.replicates: group_ids and replicate_names must both be the same length as the total number of replicates.')
   if(length(group_ids) != length(spatialRNA.replicates))
-    stop('create.RCTD.replicates: group_ids must be the same length as the total number of replciates.')
+    stop('create.RCTD.replicates: group_ids must be the same length as the total number of replicates.')
   names(group_ids) <- replicate_names
   check_vector(group_ids, 'group_ids','create.RCTD.replicates', require_int = T)
   if(min(table(group_ids)) < 2)
-    stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates')
+    stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates.')
   RCTD.reps <- list()
   for(i in 1:length(spatialRNA.replicates)) {
     print(paste('create.RCTD.replicates: creating RCTD for replicate',i))
@@ -151,13 +151,13 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
   if(is.null(group_ids))
     group_ids <- rep(1, length(RCTD.reps))
   if(length(group_ids) != length(replicate_names))
-    stop('merge.RCTD.objects: group_ids and replicate_names must both be the same length as the total number of replciates.')
+    stop('merge.RCTD.objects: group_ids and replicate_names must both be the same length as the total number of replicates.')
   if(length(group_ids) != length(RCTD.reps))
-    stop('merge.RCTD.objects: group_ids must be the same length as the total number of replciates.')
+    stop('merge.RCTD.objects: group_ids must be the same length as the total number of replicates.')
   names(group_ids) <- replicate_names
   check_vector(group_ids, 'group_ids','create.RCTD.replicates', require_int = T)
   if(min(table(group_ids)) < 2)
-    stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates')
+    stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates.')
   new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = groups_ids)
 }
 

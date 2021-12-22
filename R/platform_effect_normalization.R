@@ -8,7 +8,7 @@
 #' @export
 fitBulk <- function(RCTD) {
   bulkData <- prepareBulkData(RCTD@cell_type_info$info[[1]], RCTD@spatialRNA, RCTD@internal_vars$gene_list_bulk)
-  print('fitBulk: decomposing bulk')
+  message('fitBulk: decomposing bulk')
   decompose_results <- decompose_full(bulkData$X, sum(RCTD@spatialRNA@nUMI),
                                       bulkData$b, verbose = F, constrain = F, MIN_CHANGE = RCTD@config$MIN_CHANGE_BULK,
                                       n.iter = 100, bulk_mode = T)
@@ -34,7 +34,7 @@ chooseSigma2 <- function(prediction, counts, Q_mat_all, X_vals, sigma) {
     score_vec[i] <- best_val
   }
   sigma = sigma_ind[which.min(score_vec)]
-  print(min(score_vec))
+  message(min(score_vec))
   return(sigma)
 }
 
@@ -82,20 +82,20 @@ choose_sigma_c <- function(RCTD) {
   }
   fit_ind = sample(names(puck@nUMI[puck@nUMI > MIN_UMI]), N_fit)
   beads = t(as.matrix(puck@counts[RCTD@internal_vars$gene_list_reg,fit_ind]))
-  print(paste('chooseSigma: using initial Q_mat with sigma = ',sigma/100))
+  message(paste('chooseSigma: using initial Q_mat with sigma = ',sigma/100))
   for(iter in 1:RCTD@config$N_epoch) {
     set_likelihood_vars(Q_mat_all[[as.character(sigma)]], X_vals)
-    #print(paste('chooseSigma: getting initial weights for #samples: ',N_fit))
+    #message(paste('chooseSigma: getting initial weights for #samples: ',N_fit))
     results = decompose_batch(puck@nUMI[fit_ind], RCTD@cell_type_info$renorm[[1]], beads, RCTD@internal_vars$gene_list_reg, constrain = F, max_cores = RCTD@config$max_cores)
     weights = Matrix(0, nrow = N_fit, ncol = RCTD@cell_type_info$renorm[[3]])
     rownames(weights) = fit_ind; colnames(weights) = RCTD@cell_type_info$renorm[[2]];
     for(i in 1:N_fit)
       weights[i,] = results[[i]]$weights
     prediction <- sweep(as.matrix(RCTD@cell_type_info$renorm[[1]][RCTD@internal_vars$gene_list_reg,]) %*% t(as.matrix(weights)), 2, puck@nUMI[fit_ind], '*')
-    print(paste('Likelihood value:',calc_log_l_vec(as.vector(prediction), as.vector(t(beads)))))
+    message(paste('Likelihood value:',calc_log_l_vec(as.vector(prediction), as.vector(t(beads)))))
     sigma_prev <- sigma
     sigma <- chooseSigma(prediction, t(beads), Q_mat_all, X_vals, sigma)
-    print(paste('Sigma value: ', sigma/100))
+    message(paste('Sigma value: ', sigma/100))
     if(sigma == sigma_prev)
       break
   }

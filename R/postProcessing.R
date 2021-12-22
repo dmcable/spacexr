@@ -102,3 +102,12 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
 import_weights <- function(myRCTD, weights) {
   myRCTD@results <- weights
 }
+
+#' Normalizes the `weights` matrix from the RCTD results object
+#'
+#' @param weights a matrix of weights to be normalized
+#' @return norm.weights a normalized matrix of weights where rows sum to one.
+#' @export
+normalize_weights <- function(weights) {
+  return(sweep(weights, 1, rowSums(weights), '/'))
+}

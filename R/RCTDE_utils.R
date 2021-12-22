@@ -56,6 +56,10 @@ get_gene_list_type <- function(my_beta, barcodes, cell_type, nUMI, gene_list_typ
   UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .99))]
   if(length(UMI_list) < 10)
     UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .80))]
+  if(length(UMI_list) < 10)
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .5))]
+  if(length(UMI_list) < 10)
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .01))]
   UMI_m <- median(UMI_list)
   expr_thresh <-  C / (N_cells * UMI_m)
   gene_list_type <- setdiff(gene_list_type,gene_list_type[which(cti_renorm[gene_list_type,cell_type] < expr_thresh)])
@@ -74,8 +78,8 @@ get_gene_list_type <- function(my_beta, barcodes, cell_type, nUMI, gene_list_typ
   return(gene_list_type)
 }
 
-get_con_regions <- function(gene_fits, gene, X2, cell_type_ind, n_cell_types) {
-  matrix(gene_fits$con_all[gene,], nrow = dim(X2)[2], ncol = n_cell_types)[,cell_type_ind]
+get_con_regions <- function(gene_fits, gene, n_regions, cell_type_ind, n_cell_types) {
+  matrix(gene_fits$con_all[gene,], nrow = n_regions, ncol = n_cell_types)[,cell_type_ind]
 }
 
 get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
@@ -186,7 +190,7 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   if(length(cell_types) == 1) {
     stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
   }
-  print(paste0("choose_cell_types: running de with cell types ",paste(cell_types, collapse = ', ')))
+  message(paste0("choose_cell_types: running de with cell types ",paste(cell_types, collapse = ', ')))
   return(cell_types)
 }
 
@@ -206,7 +210,7 @@ get_spline_matrix <- function(puck, df = 15) {
   center_coords <- puck@coords
   center_coords <- sweep(center_coords, 2, apply(center_coords,2, mean), '-')
   center_coords <- center_coords / sd(as.matrix(center_coords))
-  sm <- smoothCon(s(x,y,k=df,fx=T,bs='tp'),data=center_coords)[[1]]
+  sm <- mgcv::smoothCon(mgcv::s(x,y,k=df,fx=T,bs='tp'),data=center_coords)[[1]]
   mm <- as.matrix(data.frame(sm$X))
   X2 <- cbind(mm[,(df - 2):df], mm[,1:(df-3)]) #swap intercept, x, and y
   X2[,2:df] <- sweep(X2[,2:df], 2, apply(X2[,2:df],2, mean), '-')
@@ -225,4 +229,118 @@ check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precisi
   converged_vec <- converged_vec & (!error_vec)
   names(converged_vec) <- colnames(my_beta)
   return(converged_vec)
+}
+
+#' Constructs an explanatory variable representing density of a cell type
+#'
+#' This explanatory variable can be used with RCTDE to detect cell-to-cell interactions. Density
+#' is computing using an exponentially-decaying filter. Currently only works for doublet mode RCTD.
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param cell_type the cell type (character) for which to compute density.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
+#' relevant interaction.
+#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
+#' are the \code{\linkS4class{SpatialRNA}} pixel names, and values  are standardized between 0 and 1. This variable represents density of the selected cell type.
+#' @export
+exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 50) {
+  doublet_df <- myRCTD@results$results_df
+  weights_doublet <- myRCTD@results$weights_doublet
+  puck <- myRCTD@spatialRNA
+  # Get a list of barcodes for cells of cell_type
+  # Filter so we have cells in the cropped puck, that are "singlets" or "certain doublets" with first or second type being the target type
+  target_df = dplyr::filter(doublet_df, (rownames(doublet_df) %in% barcodes) &
+                              ((first_type == cell_type  & (spot_class != 'reject')) |
+                                 ((second_type == cell_type) & (spot_class == 'doublet_certain'))
+                              )
+  )
+  target_barcodes = rownames(target_df)
+
+  # Names are the barcodes, value is a score computed using euclidean distance from the cells of cell_type
+  all_barcodes = barcodes # The cropped puck subset, use rownames(doublet_df) for all barcodes
+  explanatory.variable = c(rep(0,length(all_barcodes)))
+  names(explanatory.variable) = all_barcodes
+
+  # Calculate proximity score by summing the scores across all cells of target type for each cell in puck
+  # Individual scores between a cell and any target cell is calculated as n_i*exp(-d_i/c)
+  # n_i is the weighted nUMI of the target cell; weighted by the proportion that the pixel is the target cell type. singlets are weighted as 1.0
+  # d_i is the distance between the current cell and target cell
+
+  # Create a distance table between all pairs of cells. rdist is so fast there's no need to save this.
+  # fields::rdist treats rows as coordinates and computes all distances between placing them in a distance matrix.
+  dist_matrix = fields::rdist(as.matrix(puck@coords))
+  rownames(dist_matrix) = rownames(puck@coords)
+  colnames(dist_matrix) = rownames(puck@coords)
+  # Precompute the exponent component of the proximity score for all pairs of cells
+  exponent_mat = exp(-dist_matrix/radius)
+
+  # Precompute the weighted nUMI values for all target cells
+  weighted_nUMIs = c(rep(0,length(target_barcodes)))
+  names(weighted_nUMIs) = target_barcodes
+  for(i in 1:length(weighted_nUMIs)) {
+    barcode = target_barcodes[i]
+    nUMI = puck@nUMI[barcode]
+
+    spot_class = doublet_df[barcode,"spot_class"]
+    first_type = doublet_df[barcode,"first_type"]
+    second_type = doublet_df[barcode,"second_type"]
+
+    weight = 0.0;
+    if(spot_class == "singlet") {
+      weight = if (first_type == cell_type) 1.0 else 0.0;
+    } else {
+      weight = if (first_type == cell_type) weights_doublet[barcode,1] else weights_doublet[barcode,2];
+    }
+    weighted_nUMI = nUMI * weight
+    weighted_nUMIs[i] = weighted_nUMI
+  }
+
+  # Use the precomputed components above to compute explanatory.variable
+  for(i in 1:length(all_barcodes)) {
+    barcode = all_barcodes[i]
+
+    exp_dists = exponent_mat[barcode,target_barcodes]
+    proximity_score = weighted_nUMIs %*% exp_dists
+    explanatory.variable[i]=proximity_score
+  }
+  explanatory.variable = normalize_ev(explanatory.variable)
+}
+
+
+#' Constructs an explanatory variable representing density of a set of points
+#'
+#' This explanatory variable can be used with RCTDE to detect DE in the proximity of these points. Density
+#' is computing using an exponentially-decaying filter.
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param points a N by 2 matrix containing the locations of the points to be used for computing density. The first column should be the x
+#' coordinates while the second column should be the y coordinate.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
+#' relevant interaction.
+#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
+#' are the \code{\linkS4class{SpatialRNA}} pixel names, and values  are standardized between 0 and 1. This variable represents density of the given point set.
+#' @export
+exvar.point.density <- function(myRCTD, barcodes, points, radius = 50) {
+  puck <- myRCTD@spatialRNA
+  explanatory.variable = c(rep(0,length(barcodes)))
+  names(explanatory.variable) = barcodes
+  # fields::rdist treats rows as coordinates and computes all distances between placing them in a distance matrix.
+  dist_matrix = fields::rdist(as.matrix(puck@coords), as.matrix(points))
+  rownames(dist_matrix) = rownames(puck@coords)
+  # Precompute the exponent component of the proximity score for all pairs of cells
+  exponent_mat = exp(-dist_matrix/radius)
+  explanatory.variable <- rowSums(exponent_mat)
+  explanatory.variable = normalize_ev(explanatory.variable)
+}
+
+# Normalize explanatory.variable so the values span from 0 to 1.
+normalize_ev = function(explanatory.variable) {
+  # Threshold values over the specific 85% percentile to be 1.
+  explanatory.variable = explanatory.variable - min(explanatory.variable)
+  percentile = quantile(explanatory.variable,.85)
+  explanatory.variable = explanatory.variable / percentile
+  explanatory.variable[explanatory.variable>1] = 1
+  return(explanatory.variable)
 }

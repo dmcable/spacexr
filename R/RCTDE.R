@@ -20,6 +20,7 @@
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the RCTDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by RCTDE.
@@ -27,12 +28,12 @@
 #' @export
 run.RCTDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
-                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01) {
+                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T) {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
   return(run.RCTDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', params_to_test = 2,
-                       weight_threshold = weight_threshold, sigma_gene = sigma_gene,
+                       weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, fdr = fdr))
 }
@@ -58,6 +59,7 @@ run.RCTDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the RCTDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by RCTDE.
@@ -66,12 +68,12 @@ run.RCTDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 run.RCTDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
-                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01) {
+                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T) {
   X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
   barcodes <- rownames(X2)
   return(run.RCTDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', cell_type_threshold = cell_type_threshold,
-                       weight_threshold = weight_threshold, sigma_gene = sigma_gene,
+                       weight_threshold = weight_threshold, sigma_gene = sigma_gene,test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, params_to_test = 2:df, fdr = fdr))
 }
@@ -98,6 +100,7 @@ run.RCTDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the RCTDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the RCTDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by RCTDE.
@@ -106,13 +109,13 @@ run.RCTDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 run.RCTDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                           weight_threshold = NULL, sigma_gene = T,
-                           PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01) {
+                           PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T) {
   X2 <- build.designmatrix.regions(myRCTD, region_list)
   barcodes <- rownames(X2)
   return(run.RCTDE(myRCTD, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'categorical',
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, params_to_test = 1:dim(X2)[2],
-                       PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+                       PRECISION.THRESHOLD = PRECISION.THRESHOLD,test_genes_sig = test_genes_sig,
                        cell_types_present = cell_types_present, fdr = fdr))
 }
 
@@ -160,7 +163,11 @@ run.RCTDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
   if(is.null(cell_type_specific))
     cell_type_specific <- !logical(dim(X)[2])
   check_cell_type_specific(cell_type_specific, dim(X)[2])
-  X1 <- X[,!cell_type_specific]; X2 <- X[,cell_type_specific]
+  X1 <- X[,!cell_type_specific];
+  if(any(!cell_type_specific))
+    X2 <- X[,cell_type_specific]
+  else
+    X2 <- X
   return(run.RCTDE.general(myRCTD, X1, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold,
                            gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = test_mode, weight_threshold = weight_threshold,
@@ -210,6 +217,8 @@ run.RCTDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL) {
+  if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
+    stop('run.RCTDE.general: attempted to run RCTDE in doublet mode, but RCTD was not run in doublet mode. Please run RCTDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!myRCTD@internal_vars$cell_types_assigned)
     stop('run.RCTDE.general: cannot run RCTDE unless cell types have been assigned i.e. myRCTD@internal_vars$cell_types_assigned = TRUE')
   cell_types <- choose_cell_types(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types)
@@ -222,7 +231,7 @@ run.RCTDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
       params_to_test <- 2
     else
       params_to_test <- 1:dim(X2)[2]
-  print(paste0("run.RCTDE.general: configure params_to_test = ",params_to_test))
+  message(paste0("run.RCTDE.general: configure params_to_test = ",params_to_test))
   if(any(!(params_to_test %in% 1:dim(X2)[2])))
     stop(c('run.RCTDE.general: params_to_test must be a vector of integers from 1 to dim(X2)[2] = ', dim(X2)[2],
            'please make sure that tested parameters are in the required range.'))
@@ -230,8 +239,6 @@ run.RCTDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
     stop(c('run.RCTDE.general: for test_mode = categorical, colums params_to_test, ',params_to_test,', must have values 0 or 1.'))
   if(is.null(cell_types_present))
     cell_types_present <- cell_types
-  if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
-    stop('run.RCTDE.general: attempted to run RCTDE in doublet mode, but RCTD was not run in doublet mode. Please run RCTDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(any(!(barcodes %in% rownames(X1))) || any(!(barcodes %in% rownames(X2))))
     stop('run.RCTDE.general: some barcodes do not appear in the rownames of X1 or X2.')
   puck = myRCTD@originalSpatialRNA
@@ -253,7 +260,7 @@ run.RCTDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
   if(sigma_gene)
     set_global_Q_all()
   sigma_init <- as.character(100*myRCTD@internal_vars$sigma)
-  gene_fits <- get_de_gene_fits(X1[barcodes,],X2[barcodes,],my_beta, nUMI[barcodes], gene_list_tot,
+  gene_fits <- get_de_gene_fits(X1[barcodes, , drop = FALSE],X2[barcodes, , drop = FALSE],my_beta, nUMI[barcodes], gene_list_tot,
                                 cell_types, restrict_puck(puck, barcodes), barcodes, sigma_init,
                                 test_mode, numCores = myRCTD@config$max_cores, sigma_gene = sigma_gene,
                                 PRECISION.THRESHOLD = PRECISION.THRESHOLD, params_to_test = params_to_test)
@@ -291,7 +298,7 @@ get_sig_genes <- function(puck, myRCTD, gene_list_tot, cell_types, my_beta, barc
   return(sig_gene_list)
 }
 
-test_genes_sig <- function(myRCTD,  params_to_test = NULL, fdr = .01, p_thresh = 1, log_fc_thresh = 0.4) {
+test_genes_sig_post <- function(myRCTD, params_to_test = NULL, fdr = .01, p_thresh = 1, log_fc_thresh = 0.4) {
   puck <- myRCTD@originalSpatialRNA
   gene_list_tot <- rownames(myRCTD@de_results$gene_fits$s_mat)
   cell_types <- myRCTD@internal_vars_de$cell_types
@@ -326,7 +333,7 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
   i1_vec <- numeric(length(gene_list_type)); names(i1_vec) <- gene_list_type
   i2_vec <- numeric(length(gene_list_type)); names(i2_vec) <- gene_list_type
   for(gene in gene_list_type) {
-    con_regions <- get_con_regions(gene_fits, gene, X2, cell_ind, n_cell_types) &
+    con_regions <- get_con_regions(gene_fits, gene, dim(X2)[2], cell_ind, n_cell_types) &
       (params_to_test %in% 1:dim(X2)[2])
     n_regions_con <- sum(con_regions)
     x <- gene_fits$all_vals[gene, con_regions,cell_ind]
@@ -371,7 +378,8 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
       sig_genes <- data.frame(t(unlist((c(sig_genes, gene_fits$all_vals[rownames(sig_genes),params_to_test,cell_ind],
                                           gene_fits$s_mat[rownames(sig_genes),s_mat_ind[params_to_test]])))))
       rownames(sig_genes) <- gene_list_sig
-      colnames(sig_genes)[(length(custom_names)+1):length(sig_genes)] <-
+      if(length(sig_genes) > 0)
+        colnames(sig_genes)[(length(custom_names)+1):length(sig_genes)] <-
         c(lapply(params_to_test,function(x) paste('mean_',x)), lapply(params_to_test,function(x) paste('sd_',x)))
     } else
       sig_genes <- list()
@@ -385,23 +393,24 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
   log_fc <- gene_fits$all_vals[gene_list_type,params_to_test, ct_ind]
   s_vec <- gene_fits$s_mat[gene_list_type,I_ind]
   z_score <- abs(log_fc) / s_vec
+  p_val <- 2*(1-pnorm(z_score))
   if(length(params_to_test) > 1)
     p_val <- pmin(apply(p_val, 1, min)*length(params_to_test),1)
-  else
-    p_val <- 2*(1-pnorm(z_score))
   names(p_val) <- gene_list_type
   gene_list_sig <- fdr_sig_genes(gene_list_type, p_val, fdr)
   if(length(gene_list_sig) > 0)
     p_thresh <- min(p_thresh, max(p_val[gene_list_sig]))
   if(length(params_to_test) > 1) {
+    p_val <- 2*(1-pnorm(z_score))
     best_mat <- function(gene) {
-      index <- which(p_val[gene,] < p_thresh)
+      index <- which(p_val[gene,]*length(params_to_test) < p_thresh)
       if(length(index) > 0) {
         best_ind <- which.max(abs(z_score[gene,index]))
         lfc <- log_fc[gene,index][best_ind]
         sd <- s_vec[gene,index][best_ind]
         z <- z_score[gene,index][best_ind]
-        return(best_ind, lfc,sd,z)
+        best_ind <- params_to_test[index[best_ind]]
+        return(c(best_ind, lfc,sd,z))
       } else {
         return(c(0,0,0,0))
       }
@@ -418,14 +427,15 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
     best_Z <- function(gene) {
       best_mat(gene)[4]
     }
-    best_ind <- unlist(lapply(gene_list_type, best_ind))
-    names(best_ind) <- gene_list_type
-    log_fc <- unlist(lapply(gene_list_type, best_log_fc))
-    names(log_fc) <- gene_list_type
-    z_score <- unlist(lapply(gene_list_type, best_Z))
-    names(z_score) <- gene_list_type
+    best_indn <- unlist(lapply(gene_list_type, best_ind))
+    names(best_indn) <- gene_list_type
+    log_fcn <- unlist(lapply(gene_list_type, best_log_fc))
+    names(log_fcn) <- gene_list_type
+    z_scoren <- unlist(lapply(gene_list_type, best_Z))
+    names(z_scoren) <- gene_list_type
     s_vec <- unlist(lapply(gene_list_type, best_sd))
     names(s_vec) <- gene_list_type
+    best_ind <- best_indn; z_score <- z_scoren; log_fc <- log_fcn
     p_val <- pmin(apply(p_val, 1, min)*length(params_to_test),1)
   } else {
     best_ind <- rep(params_to_test, length(gene_list_type))
@@ -447,6 +457,7 @@ get_de_gene_fits <- function(X1,X2,my_beta, nUMI, gene_list, cell_types, puck, b
   mean_val <- matrix(0,nrow = N_genes, ncol = length(cell_types))
   all_vals <- array(0, dim = c(N_genes, dim(X2)[2],length(cell_types)))
   dimnames(all_vals)[[1]] <- gene_list
+  dimnames(all_vals)[[3]] <- cell_types
   con_val <- logical(N_genes)
   ll_val <- numeric(N_genes)
   n_val <- numeric(N_genes)
@@ -498,7 +509,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
   results_list <- list()
   if(numCores == 1) {
     for(i in 1:length(gene_list)) {
-      print(i)
+      message(i)
       gene <- gene_list[i]
       Y <- puck@counts[gene, barcodes]
       results_list[[i]] <- estimate_gene_wrapper(Y,X1,X2,my_beta, nUMI, sigma_init, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD)

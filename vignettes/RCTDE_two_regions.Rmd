@@ -1,7 +1,7 @@
 ---
-title: "Applying RCTDE to Spatial Transcriptomics Data"
+title: "Applying RCTDE to Spatial Transcriptomics Data: Two Regions"
 author: "Dylan Cable"
-date: "December 15th, 2021"
+date: "December 19th, 2021"
 output:
   html_document:
     keep_md: yes
@@ -9,8 +9,8 @@ output:
   rmarkdown::html_vignette:
     keep_md: yes
 vignette: |
-  %\VignetteIndexEntry{differential-expression}
-  %\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{rctde-two-regions} 
+  %\VignetteEncoding{UTF-8} 
   %\VignetteEngine{knitr::rmarkdown}
 ---
 
@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for differential expression in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression across a random explanatory variable.
+Robust Cell Type Differential Expression, or RCTDE, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for differential expression across two regions in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression between the nodulus and anterior lobe regions.
 
 ## Data Preprocessing and running RCTD
 
@@ -72,24 +72,26 @@ if(!file.exists(file.path(savedir,'myRCTD.rds'))) {
 
 ## Create explanatory variable / covariate
 
-Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
-The explanatory variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object.
+Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in RCTDE. In general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
 
-Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high explanatory variable) to see whether RCTDE can detect this differentially expressed gene.
+The explanatory variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object. In this case, we will use the explanatory variable
+two divide the cerebellum into two regions (left and right).
+
+Here, we also artifically upregulate the expression of the Kcnip4 gene (in regions of high explanatory variable) to see whether RCTDE can detect this differentially expressed gene.
 
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 ### Create SpatialRNA object
 myRCTD <- readRDS(file.path(savedir,'myRCTD.rds'))
-set.seed(12345)
-explanatory.variable <- runif(length(myRCTD@spatialRNA@nUMI))
-names(explanatory.variable) <- names(myRCTD@spatialRNA@nUMI) # currently random explanatory variable 
+explanatory.variable <- as.integer(myRCTD@spatialRNA@coords$x > 3000)
+names(explanatory.variable) <- rownames(myRCTD@spatialRNA@coords)
 print(head(explanatory.variable))
+print(table(explanatory.variable))
 
-#Differentially upregulate one gene
-change_gene <- 'Lsamp'
+# Differentially upregulate one gene
+change_gene <- 'Kcnip4'
 high_barc <- names(explanatory.variable[explanatory.variable > 0.5])
 low_barc <- names(explanatory.variable[explanatory.variable < 0.5])
-myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@counts[change_gene, high_barc] * 3 
+myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@counts[change_gene, high_barc] * 2 
 
 plot_puck_continuous(myRCTD@spatialRNA, names(explanatory.variable), explanatory.variable, ylimit = c(0,1), title ='plot of explanatory variable') 
 ```
@@ -104,14 +106,26 @@ After creating the explanatory variable, we are now ready to run RCTDE using the
 #de
 myRCTD@config$max_cores <- 2
 myRCTD <- run.RCTDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
-                        cell_type_threshold = 10, fdr = 0.25) 
+                         cell_type_threshold = 10, fdr = 0.25) 
 
-saveRDS(myRCTD,file.path(savedir,'myRCTDde.rds'))
+saveRDS(myRCTD,file.path(savedir,'myRCTDde_two_regions.rds'))
+```
+
+Equivalently to using the `run.RCTDE.single` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.single` function, which
+constructs the design matrix for a single explanatory variable. After constructing the design matrix, one can use the `run.RCTDE` function to run RCTDE with this general design matrix.
+
+```{r design matrix}
+X <- build.designmatrix.single(myRCTD, explanatory.variable)
+print(head(X))
+barcodes <- names(explanatory.variable)
+cell_types <- c('10', '18')
+myRCTD_identical <- run.RCTDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, 
+                        cell_type_threshold = 10, fdr = 0.25)
 ```
 
 ## RCTDE results
 
-After running RCTDE, it is time to examine RCTDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. RCTDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
+After running RCTDE, it is time to examine RCTDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Kcnip4 gene, which was detected to be significantly differentially expressed in cell type 10. RCTDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
 
 ```{r rctde_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'
@@ -130,12 +144,12 @@ print(myRCTD@de_results$gene_fits$s_mat[sig_gene, c(2,4)])
 
 Finally, we will plot RCTDE results in the `savedir` directory!
 
-The following plot shows a spatial visualization of the Lsamp gene, which was determined to be differentially expressed.
+The following plot shows a spatial visualization of the Kcnip4 gene, which was determined to be differentially expressed.
 
 The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types.
 
 ```{r results,  fig.width = 8, fig.height=8}
-myRCTD <- readRDS(file.path(savedir,'myRCTDde.rds'))
+myRCTD <- readRDS(file.path(savedir,'myRCTDde_two_regions.rds'))
 plot_gene_two_regions(myRCTD, sig_gene, cell_type, min_UMI = 10)
 make_all_de_plots(myRCTD, savedir)
 ```
