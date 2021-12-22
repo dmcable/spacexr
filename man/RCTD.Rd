@@ -3,7 +3,7 @@
 \docType{package}
 \name{RCTD}
 \alias{RCTD}
-\title{RCTD: an R package for assigning cell types to spatial transcriptomics data.}
+\title{spacexr: an R package for assigning cell types and cell type specific differential expression to spatial transcriptomics data.}
 \section{Running RCTD}{
 
 
@@ -14,5 +14,14 @@ scRNA-seq data. Then simply run RCTD as:
 \code{myRCTD <- create.RCTD(puck, reference)}
 
 \code{myRCTD <- run.RCTD(myRCTD)}
+}
+
+\section{Running RCTDE}{
+
+
+After running RCTD, create an explanatory variable (`explanatory.variable`) representing a covariate hypothesized to explain gene expression.
+Then, to detect cell type-specific differential expression, simply run RCTDE as:
+
+\code{myRCTD <- run.RCTDE.single(puck, explanatory.variable)}
 }
 

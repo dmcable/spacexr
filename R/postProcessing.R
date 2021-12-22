@@ -99,8 +99,15 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
   return(puck_d)
 }
 
+#' Assigns a cell type `weights` matrix to an \code{\linkS4class{RCTD}} object
+#'
+#' @param myRCTD a \code{\linkS4class{RCTD}} object to be assigned weights.
+#' @param weights a matrix of weights to be normalized
+#' @return the \code{\linkS4class{RCTD}} object with weights assigned.
+#' @export
 import_weights <- function(myRCTD, weights) {
   myRCTD@results <- weights
+  return(myRCTD)
 }
 
 #' Normalizes the `weights` matrix from the RCTD results object

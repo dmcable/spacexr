@@ -1,5 +1,9 @@
 ---
-output: github_document
+title: Vignettes
+author: Dylan Cable
+data: December 22, 2021
+#output: github_document
+output: md_document
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->

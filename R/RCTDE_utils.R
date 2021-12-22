@@ -22,6 +22,19 @@ get_beta_doublet <- function(barcodes, cell_type_names, results_df, weights_doub
   return(my_beta)
 }
 
+#' Converts RCTD doublet mode results to a weight matrix (across all cell types)
+#'
+#' RCTD must have been run in doublet mode
+#'
+#' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types from the \code{\link{run.RCTD}} function.
+#' @return a weights matrix of cell type proportions for each pixel and each cell type.
+#' @export
+get_doublet_weights <- function(myRCTD) {
+  barcodes <- rownames(myRCTD@results$results_df)
+  cell_type_names <- myRCTD@cell_type_info$info[[2]]
+  get_beta_doublet(barcodes, cell_type_names, myRCTD@results$results_df, myRCTD@results$weights_doublet)
+}
+
 filter_barcodes_cell_types <- function(barcodes, cell_types, my_beta, thresh = 0.9999) {
   barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types]) >= thresh)]
   my_beta <- my_beta[barcodes,cell_types]
@@ -90,6 +103,7 @@ get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
                    myRCTD@spatialRNA@nUMI, gene_list, cti_renorm, cell_types_present,
                    myRCTD@de_results$gene_fits))
 }
+
 #' Aggregates the pixel occurrences for each cell type in the \code{\linkS4class{RCTD}} object
 #'
 #' The difference with \code{\link{count_cell_types}} is that this function does not filter out pixels
@@ -343,4 +357,23 @@ normalize_ev = function(explanatory.variable) {
   explanatory.variable = explanatory.variable / percentile
   explanatory.variable[explanatory.variable>1] = 1
   return(explanatory.variable)
+}
+
+#' On an RCTD object after running RCTDE, returns an array of standard errors of RCTDE coefficients
+#'
+#' The dimensions of the standard error array is N_genes x N_coefficients x N_cell_types
+#' The N_coefficients are the number of explanatory variables in the RCTDE model
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with fitted RCTDE e.g. from the \code{\link{run.RCTDE}} function.
+#' @return a three-dimensional array representing RCTDE standard errors for each gene,
+#' each coefficient, and each cell type.
+#' @export
+get_standard_errors <- function(myRCTD) {
+  s_new <- myRCTD@de_results$gene_fits$s_mat
+  dim3 <- length(myRCTD@internal_vars_de$cell_types)
+  dim2 <- dim(myRCTD@de_results$gene_fits$s_mat)[2] / dim3
+  dim(s_new) <- c(dim(myRCTD@de_results$gene_fits$s_mat)[1],2,dim3)
+  dimnames(s_new)[[1]] <- rownames(myRCTD@de_results$gene_fits$s_mat)
+  dimnames(s_new)[[3]] <- myRCTD@internal_vars_de$cell_types
+  return(s_new)
 }
