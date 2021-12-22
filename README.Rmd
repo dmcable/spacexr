@@ -58,7 +58,13 @@ You can install the current version of RCTD from [GitHub](https://github.com/dmc
 devtools::install_github("dmcable/RCTD", build_vignettes = FALSE)
 ```
 
-If you would like to build vignettes (it will take some time), modify the above by setting `build_vignettes = TRUE`. A complete guide to spacexr vignettes can be found [here](https://github.com/dmcable/RCTD/tree/master/vignettes), which includes diverse applications of RCTD and RCTDE on Slide-seq, MERFISH, and Visium datasets. These vignettes also include multiple applications of RCTDE to differential expression problems including spatial position, cell-to-cell interactions, and joint analysis of multiple experimental samples/replicates.
+If you would like to build vignettes (it will take some time), modify the above by setting `build_vignettes = TRUE`. 
+
+## Vignettes and Documentation
+
+A complete guide to spacexr vignettes can be found [here](https://github.com/dmcable/RCTD/tree/master/vignettes), which includes diverse applications of RCTD and RCTDE on Slide-seq, MERFISH, and Visium datasets. These vignettes also include multiple applications of RCTDE to differential expression problems including spatial position, cell-to-cell interactions, and joint analysis of multiple experimental samples/replicates.
+
+Additional detailed recommended reading (documentation, tutorials, and tips) can be found [here](https://github.com/dmcable/RCTD/tree/master/documentation).
 
 ## Quick Guide to Getting Started with RCTD
 
