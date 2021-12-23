@@ -15,12 +15,11 @@ vignette: |
 ---
 
 ```{r setup}
-
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(doParallel)
 library(ggplot2)
-datadir <- system.file("extdata",'SpatialRNA/MerfishVignette',package = 'RCTD') # directory for sample MERFISH dataset
+datadir <- system.file("extdata",'SpatialRNA/MerfishVignette',package = 'spacexr') # directory for sample MERFISH dataset
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir <- 'RCTD_results'
@@ -39,11 +38,11 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
+Robust Cell Type Differential Expression, or RCTDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
 
 ## Data Preprocessing and running RCTD
 
-First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on doublet mode. Since doublet mode can discover 1-2 cell types per pixel, it is a reasonable choice for technologies such as MERFISH that can have precise spatial resolution. Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
+First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on doublet mode. Since doublet mode can discover 1-2 cell types per pixel, it is a reasonable choice for technologies such as MERFISH that can have precise spatial resolution. Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
 
 ```{r RCTD}
 ### Load in/preprocess your data, this might vary based on your file type
@@ -57,7 +56,7 @@ if(!file.exists(file.path(savedir,'myRCTD_merfish.rds'))) {
   barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). 
   plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
                        title ='plot of nUMI') 
-  refdir <- system.file("extdata",'Reference/Merfish_Ref',package = 'RCTD') # directory for the reference
+  refdir <- system.file("extdata",'Reference/Merfish_Ref',package = 'spacexr') # directory for the reference
   counts <- as.data.frame(readr::read_csv(file.path(refdir,"counts.csv"))) # load in cell types
   rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
   cell_types <- read.csv(file.path(refdir,"cell_types.csv")) # load in cell types

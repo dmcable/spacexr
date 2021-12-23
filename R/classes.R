@@ -18,7 +18,7 @@
 #' \code{myRCTD <- run.RCTDE.single(puck, explanatory.variable)}
 #'
 #' @docType package
-#' @name RCTD
+#' @name spacexr
 NULL
 
 #' An S4 class to represent Spatial Transcriptomic data

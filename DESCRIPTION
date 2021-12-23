@@ -1,6 +1,6 @@
-Package: RCTD
+Package: spacexr
 Type: Package
-Title: Cell type identification and cell type-specific differential expression for spatial transcriptomics
+Title: SpatialeXpressionR: Cell type identification and cell type-specific differential expression for spatial transcriptomics
 Version: 2.0.0
 Author: Dylan Cable
 Maintainer: <dcable@mit.edu>

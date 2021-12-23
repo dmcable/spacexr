@@ -171,14 +171,14 @@ pre code {
 </div>
 
 
-<pre class="r"><code>library(RCTD)
+<pre class="r"><code>library(spacexr)
 library(Matrix)
 library(doParallel)</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
 <pre class="r"><code>library(ggplot2)
-datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/VisiumVignette&#39;,package = &#39;RCTD&#39;) # directory for sample Visium dataset
+datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/VisiumVignette&#39;,package = &#39;spacexr&#39;) # directory for sample Visium dataset
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir &lt;- &#39;RCTD_results&#39;
@@ -192,11 +192,11 @@ if(!dir.exists(savedir))
 )</code></pre>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Robust Cell Type Decomposition, or RCTD, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. We will first use RCTD to assign cell types to a toy hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset.</p>
+<p>Robust Cell Type Decomposition, or RCTD, is part of the <em>spacexr</em> R package for learning cell type-specific differential expression from spatial transcriptomics data. We will first use RCTD to assign cell types to a toy hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset.</p>
 </div>
 <div id="data-preprocessing-and-running-rctd" class="section level2">
 <h2>Data Preprocessing and running RCTD</h2>
-<p>First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on multi mode. Since multi mode can discover more than two (up to a prespecified amount) cell types per pixel, it is a reasonable choice for technologies such as Visium that can have spatial resolution much larger than single cells. Please refer to the <a href="https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
+<p>First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on multi mode. Since multi mode can discover more than two (up to a prespecified amount) cell types per pixel, it is a reasonable choice for technologies such as Visium that can have spatial resolution much larger than single cells. Please refer to the <a href="https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
 <pre class="r"><code>### Load in/preprocess your data, this might vary based on your file type
 if(!file.exists(file.path(savedir,&#39;myRCTD_visium_multi.rds&#39;))) {
   counts &lt;- as.data.frame(readr::read_csv(file.path(datadir,&quot;counts.csv&quot;))) # load in counts matrix
@@ -208,7 +208,7 @@ if(!file.exists(file.path(savedir,&#39;myRCTD_visium_multi.rds&#39;))) {
   barcodes &lt;- colnames(puck@counts) # pixels to be used (a list of barcode names). 
   plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
                        title =&#39;plot of nUMI&#39;) 
-  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Visium_Ref&#39;,package = &#39;RCTD&#39;) # directory for the reference
+  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Visium_Ref&#39;,package = &#39;spacexr&#39;) # directory for the reference
   counts &lt;- read.csv(file.path(refdir,&quot;counts.csv&quot;)) # load in cell types
   rownames(counts) &lt;- counts[,1]; counts[,1] &lt;- NULL # Move first column to rownames
   cell_types &lt;- read.csv(file.path(refdir,&quot;cell_types.csv&quot;)) # load in cell types
@@ -220,7 +220,81 @@ if(!file.exists(file.path(savedir,&#39;myRCTD_visium_multi.rds&#39;))) {
   myRCTD &lt;- create.RCTD(puck, reference, max_cores = 2)
   myRCTD &lt;- run.RCTD(myRCTD, doublet_mode = &#39;multi&#39;)
   saveRDS(myRCTD,file.path(savedir,&#39;myRCTD_visium_multi.rds&#39;))
-}</code></pre>
+}
+#&gt; New names:
+#&gt; * `` -&gt; ...1
+#&gt; Rows: 276 Columns: 314
+#&gt; ── Column specification ────────────────────────────────────────────────────────
+#&gt; Delimiter: &quot;,&quot;
+#&gt; chr   (1): ...1
+#&gt; dbl (313): AAAGGGATGTAGCAAG-1, AAAGGGCAGCTTGAAT-1, AACAACTGGTAGTTGC-1, AACCC...
+#&gt; 
+#&gt; ℹ Use `spec()` to retrieve the full column specification for this data.
+#&gt; ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+#&gt; Warning in Reference(counts, cell_types, nUMI): Reference: nUMI does not match
+#&gt; colSums of counts. If this is unintended, please correct this discrepancy. If
+#&gt; this is intended, there is no problem.
+#&gt; Begin: process_cell_type_info
+#&gt; process_cell_type_info: number of cells in reference: 510
+#&gt; process_cell_type_info: number of genes in reference: 307
+#&gt; 3030303030303030303030303030303030
+#&gt; End: process_cell_type_info
+#&gt; create.RCTD: getting regression differentially expressed genes:
+#&gt; get_de_genes: Astrocyte found DE genes: 21
+#&gt; get_de_genes: CA1 found DE genes: 15
+#&gt; get_de_genes: CA3 found DE genes: 24
+#&gt; get_de_genes: Cajal_Retzius found DE genes: 15
+#&gt; get_de_genes: Choroid found DE genes: 12
+#&gt; get_de_genes: Denate found DE genes: 14
+#&gt; get_de_genes: Endothelial_Stalk found DE genes: 7
+#&gt; get_de_genes: Endothelial_Tip found DE genes: 6
+#&gt; get_de_genes: Entorihinal found DE genes: 16
+#&gt; get_de_genes: Ependymal found DE genes: 11
+#&gt; get_de_genes: Interneuron found DE genes: 7
+#&gt; get_de_genes: Microglia_Macrophages found DE genes: 6
+#&gt; get_de_genes: Mural found DE genes: 8
+#&gt; get_de_genes: Neurogenesis found DE genes: 18
+#&gt; get_de_genes: Neuron.Slc17a6 found DE genes: 13
+#&gt; get_de_genes: Oligodendrocyte found DE genes: 11
+#&gt; get_de_genes: Polydendrocyte found DE genes: 4
+#&gt; get_de_genes: total DE genes: 102
+#&gt; create.RCTD: getting platform effect normalization differentially expressed genes:
+#&gt; get_de_genes: Astrocyte found DE genes: 22
+#&gt; get_de_genes: CA1 found DE genes: 28
+#&gt; get_de_genes: CA3 found DE genes: 32
+#&gt; get_de_genes: Cajal_Retzius found DE genes: 36
+#&gt; get_de_genes: Choroid found DE genes: 22
+#&gt; get_de_genes: Denate found DE genes: 28
+#&gt; get_de_genes: Endothelial_Stalk found DE genes: 16
+#&gt; get_de_genes: Endothelial_Tip found DE genes: 10
+#&gt; get_de_genes: Entorihinal found DE genes: 29
+#&gt; get_de_genes: Ependymal found DE genes: 14
+#&gt; get_de_genes: Interneuron found DE genes: 13
+#&gt; get_de_genes: Microglia_Macrophages found DE genes: 9
+#&gt; get_de_genes: Mural found DE genes: 12
+#&gt; get_de_genes: Neurogenesis found DE genes: 32
+#&gt; get_de_genes: Neuron.Slc17a6 found DE genes: 26
+#&gt; get_de_genes: Oligodendrocyte found DE genes: 16
+#&gt; get_de_genes: Polydendrocyte found DE genes: 8
+#&gt; get_de_genes: total DE genes: 122
+#&gt; fitBulk: decomposing bulk
+#&gt; chooseSigma: using initial Q_mat with sigma =  1
+#&gt; Likelihood value: 123496.681380086
+#&gt; Sigma value:  0.84
+#&gt; Likelihood value: 119268.308954081
+#&gt; Sigma value:  0.69
+#&gt; Likelihood value: 114932.720250622
+#&gt; Sigma value:  0.61
+#&gt; Likelihood value: 112490.291409321
+#&gt; Sigma value:  0.53
+#&gt; Likelihood value: 109993.152353795
+#&gt; Sigma value:  0.45
+#&gt; Likelihood value: 107505.825401598
+#&gt; Sigma value:  0.37
+#&gt; Likelihood value: 105150.81136131
+#&gt; Sigma value:  0.29
+#&gt; Likelihood value: 103178.818294388
+#&gt; Sigma value:  0.21</code></pre>
 </div>
 <div id="exploring-the-multi-mode-results" class="section level2">
 <h2>Exploring the multi mode results</h2>

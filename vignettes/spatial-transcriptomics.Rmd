@@ -14,7 +14,7 @@ vignette: >
 ---
 
 ```{r setup}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 ```
 
@@ -47,7 +47,7 @@ The reference may come from various data types, but it needs to be loaded into t
 We use the `Reference` constructor function:
 ```{r scRNA}
 ### Load in/preprocess your data, this might vary based on your file type
-refdir <- system.file("extdata",'Reference/Vignette',package = 'RCTD') # directory for the reference
+refdir <- system.file("extdata",'Reference/Vignette',package = 'spacexr') # directory for the reference
 counts <- read.csv(file.path(refdir,"dge.csv")) # load in counts matrix
 rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
 meta_data <- read.csv(file.path(refdir,"meta_data.csv")) # load in meta_data (barcodes, clusters, and nUMI)
@@ -77,7 +77,7 @@ These elements can be constructed differently, depending on how you store your s
 1. BeadLocationsForR.csv: a CSV file (with 3 columns, with headers "barcodes", "xcoord", and "ycoord") containing the spatial locations of the pixels. <br/>
 2. MappedDGEForR.csv: a DGE (gene counts by barcodes) CSV file. Represents raw counts at each pixel. <br/>
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
-datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'RCTD') # directory for sample Slide-seq dataset
+datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'spacexr') # directory for sample Slide-seq dataset
 counts <- read.csv(file.path(datadir,"MappedDGEForR.csv")) # load in counts matrix
 coords <- read.csv(file.path(datadir,"BeadLocationsForR.csv"))
 rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames

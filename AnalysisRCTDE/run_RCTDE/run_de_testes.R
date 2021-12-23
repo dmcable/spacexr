@@ -1,4 +1,4 @@
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(ggplot2)
 library(devtools)

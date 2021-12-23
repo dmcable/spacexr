@@ -527,7 +527,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
       dir.create('logs')
     if(file.exists(out_file))
       file.remove(out_file)
-    results_list <- foreach::foreach(i = 1:length(gene_list), .packages = c("quadprog", "RCTD"), .export = environ) %dopar% {
+    results_list <- foreach::foreach(i = 1:length(gene_list), .packages = c("quadprog", "spacexr"), .export = environ) %dopar% {
       if(i %% 10 == 0) {
         cat(paste0("Finished sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
       }

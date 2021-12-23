@@ -7,7 +7,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)

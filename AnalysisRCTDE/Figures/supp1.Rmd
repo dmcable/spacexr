@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 # Benchmarking RCTDE on a simulated spatial transcriptomics dataset
 
 ```{r libraries}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)

@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# Robust Cell Type Decomposition (RCTD) and Robust Cell Type Differential Expression (RCTDE)
+# spacexr (Spatial-eXpression-R): Robust Cell Type Decomposition (RCTD) and Robust Cell Type Differential Expression (RCTDE)
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -43,14 +43,14 @@ replicates or samples.
 
 Code for generating the figures of our RCTD paper, Robust decomposition
 of cell type mixtures in spatial transcriptomics, is located
-[here](https://github.com/dmcable/RCTD/tree/master/AnalysisPaper). Our
-*Nature Biotechnology* paper can be found
+[here](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper).
+Our *Nature Biotechnology* paper can be found
 [here](https://www.nature.com/articles/s41587-021-00830-w).
 
 Code for generating the figures of our RCTDE paper, Cell type-specific
 differential expression for spatial transcriptomics, is located
-[here](https://github.com/dmcable/RCTD/tree/master/AnalysisRCTDE). Our
-RCTDE paper will be available soon. <!--[here](BIORXIV LINK). -->
+[here](https://github.com/dmcable/spacexr/tree/master/AnalysisRCTDE).
+Our RCTDE paper will be available soon. <!--[here](BIORXIV LINK). -->
 
 ## News and Updates
 
@@ -72,12 +72,12 @@ update.
 
 ## Installation
 
-You can install the current version of RCTD from
-[GitHub](https://github.com/dmcable/RCTD) with:
+You can install the current version of *spacexr* from
+[GitHub](https://github.com/dmcable/spacexr) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("dmcable/RCTD", build_vignettes = FALSE)
+devtools::install_github("dmcable/spacexr", build_vignettes = FALSE)
 ```
 
 If you would like to build vignettes (it will take some time), modify
@@ -86,7 +86,7 @@ the above by setting `build_vignettes = TRUE`.
 ## Vignettes and Documentation
 
 A complete guide to spacexr vignettes can be found
-[here](https://github.com/dmcable/RCTD/tree/master/vignettes), which
+[here](https://github.com/dmcable/spacexr/tree/master/vignettes), which
 includes diverse applications of RCTD and RCTDE on Slide-seq, MERFISH,
 and Visium datasets. These vignettes also include multiple applications
 of RCTDE to differential expression problems including spatial position,
@@ -95,7 +95,7 @@ samples/replicates.
 
 Additional detailed recommended reading (documentation, tutorials, and
 tips) can be found
-[here](https://github.com/dmcable/RCTD/tree/master/documentation).
+[here](https://github.com/dmcable/spacexr/tree/master/documentation).
 
 ## Quick Guide to Getting Started with RCTD
 
@@ -105,12 +105,12 @@ possible on your data:
 1.  Open the ‘spatial-transcriptomics.Rmd’ vignette for a complete
     explanation of the RCTD workflow. Expected output of the vignette is
     provided
-    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html).
+    [here](https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html).
     If you have any questions about how to run RCTD, please first make
     sure you run this Vignette on your computer and make sure you
     understand how it works. For other modes of RCTD, be sure to check
     out the rest of our
-    [vignettes](https://github.com/dmcable/RCTD/tree/master/vignettes).
+    [vignettes](https://github.com/dmcable/spacexr/tree/master/vignettes).
 
 2.  As described in the ‘Data Preprocessing’ step of the vignette,
     convert your spatial transcriptomics data to a `SpatialRNA` object
@@ -160,12 +160,12 @@ type-specific differential expression:
 1.  Open the ‘differential-expression.Rmd’ vignette for a complete
     explanation of the RCTDE workflow. Expected output of the vignette
     is provided
-    [here](https://raw.githack.com/dmcable/RCTD/master/vignettes/differential-expression.html).
+    [here](https://raw.githack.com/dmcable/spacexr/master/vignettes/differential-expression.html).
     If you have any questions about how to run RCTDE, please first make
     sure you run this Vignette on your computer and make sure you
     understand how it works. For other applications of RCTDE, be sure to
     check out the rest of our
-    [vignettes](https://github.com/dmcable/RCTD/tree/master/vignettes).
+    [vignettes](https://github.com/dmcable/spacexr/tree/master/vignettes).
 
 2.  Assign cell types to your spatial transcriptomics dataset. Since
     RCTDE detects cell type-specific differential expression, it needs
@@ -200,7 +200,7 @@ type-specific differential expression:
     (operates on a `RCTD.replicates` object) and using RCTDE to do
     population-level statistical inference. This procedure is detailed
     in the [Population-level RCTD and RCTDE
-    vignette](https://raw.githack.com/dmcable/RCTD/master/vignettes/replicates.html).
+    vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).
 
 ### Dependencies
 
@@ -226,12 +226,13 @@ minutes (4 cores) on differential expression between two regions for the
 Slide-seq cerebellum dataset (approximately 2,776 pixels, 4,812 genes,
 and 5 cell types used).
 
-Operating systems (version 2.0 RCTD) tested on:
+Operating systems (version 2.0 spacexr) tested on:
 
 -   macOS Big Sur 11.6
--   GNU/Linux (GNU coreutils) 8.22 (version 1.0 RCTD tested)
+-   GNU/Linux (GNU coreutils) 8.22 (version 1.0 spacexr tested)
 
 ### License
 
-RCTD is [licensed](https://github.com/dmcable/RCTD/blob/master/LICENSE)
-under the GNU General Public License v3.0.
+spacexr is
+[licensed](https://github.com/dmcable/spacexr/blob/master/LICENSE) under
+the GNU General Public License v3.0.

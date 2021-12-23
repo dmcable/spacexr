@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy 
 ### Visualize cerebellum regions
 
 ```{r fig-1, fig.height = 6, fig.width = 6, fig.align = 'center'}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -25,8 +25,8 @@ library(ggrepel)
 load_all()
 id <- '08'
 puck_no <- paste0('190926_', id)
-datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
-resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
+datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
+resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
 myRCTD<- readRDS(file.path(datadir,'myRCTD_cer_reps.rds'))
 load(file.path(datadir,"regions.RData"))
 nodular = substr(nodular_08, start=1,stop=nchar(nodular_08)-3)
@@ -47,11 +47,11 @@ p1
 ### Merge samples and test for population-level DE
 
 ```{r de-population-pre}
-datadir_list <- c('../../../RCTD/data/SpatialRNA/CerebellumReplicates/Puck_190926_08', '../../../RCTD/data/SpatialRNA/CerebellumReplicates/Puck_190926_09',
-                  '../../../RCTD/data/SpatialRNA/CerebellumReplicates/Puck_190926_11')
+datadir_list <- c('../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_08', '../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_09',
+                  '../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_11')
 cell_types <- c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes')
 cell_types_present <- c('Astrocytes','Bergmann','Granule','Purkinje','MLI1','MLI2','Oligodendrocytes')
-resultsdir <- '../../../RCTD/data/SpatialRNA/CerebellumReplicates/JointResults/'
+resultsdir <- '../../../spacexr/data/SpatialRNA/CerebellumReplicates/JointResults/'
 RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde.rds')))
 ```
 
@@ -145,7 +145,7 @@ p
 hcr_estimates <- -c(2.990715,	0.3143165,0.8323186, 0.152781,-1.114702,-0.4867042)
 genes <- c('Aldoc', 'Aldoc', 'Mybpc1','Tmem132c','Plcb4', 'Plcb4')
 cell_types <- c('Purkinje','Bergmann', 'Bergmann','Granule', 'Purkinje', 'Bergmann')
-datadir <- '../../../RCTD/data/SpatialRNA/CerebellumReplicates/JointResults'
+datadir <- '../../../spacexr/data/SpatialRNA/CerebellumReplicates/JointResults'
 de_p <- read.csv(file.path(datadir,
                    'Purkinje_cell_type_genes.csv'))
 rownames(de_p) <- de_p$X

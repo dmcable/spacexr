@@ -16,7 +16,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 
 ```{r prelude}
 # Load in spatialRNA data and Reference data
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)

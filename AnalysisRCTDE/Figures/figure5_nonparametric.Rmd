@@ -7,7 +7,7 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -28,8 +28,8 @@ load_all()
 ```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
 # Load in DE results and cluster
 pwd = getwd()
-datadir <- paste0('../../../DEGLAM/data/tumor','/')
-resultsdir <- paste0('../../../DEGLAM/results/ResultsTumorNonparam','/')
+datadir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/data/tumor','/')
+resultsdir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/results/ResultsTumorNonparam','/')
 new_X <- readRDS(file.path(resultsdir, 'new_X.rds'))
 orig_new_coords <- readRDS(file.path(resultsdir, 'orig_new_coords.rds'))
 myRCTDde <- readRDS(file.path(resultsdir,'myRCTDde.rds'))
@@ -45,7 +45,7 @@ Pred_mat <- matrix(0, length(sig_gene_list), length(barc_list))
 rownames(Pred_mat) <- sig_gene_list
 colnames(Pred_mat) <- barc_list
 for(gene in sig_gene_list) {
-  predictions <- predict_DEGLAM(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  predictions <- predict_RCTDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
   quantiles <- rank(predictions) / length(predictions)
   Quant_mat[gene, ] <- quantiles
   Pred_mat[gene, ] <- predictions
@@ -67,7 +67,7 @@ if(F) {
 
 ```{r} 
 p <- list()
-resultsdir_par <- paste0('../../../DEGLAM/results/ResultsTumor','/')
+resultsdir_par <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/results/ResultsTumor','/')
 myRCTDpar = readRDS(paste0(resultsdir_par,'myRCTDde.rds'))
 res_genes <- myRCTDpar@de_results$res_gene_list$CAF
 over_genes <- tolower(rownames(res_genes[res_genes$log_fc > 0,]))
@@ -109,7 +109,7 @@ cell_type <- 'CAF'
 Pred_mat_all <- matrix(0, length(sig_gene_list), dim(new_X)[1])
 rownames(Pred_mat_all) <- sig_gene_list
 for(gene in sig_gene_list) {
-  predictions <- predict_DEGLAM(2, gene_fits, gene, new_X)[,1]
+  predictions <- predict_RCTDE(2, gene_fits, gene, new_X)[,1]
   Pred_mat_all[gene, ] <- predictions
 }
 p <- list()
@@ -135,7 +135,7 @@ over_cols <- c('mse_0', 'mse_1', 'var_poisson', 'R2_adj', 'var_odp')
 over_mat <- matrix(0, length(gene_list_all), length(over_cols))
 rownames(over_mat) <- gene_list_all; colnames(over_mat) <- over_cols
 for(gene in gene_list_all) {
-  predictions <- predict_DEGLAM(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  predictions <- predict_RCTDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
   Y <- myRCTDde@spatialRNA@counts[gene, barc_list]
   N <- myRCTDde@spatialRNA@nUMI[barc_list]
   my_order <- order(predictions/N)

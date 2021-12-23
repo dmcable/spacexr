@@ -1,5 +1,5 @@
 library(Matrix)
-library(RCTD)
+library(spacexr)
 library(doParallel)
 library(ggplot2)
 #source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/PersonalFiles/private_utils.R')

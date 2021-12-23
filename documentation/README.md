@@ -7,10 +7,10 @@ Dylan Cable
 
 Here, we will provide additional documentation on the *spacexr* R
 package. Other sources of spacexr documentation include the
-[vignettes](https://github.com/dmcable/RCTD/tree/master/vignettes) and
-the [Github issues](https://github.com/dmcable/RCTD/issues). Another
-great option for help on particular functions is to use the R manual
-files, which can be accessed with `?` or `help`. For example:
+[vignettes](https://github.com/dmcable/spacexr/tree/master/vignettes)
+and the [Github issues](https://github.com/dmcable/spacexr/issues).
+Another great option for help on particular functions is to use the R
+manual files, which can be accessed with `?` or `help`. For example:
 
 ``` r
 ?run.RCTD
@@ -307,4 +307,4 @@ multiple `SpatialRNA` experimental replicates. Then, one can use
 `run.RCTD.replicates` and `run.RCTDE.replicates` to run RCTD and RCTDE,
 respectively. This procedure is documented in detail in the
 [Population-level RCTD and RCTDE
-vignette](https://raw.githack.com/dmcable/RCTD/master/vignettes/replicates.html).
+vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).

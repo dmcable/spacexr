@@ -171,17 +171,17 @@ pre code {
 </div>
 
 
-<pre class="r"><code>library(RCTD)
+<pre class="r"><code>library(spacexr)
 library(Matrix)
 library(doParallel)</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
 <pre class="r"><code>library(ggplot2)
-datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;RCTD&#39;)# directory for sample Slide-seq dataset
-datadir2 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep2&#39;,package = &#39;RCTD&#39;)
-datadir3 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep3&#39;,package = &#39;RCTD&#39;)
-datadir4 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep4&#39;,package = &#39;RCTD&#39;)
+datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;spacexr&#39;)# directory for sample Slide-seq dataset
+datadir2 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep2&#39;,package = &#39;spacexr&#39;)
+datadir3 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep3&#39;,package = &#39;spacexr&#39;)
+datadir4 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep4&#39;,package = &#39;spacexr&#39;)
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir &lt;- &#39;RCTD_results&#39;
@@ -189,12 +189,12 @@ if(!dir.exists(savedir))
   dir.create(savedir)</code></pre>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Robust Cell Type Differential Expression, or RCTDE, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and RCTDE on multiple replicates (slices) of cerebellum Slide-seq toy data.</p>
+<p>Robust Cell Type Differential Expression, or RCTDE, is part of the <em>spacexr</em> R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and RCTDE on multiple replicates (slices) of cerebellum Slide-seq toy data.</p>
 <p>The ultimate goal will be to test for differential expression across two regions in the cerbellum. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression between the nodulus and anterior lobe regions.</p>
 </div>
 <div id="data-preprocessing-and-creating-an-rctd.replicates-object" class="section level2">
 <h2>Data Preprocessing and Creating an RCTD.replicates object</h2>
-<p>First, we run RCTD on the data to annotated cell types (doublet mode). Please refer to the <a href="https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm, such as precise details for loading in the <code>SpatialRNA</code> object for this dataset. Since we need to load in the <code>SpatialRNA</code> object for four replicates, we will apply the function <code>read.SpatialRNA</code> to the directories of each of the four datasets to generate <code>puck1</code>, <code>puck2</code>, <code>puck3</code>, and <code>puck4</code>. Please note that in general, we recommend applying to each replicate a custom function that can load in a single replicate.</p>
+<p>First, we run RCTD on the data to annotated cell types (doublet mode). Please refer to the <a href="https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm, such as precise details for loading in the <code>SpatialRNA</code> object for this dataset. Since we need to load in the <code>SpatialRNA</code> object for four replicates, we will apply the function <code>read.SpatialRNA</code> to the directories of each of the four datasets to generate <code>puck1</code>, <code>puck2</code>, <code>puck3</code>, and <code>puck4</code>. Please note that in general, we recommend applying to each replicate a custom function that can load in a single replicate.</p>
 <pre class="r"><code>### Load in/preprocess your data, this might vary based on your file type
 puck1 &lt;- read.SpatialRNA(datadir, count_file = &quot;MappedDGEForR.csv&quot;, coords_file = &#39;BeadLocationsForR.csv&#39;)
 puck2 &lt;- read.SpatialRNA(datadir2, count_file = &quot;MappedDGEForR.csv&quot;, coords_file = &#39;BeadLocationsForR.csv&#39;)
@@ -226,7 +226,7 @@ puck3@counts[change_gene, high_barc3] &lt;- puck3@counts[change_gene, high_barc3
 high_barc4 &lt;- names(explanatory.variable4[explanatory.variable4 &gt; 0.5])
 puck4@counts[change_gene, high_barc4] &lt;- puck4@counts[change_gene, high_barc4] * 2 </code></pre>
 <p>We also load in the <code>Reference</code> object, as follows.</p>
-<pre class="r"><code>refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Vignette&#39;,package = &#39;RCTD&#39;) # directory for the reference
+<pre class="r"><code>refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Vignette&#39;,package = &#39;spacexr&#39;) # directory for the reference
 counts &lt;- read.csv(file.path(refdir,&quot;dge.csv&quot;)) # load in counts matrix
 rownames(counts) &lt;- counts[,1]; counts[,1] &lt;- NULL # Move first column to rownames
 meta_data &lt;- read.csv(file.path(refdir,&quot;meta_data.csv&quot;)) # load in meta_data (barcodes, clusters, and nUMI)

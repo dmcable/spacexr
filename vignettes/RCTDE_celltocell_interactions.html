@@ -171,14 +171,14 @@ pre code {
 </div>
 
 
-<pre class="r"><code>library(RCTD)
+<pre class="r"><code>library(spacexr)
 library(Matrix)
 library(doParallel)</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
 <pre class="r"><code>library(ggplot2)
-datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;RCTD&#39;) # directory for sample Slide-seq dataset
+datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;spacexr&#39;) # directory for sample Slide-seq dataset
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir &lt;- &#39;RCTD_results&#39;
@@ -190,7 +190,7 @@ if(!dir.exists(savedir))
 </div>
 <div id="data-preprocessing-and-running-rctd" class="section level2">
 <h2>Data Preprocessing and running RCTD</h2>
-<p>First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette (doublet mode). Please refer to the <a href="https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
+<p>First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette (doublet mode). Please refer to the <a href="https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
 <pre class="r"><code>### Load in/preprocess your data, this might vary based on your file type
 if(!file.exists(file.path(savedir,&#39;myRCTD.rds&#39;))) {
   counts &lt;- read.csv(file.path(datadir,&quot;MappedDGEForR.csv&quot;)) # load in counts matrix
@@ -202,7 +202,7 @@ if(!file.exists(file.path(savedir,&#39;myRCTD.rds&#39;))) {
   barcodes &lt;- colnames(puck@counts) # pixels to be used (a list of barcode names). 
   plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
                        title =&#39;plot of nUMI&#39;) 
-  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Vignette&#39;,package = &#39;RCTD&#39;) # directory for the reference
+  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Vignette&#39;,package = &#39;spacexr&#39;) # directory for the reference
   counts &lt;- read.csv(file.path(refdir,&quot;dge.csv&quot;)) # load in counts matrix
   rownames(counts) &lt;- counts[,1]; counts[,1] &lt;- NULL # Move first column to rownames
   meta_data &lt;- read.csv(file.path(refdir,&quot;meta_data.csv&quot;)) # load in meta_data (barcodes, clusters, and nUMI)

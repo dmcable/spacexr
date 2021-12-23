@@ -15,11 +15,11 @@ vignette: |
 ---
 
 ```{r setup}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(doParallel)
 library(ggplot2)
-datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'RCTD') # directory for sample Slide-seq dataset
+datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'spacexr') # directory for sample Slide-seq dataset
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir <- 'RCTD_results'
@@ -42,7 +42,7 @@ Robust Cell Type Differential Expression, or RCTDE, is part of the spacexr R pac
 
 ## Data Preprocessing and running RCTD
 
-First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette (doublet mode). Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
+First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette (doublet mode). Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
 
 ```{r RCTD}
 ### Load in/preprocess your data, this might vary based on your file type
@@ -56,7 +56,7 @@ if(!file.exists(file.path(savedir,'myRCTD.rds'))) {
   barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). 
   plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
                        title ='plot of nUMI') 
-  refdir <- system.file("extdata",'Reference/Vignette',package = 'RCTD') # directory for the reference
+  refdir <- system.file("extdata",'Reference/Vignette',package = 'spacexr') # directory for the reference
   counts <- read.csv(file.path(refdir,"dge.csv")) # load in counts matrix
   rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
   meta_data <- read.csv(file.path(refdir,"meta_data.csv")) # load in meta_data (barcodes, clusters, and nUMI)

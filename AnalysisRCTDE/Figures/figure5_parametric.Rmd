@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 ### Load in RCTDE Results and calculate significant genes
 
 ```{r prelude}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(devtools)
 library(ggplot2)
@@ -28,17 +28,17 @@ library(GSA)
 load_all()
 # Load in spatialRNA data and Reference data
 pwd = getwd()
-datadir <- paste0('../../../DEGLAM/data/tumor','/')
-resultsdir <- paste0('../../../DEGLAM/results/ResultsTumor','/')
+datadir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/data/tumor','/')
+resultsdir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/results/ResultsTumor','/')
 myRCTD = readRDS(paste0(resultsdir,'myRCTDde.rds'))
 cell_types = c("CAF","hepatocyte 2","vascular smooth mc")
 cell_types_present = c("CAF","hepatocyte 2","vascular smooth mc", 'monocyte/DC')
+myRCTD@de_results$gene_fits$s_mat <- myRCTD@de_results$gene_fits$I_mat
 de_results = myRCTD@de_results
 gene_fits <- de_results$gene_fits
 cell_type <- 'CAF'
 gene_list_type <- get_gene_list_type_wrapper(myRCTD, cell_type, cell_types_present)
-res_genes <- find_sig_genes_direct(cell_type, cell_types, myRCTD@de_results$gene_fits, gene_list_type,myRCTD@internal_vars_de$X2,
-                                   fdr = 0.01, p_thresh = 0.001, log_fc_thresh = 0.4)
+res_genes <- find_sig_genes_individual(cell_type, cell_types, myRCTD@de_results$gene_fits, gene_list_type,myRCTD@internal_vars_de$X2, fdr = 0.01, p_thresh = 0.001, log_fc_thresh = 0.4)
 my_genes <- gene_list_type[grep("^(Rps|Rpl|mt-)",gene_list_type)]
 my_genes <- intersect(rownames(res_genes),my_genes)
 res_genes[my_genes,]

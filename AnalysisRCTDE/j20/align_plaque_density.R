@@ -5,7 +5,7 @@ library(shiny)
 library(imager)
 library(raster)
 library(rgdal)
-library(RCTD)
+library(spacexr)
 ###CONSTANTS
 IM_DIR <- '../RCTD/data/Images/Plaque/210715/Processed/'
 ALIGN_DIR <- '../RCTD/data/Images/Plaque/210715/AlignmentResults/'

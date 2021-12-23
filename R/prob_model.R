@@ -14,10 +14,10 @@ set_likelihood_vars <- function(Q_mat_loc, X_vals) {
 }
 
 set_global_Q_all <- function() {
-  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "RCTD"))
-  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "RCTD"))
+  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "spacexr"))
+  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "spacexr"))
   Q_mat_all <<- c(Q1,Q2)
-  X_vals <<- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "RCTD"))
+  X_vals <<- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexr"))
 }
 
 ht_pdf <- function(z, sigma) {

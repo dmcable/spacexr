@@ -69,12 +69,12 @@ chooseSigma <- function(prediction, counts, Q_mat_all, X_vals, sigma) {
 choose_sigma_c <- function(RCTD) {
   puck = RCTD@spatialRNA; MIN_UMI = RCTD@config$UMI_min_sigma; sigma = 100
   #Q_mat_all <- readRDS('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/Qmat/Q_mat_c.rds')
-  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "RCTD"))
-  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "RCTD"))
+  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "spacexr"))
+  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "spacexr"))
   Q_mat_all <- c(Q1,Q2)
   sigma_vals <- names(Q_mat_all)
   #X_vals <- readRDS('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/Qmat/X_vals.rds')
-  X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "RCTD"))
+  X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexr"))
   #get initial classification
   N_fit = min(RCTD@config$N_fit,sum(puck@nUMI > MIN_UMI))
   if(N_fit == 0) {

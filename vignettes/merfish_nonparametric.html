@@ -171,14 +171,14 @@ pre code {
 </div>
 
 
-<pre class="r"><code>library(RCTD)
+<pre class="r"><code>library(spacexr)
 library(Matrix)
 library(doParallel)</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
 <pre class="r"><code>library(ggplot2)
-datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/MerfishVignette&#39;,package = &#39;RCTD&#39;) # directory for sample MERFISH dataset
+datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/MerfishVignette&#39;,package = &#39;spacexr&#39;) # directory for sample MERFISH dataset
 if(!dir.exists(datadir))
   dir.create(datadir)
 savedir &lt;- &#39;RCTD_results&#39;
@@ -192,11 +192,11 @@ if(!dir.exists(savedir))
 )</code></pre>
 <div id="introduction" class="section level2">
 <h2>Introduction</h2>
-<p>Robust Cell Type Differential Expression, or RCTDE, is part of the RCTD R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.</p>
+<p>Robust Cell Type Differential Expression, or RCTDE, is part of the <em>spacexr</em> R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.</p>
 </div>
 <div id="data-preprocessing-and-running-rctd" class="section level2">
 <h2>Data Preprocessing and running RCTD</h2>
-<p>First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on doublet mode. Since doublet mode can discover 1-2 cell types per pixel, it is a reasonable choice for technologies such as MERFISH that can have precise spatial resolution. Please refer to the <a href="https://raw.githack.com/dmcable/RCTD/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
+<p>First, we run RCTD on the data to annotate cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette, except that we use RCTD on doublet mode. Since doublet mode can discover 1-2 cell types per pixel, it is a reasonable choice for technologies such as MERFISH that can have precise spatial resolution. Please refer to the <a href="https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html">spatial transcriptomics vignette</a> for more explanation on the RCTD algorithm.</p>
 <pre class="r"><code>### Load in/preprocess your data, this might vary based on your file type
 if(!file.exists(file.path(savedir,&#39;myRCTD_merfish.rds&#39;))) {
   counts &lt;- as.data.frame(readr::read_csv(file.path(datadir,&quot;counts.csv&quot;))) # load in counts matrix
@@ -208,7 +208,7 @@ if(!file.exists(file.path(savedir,&#39;myRCTD_merfish.rds&#39;))) {
   barcodes &lt;- colnames(puck@counts) # pixels to be used (a list of barcode names). 
   plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
                        title =&#39;plot of nUMI&#39;) 
-  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Merfish_Ref&#39;,package = &#39;RCTD&#39;) # directory for the reference
+  refdir &lt;- system.file(&quot;extdata&quot;,&#39;Reference/Merfish_Ref&#39;,package = &#39;spacexr&#39;) # directory for the reference
   counts &lt;- as.data.frame(readr::read_csv(file.path(refdir,&quot;counts.csv&quot;))) # load in cell types
   rownames(counts) &lt;- counts[,1]; counts[,1] &lt;- NULL # Move first column to rownames
   cell_types &lt;- read.csv(file.path(refdir,&quot;cell_types.csv&quot;)) # load in cell types
@@ -220,7 +220,75 @@ if(!file.exists(file.path(savedir,&#39;myRCTD_merfish.rds&#39;))) {
   myRCTD &lt;- create.RCTD(puck, reference, max_cores = 2)
   myRCTD &lt;- run.RCTD(myRCTD, doublet_mode = &#39;doublet&#39;)
   saveRDS(myRCTD,file.path(savedir,&#39;myRCTD_merfish.rds&#39;))
-}</code></pre>
+}
+#&gt; New names:
+#&gt; * `` -&gt; ...1
+#&gt; Rows: 134 Columns: 751
+#&gt; ── Column specification ────────────────────────────────────────────────────────
+#&gt; Delimiter: &quot;,&quot;
+#&gt; chr   (1): ...1
+#&gt; dbl (750): f4e9c023-f3db-4f6d-9212-72b4dc77a3e3, b918064b-14e5-4c76-a868-7e2...
+#&gt; 
+#&gt; ℹ Use `spec()` to retrieve the full column specification for this data.
+#&gt; ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+#&gt; New names:
+#&gt; * `` -&gt; ...1
+#&gt; Rows: 134 Columns: 1309
+#&gt; ── Column specification ────────────────────────────────────────────────────────
+#&gt; Delimiter: &quot;,&quot;
+#&gt; chr    (1): ...1
+#&gt; dbl (1308): TCTCATAAGCCCGAAA-2, TCATTACAGTTCGCAT-1, TTATGCTTCTTCGAGA-2, TGCC...
+#&gt; 
+#&gt; ℹ Use `spec()` to retrieve the full column specification for this data.
+#&gt; ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+#&gt; Warning in Reference(counts, cell_types, nUMI): Reference: nUMI does not match
+#&gt; colSums of counts. If this is unintended, please correct this discrepancy. If
+#&gt; this is intended, there is no problem.
+#&gt; Begin: process_cell_type_info
+#&gt; process_cell_type_info: number of cells in reference: 1308
+#&gt; process_cell_type_info: number of genes in reference: 134
+#&gt; 10010010069100721001007910010010010088
+#&gt; End: process_cell_type_info
+#&gt; create.RCTD: getting regression differentially expressed genes:
+#&gt; get_de_genes: Ambiguous found DE genes: 2
+#&gt; get_de_genes: Astrocytes found DE genes: 4
+#&gt; get_de_genes: Endothelial found DE genes: 7
+#&gt; get_de_genes: Ependymal found DE genes: 5
+#&gt; get_de_genes: Excitatory found DE genes: 5
+#&gt; get_de_genes: Fibroblast found DE genes: 6
+#&gt; get_de_genes: Immature oligodendrocyte found DE genes: 7
+#&gt; get_de_genes: Inhibitory found DE genes: 3
+#&gt; get_de_genes: Macrophage found DE genes: 1
+#&gt; get_de_genes: Mature oligodendrocyte found DE genes: 8
+#&gt; get_de_genes: Microglia found DE genes: 4
+#&gt; get_de_genes: Mural found DE genes: 5
+#&gt; get_de_genes: Newly formed oligodendrocyte found DE genes: 6
+#&gt; get_de_genes: Unstable found DE genes: 5
+#&gt; get_de_genes: total DE genes: 44
+#&gt; create.RCTD: getting platform effect normalization differentially expressed genes:
+#&gt; get_de_genes: Ambiguous found DE genes: 7
+#&gt; get_de_genes: Astrocytes found DE genes: 4
+#&gt; get_de_genes: Endothelial found DE genes: 7
+#&gt; get_de_genes: Ependymal found DE genes: 7
+#&gt; get_de_genes: Excitatory found DE genes: 8
+#&gt; get_de_genes: Fibroblast found DE genes: 9
+#&gt; get_de_genes: Immature oligodendrocyte found DE genes: 8
+#&gt; get_de_genes: Inhibitory found DE genes: 8
+#&gt; get_de_genes: Macrophage found DE genes: 2
+#&gt; get_de_genes: Mature oligodendrocyte found DE genes: 9
+#&gt; get_de_genes: Microglia found DE genes: 6
+#&gt; get_de_genes: Mural found DE genes: 6
+#&gt; get_de_genes: Newly formed oligodendrocyte found DE genes: 9
+#&gt; get_de_genes: Unstable found DE genes: 8
+#&gt; get_de_genes: total DE genes: 52
+#&gt; fitBulk: decomposing bulk
+#&gt; chooseSigma: using initial Q_mat with sigma =  1
+#&gt; Likelihood value: 33018.580442449
+#&gt; Sigma value:  0.84
+#&gt; Likelihood value: 32652.6479856954
+#&gt; Sigma value:  0.69
+#&gt; Likelihood value: 32508.4386797605
+#&gt; Sigma value:  0.69</code></pre>
 </div>
 <div id="running-rctde" class="section level2">
 <h2>Running RCTDE</h2>
