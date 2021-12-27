@@ -6,13 +6,13 @@
 \title{An S4 class used to store multiple replicates as \code{\linkS4class{SpatialRNA}} objects.}
 \description{
 By storing multiple \code{\linkS4class{SpatialRNA}} replicates in this one object, it is convenient
-to run RCTD and RCTDE across all replicates. Finally, multiple replicates can be combined with population-level
-differential expression inference using the \code{\link{RCTDE.population.inference}} function
+to run RCTD and GLAMDE across all replicates. Finally, multiple replicates can be combined with population-level
+differential expression inference using the \code{\link{GLAMDE.population.inference}} function
 }
 \details{
 Created using the \code{\link{create.RCTD.replicates}} or \code{\link{merge.RCTD.objects}} functions.
-One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run RCTDE using the
-\code{\link{run.RCTDE.replicates}} function.
+One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run GLAMDE using the
+\code{\link{run.GLAMDE.replicates}} function.
 }
 \section{Slots}{
 

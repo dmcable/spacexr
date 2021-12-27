@@ -1,0 +1,155 @@
+---
+title: "Applying GLAMDE to Spatial Transcriptomics Data: Cell-to-cell interactions"
+author: "Dylan Cable"
+date: "December 19th, 2021"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+  rmarkdown::html_vignette:
+    keep_md: yes
+vignette: |
+  %\VignetteIndexEntry{GLAMDE-celltocell-interactions} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup}
+library(spacexr)
+library(Matrix)
+library(doParallel)
+library(ggplot2)
+datadir <- system.file("extdata",'SpatialRNA/Vignette',package = 'spacexr') # directory for sample Slide-seq dataset
+if(!dir.exists(datadir))
+  dir.create(datadir)
+savedir <- 'RCTD_results'
+if(!dir.exists(savedir))
+  dir.create(savedir)
+```
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache = TRUE,
+  out.width = "100%"
+)
+```
+
+## Introduction
+
+Generalized Linear Admixture Models for Differential Expression, or GLAMDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use GLAMDE to test for cell-to-cell interactions in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression as a function of colocalization with a particular cell type.
+
+## Data Preprocessing and running RCTD
+
+First, we run RCTD on the data to annotated cell types. Please note that this follows exactly the content of the spatial transcriptomics RCTD vignette (doublet mode). Please refer to the [spatial transcriptomics vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/spatial-transcriptomics.html) for more explanation on the RCTD algorithm.
+
+```{r RCTD}
+### Load in/preprocess your data, this might vary based on your file type
+if(!file.exists(file.path(savedir,'myRCTD.rds'))) {
+  counts <- read.csv(file.path(datadir,"MappedDGEForR.csv")) # load in counts matrix
+  coords <- read.csv(file.path(datadir,"BeadLocationsForR.csv"))
+  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
+  rownames(coords) <- coords$barcodes; coords$barcodes <- NULL # Move barcodes to rownames
+  nUMI <- colSums(counts) # In this case, total counts per pixel is nUMI
+  puck <- SpatialRNA(coords, counts, nUMI)
+  barcodes <- colnames(puck@counts) # pixels to be used (a list of barcode names). 
+  plot_puck_continuous(puck, barcodes, puck@nUMI, ylimit = c(0,round(quantile(puck@nUMI,0.9))), 
+                       title ='plot of nUMI') 
+  refdir <- system.file("extdata",'Reference/Vignette',package = 'spacexr') # directory for the reference
+  counts <- read.csv(file.path(refdir,"dge.csv")) # load in counts matrix
+  rownames(counts) <- counts[,1]; counts[,1] <- NULL # Move first column to rownames
+  meta_data <- read.csv(file.path(refdir,"meta_data.csv")) # load in meta_data (barcodes, clusters, and nUMI)
+  cell_types <- meta_data$cluster; names(cell_types) <- meta_data$barcode # create cell_types named list
+  cell_types <- as.factor(cell_types) # convert to factor data type
+  nUMI <- meta_data$nUMI; names(nUMI) <- meta_data$barcode # create nUMI named list
+  reference <- Reference(counts, cell_types, nUMI)
+  myRCTD <- create.RCTD(puck, reference, max_cores = 2)
+  myRCTD <- run.RCTD(myRCTD, doublet_mode = 'doublet')
+  saveRDS(myRCTD,file.path(savedir,'myRCTD.rds'))
+}
+```
+
+## Create explanatory variable / covariate
+
+Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in GLAMDE. In general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
+
+The explanatory variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object. In this case, we will use the explanatory variable
+as the density of cell type '6'. We will calculate this explanatory variable using the `exvar.celltocell.interactions`, which calculates cell type density using an exponential filter.
+
+Here, we also artifically upregulate the expression of the Malat1 gene (in regions of high explanatory variable) to see whether GLAMDE can detect this differentially expressed gene.
+
+```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
+### Create SpatialRNA object
+myRCTD <- readRDS(file.path(savedir,'myRCTD.rds'))
+barcodes <- colnames(myRCTD@spatialRNA@counts)
+cell_type_interacting <- '6'
+explanatory.variable <- exvar.celltocell.interactions(myRCTD, barcodes, cell_type_interacting, radius = 500)
+print(head(explanatory.variable))
+hist(explanatory.variable)
+
+# Differentially upregulate one gene
+change_gene <- 'Malat1'
+high_barc <- names(explanatory.variable[explanatory.variable > 0.5])
+low_barc <- names(explanatory.variable[explanatory.variable < 0.5])
+myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@counts[change_gene, high_barc] * 2 
+
+plot_puck_continuous(myRCTD@spatialRNA, names(explanatory.variable), explanatory.variable, ylimit = c(0,1), title ='plot of explanatory variable') 
+```
+
+## Running GLAMDE
+
+After creating the explanatory variable, we are now ready to run GLAMDE using the `run.GLAMDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the GLAMDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.GLAMDE.single` for more information on these parameters. 
+
+```{r DEgenes}
+#de
+myRCTD@config$max_cores <- 2
+myRCTD <- run.GLAMDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
+                         cell_type_threshold = 10, fdr = 0.25) 
+
+saveRDS(myRCTD,file.path(savedir,'myRCTDde_celltocell.rds'))
+```
+
+Equivalently to using the `run.GLAMDE.single` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.single` function, which
+constructs the design matrix for a single explanatory variable. After constucting the design matrix, one can use the `run.GLAMDE` function to run GLAMDE with this general design matrix.
+
+```{r design matrix}
+X <- build.designmatrix.single(myRCTD, explanatory.variable)
+print(head(X))
+barcodes <- names(explanatory.variable)
+cell_types <- c('10', '18')
+myRCTD_identical <- run.GLAMDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, 
+                        cell_type_threshold = 10, fdr = 0.25)
+```
+
+## GLAMDE results
+
+After running GLAMDE, it is time to examine GLAMDE results. GLAMDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence. We will focus on cell type 10. Furthermore, we will examine the original Malat1 gene, which was differentially expressed in cell type 10.
+
+```{r GLAMDE_results,  fig.width = 8, fig.height=8}
+#print results for cell type '18'
+cell_type <- '10'
+sig_gene <- change_gene
+print(paste("following results hold for", sig_gene))
+print("check for covergence of each cell type")
+print(myRCTD@de_results$gene_fits$con_mat[sig_gene, ]) 
+print('estimated DE')
+print(myRCTD@de_results$gene_fits$mean_val[sig_gene, ]) 
+print('standard errors for non-intercept terms')
+print(myRCTD@de_results$gene_fits$s_mat[sig_gene, c(2,4)]) 
+```
+
+Finally, we will plot GLAMDE results in the `savedir` directory!
+
+The following plot shows a spatial visualization of the Malat1 gene, which was determined to be differentially expressed.
+
+The function `make_all_de_plots` will automatically generate several types of plots displaying the GLAMDE results across all genes and cell types.
+
+```{r results,  fig.width = 8, fig.height=8}
+myRCTD <- readRDS(file.path(savedir,'myRCTDde_celltocell.rds'))
+plot_gene_two_regions(myRCTD, sig_gene, cell_type, min_UMI = 10, expr.thresh = 25)
+make_all_de_plots(myRCTD, savedir)
+```
+

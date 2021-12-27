@@ -1,0 +1,180 @@
+---
+output:
+  pdf_document: default
+  word_document: default
+  html_document:
+    keep_md: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# GLAMDE on the Slide-seq J20 Hippocampus
+
+### Load in GLAMDE Results and calculate significant genes
+
+```{r prelude}
+library(spacexr)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+library(fields)
+library(stringr)
+devtools::load_all()
+# Load in spatialRNA data and Reference data
+pwd = getwd()
+datadir <- '../../../RCTD/data/SpatialRNA/Puck_210605/23'
+IM_DIR <- '../../../RCTD/data/Images/Plaque/210715/Processed/'
+ALIGN_DIR <- '../../../RCTD/data/Images/Plaque/210715/AlignmentResults/'
+myRCTD <- readRDS(file.path(datadir, 'myRCTDde_thresh.rds'))   
+cell_types <- myRCTD@internal_vars_de$cell_types
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/merge_de_helper.R')
+```
+
+### Save plaque image
+
+```{r plaque-img, eval = F} 
+IMAGE_NUMBER = 6
+aligned <- readRDS(file.path(ALIGN_DIR,paste0('aligned_',IMAGE_NUMBER)))
+plaque_img <- as.cimg(raster(paste0(IM_DIR,'C2-AVG_slide ',IMAGE_NUMBER,'.tif')))
+cur_im <- pmin(pmax(plaque_img-100,0),500)
+my_m <- aligned@tools$Staffli@transformations[[6]][1:2,1:2]
+my_m <- my_m/sqrt(sum(my_m[1:2,1]^2))
+final_im <- imager::mirror(imrotate(cur_im,acos(my_m[1,1])*180/pi + 90),'x')
+plot(final_im)
+save.image(final_im, file.path(datadir,'rotated_plaque_img.png'))
+```
+
+### Load GLAMDE results
+
+```{r de-load}
+datadir_list <- c('../../../RCTD/data/SpatialRNA/Puck_210605/21', '../../../RCTD/data/SpatialRNA/Puck_210605/22',
+                  '../../../RCTD/data/SpatialRNA/Puck_210605/23', '../../../RCTD/data/SpatialRNA/Puck_210605/24')
+resultsdir <- '../../../RCTD/data/SpatialRNA/Puck_210605/JointResults2/'
+RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde_thresh.rds')))
+cell_types <- RCTDde_list[[1]]@internal_vars_de$cell_types
+cell_types_present <- cell_types
+```
+
+```{r de-population, eval = FALSE}
+myRCTD <- RCTDde_list[[1]]
+de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
+plot_results <- F
+if(!dir.exists(resultsdir))
+  dir.create(resultsdir)
+de_pop_all <- list()
+gene_final_all <- list()
+for(cell_type in cell_types) {
+  res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, resultsdir, cell_types_present, plot_results = plot_results, q_thresh = 0.01, p_thresh = 1)
+  de_pop_all[[cell_type]] <- res$de_pop
+  gene_final_all[[cell_type]] <- res$gene_final
+}
+saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all_thresh.rds'))
+saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all_thresh.rds'))
+```
+
+```{r de-population-load}
+de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all_thresh.rds'))
+gene_final_all <- readRDS(file.path(resultsdir, 'gene_final_all_thresh.rds'))
+```
+
+### Plot GLAMDE model vs raw data
+
+```{r calc-quant-plots fig-3, fig.height = 6, fig.width = 6, fig.align='center'}
+n_levels = myRCTD@cell_type_info$info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = myRCTD@cell_type_info$info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["Ependymal"] <- "#D55E00"
+my_pal_curr["Interneuron"] <- "#E69F00"
+my_pal_curr["CA1"] <- "#56B4E9"
+my_pal_curr["Denate"] <- "#009E73"
+my_pal_curr["Oligodendrocyte"] <- "#EFCB00"
+my_pal_curr["CA3"] <- "#0072B2"
+my_pal_curr["Microglia_Macrophages"] <- "#000000"
+my_pal_curr["Astrocyte"] <- "#CC79A7"
+my_pal_curr["Choroid"] <- my_pal["Oligodendrocyte"]
+my_pal_curr["Entorihinal"] <- my_pal["CA3"]
+final_df <- data.frame(gene = character(), region = integer(), 
+                           N = integer(), Y = numeric(), pred = numeric(), se = numeric())
+for(j in 1:2) {
+  if(j == 1) {
+    cell_type <- 'Astrocyte'
+    gene <- 'Gfap'
+  } else {
+    cell_type <- 'Microglia_Macrophages'
+    gene <- 'Ctsd'
+  }
+  results_df <- data.frame(gene = character(), region = integer(), model = integer(),
+                             N = integer(), Y = numeric(), pred = numeric(), se = numeric())
+  for(model in 1:4) {
+    myRCTD <- RCTDde_list[[model]]
+    X2 <- myRCTD@internal_vars_de$X2
+    gene_fits <- myRCTD@de_results$gene_fits
+    all_barc <- myRCTD@internal_vars_de$all_barc
+    my_beta <- myRCTD@internal_vars_de$my_beta
+    puck <- myRCTD@spatialRNA
+    q_df <- get_quant_df(myRCTD, gene_fits, cell_types, cell_type, gene, multi_region = F, prop_thresh = 0.999)
+    NR = 5;
+    Threshes <- (0:NR)/NR
+    for(cat in 1:NR) {
+      cur_barcs <- rownames(q_df)[q_df$region >= Threshes[cat] & q_df$region <= Threshes[cat + 1]]
+      n <- length(cur_barcs)
+      Y <- mean(q_df[cur_barcs, 'Y'])
+      pred <- mean(q_df[cur_barcs, 'pred'])
+      se <- sqrt(mean(q_df[cur_barcs,'var'])/n)
+      de<-data.frame(gene, cat, model, n, Y, pred, se)
+      names(de)<-c('gene','region', 'model','N','Y','pred', 'se')
+      results_df <- bind_rows(results_df, de)
+    }
+  }
+  results_df$se <- results_df$se^2
+  final_df2 <- data.frame('Y' = aggregate(results_df$Y, list(results_df$region), mean)$x,
+             'pred' = aggregate(results_df$pred, list(results_df$region), mean)$x,
+             'region' = 1:NR,
+             'se' = sqrt(aggregate(results_df$se, list(results_df$region), mean)$x / NR),
+             'N' = aggregate(results_df$N, list(results_df$region), sum)$x,
+             'gene' = gene)
+  final_df <- bind_rows(final_df, final_df2)
+}
+final_df[,c('Y','se','pred')] <- final_df[,c('Y','se','pred')] * 500 #scale to counts per 500
+final_df$region <- (final_df$region - 1) / (NR - 1)
+p <- ggplot(final_df, aes(x = region, y = log(pmax(Y, 10^(-4.5)),2), color = gene)) + geom_point() + geom_line(aes(y = log(pred,2)))+
+  geom_errorbar(aes(ymin = log(pmax(Y - 1.96*se,10^(-4.5)),2), ymax = log(Y + 1.96*se,2)), width = 0.05) + 
+  theme_classic() + ylab('Log average expression') + xlab('Plaque density') +  ggplot2::scale_color_manual("Gene",values = unname(my_pal_curr[c('Microglia_Macrophages','Astrocyte')]), breaks = c('Ctsd','Gfap'), labels = c('Ctsd','Gfap')) + scale_x_continuous(breaks = c(0,0.5,1), labels = c(0,0.5,1), limits = c(-0.05,1.05))
+p
+```
+
+### Plot proportion of cells near plaque
+
+```{r fig-5, fig.height = 4, fig.width = 4, fig.align='center'}
+cell_types_present <- myRCTD@internal_vars_de$cell_types_present
+results <- matrix(0,2,length(cell_types_present))
+colnames(results) <- cell_types_present
+PLAQUE_THRESH <- 0.5
+for(j in 1:length(RCTDde_list)) {
+  myRCTD <- RCTDde_list[[j]]
+  X2 <- myRCTD@internal_vars_de$X2
+  all_barc <- myRCTD@internal_vars_de$all_barc
+  results_df <- myRCTD@results$results_df
+  for(i in 1:length(cell_types_present)) {
+    cell_type <- cell_types_present[i]
+    results[,i] <- results[,i] +  table(X2[all_barc,][results_df[all_barc,]$spot_class == 'singlet' & results_df[all_barc,]$first_type == cell_type,2] > PLAQUE_THRESH) 
+  }
+}
+results <- data.frame(t(results))
+colnames(results) <- c('far','close')
+results$p <- results$close / (results$close + results$far)
+results$name <- rownames(results)
+for(cell_type in rownames(results)){
+  results[cell_type,'ub'] <- qbeta(0.975,1+results[cell_type,'close'],1+results[cell_type,'far'])
+  results[cell_type,'lb'] <- qbeta(0.025,1+results[cell_type,'close'],1+results[cell_type,'far'])
+}
+plot_df <- results[results$far + results$close >= 10,]
+ggplot(plot_df, aes(x=name,y=p)) + geom_point() + geom_errorbar(aes(ymin=lb, ymax=ub), width=.2) + theme_classic() + ylim(c(0,1)) +  theme(axis.text.x = element_text(angle=15,hjust = 1)) + ylab('Proportion of cells near plaque') + xlab('')
+```

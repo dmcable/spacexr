@@ -1,0 +1,81 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+```
+
+# GLAMDE on the Slide-seq KP tumor (immune cell-dependent DE)
+
+### Load in GLAMDE Results and calculate significant genes
+
+```{r prelude}
+library(spacexr)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+library(fields)
+library(stringr)
+library(GSA)
+load_all()
+# Load in spatialRNA data and Reference data
+pwd = getwd()
+datadir <- paste0('../../data/tumor','/')
+resultsdir <- paste0('../../results/ResultsTumor','/')
+myRCTD = readRDS(paste0(resultsdir,'myRCTDde.rds'))
+cell_types = c("CAF","hepatocyte 2","vascular smooth mc")
+cell_types_present = c("CAF","hepatocyte 2","vascular smooth mc", 'monocyte/DC')
+de_results = myRCTD@de_results
+gene_fits <- de_results$gene_fits
+cell_type <- 'CAF'
+gene_list_type <- get_gene_list_type_wrapper(myRCTD, cell_type, cell_types_present)
+res_genes <- find_sig_genes_direct(cell_type, cell_types, myRCTD@de_results$gene_fits, gene_list_type,myRCTD@internal_vars_de$X2,
+                                   fdr = 0.01, p_thresh = 0.001, log_fc_thresh = 0.4)
+my_genes <- gene_list_type[grep("^(Rps|Rpl|mt-)",gene_list_type)]
+my_genes <- intersect(rownames(res_genes),my_genes)
+res_genes[my_genes,]
+my_beta <- myRCTD@internal_vars_de$my_beta
+cell_type <- 'CAF'
+barcodes_sing <- names(which(my_beta[myRCTD@internal_vars_de$all_barc,cell_type] > 0.999))
+big_sing <- intersect(barcodes_sing,names(which(myRCTD@internal_vars_de$X2[,2] > 0.5)))
+sm_sing <- intersect(barcodes_sing,names(which(myRCTD@internal_vars_de$X2[,2] < 0.5)))
+Y <- colSums(myRCTD@spatialRNA@counts[my_genes,])
+Yn <- Y / myRCTD@spatialRNA@nUMI
+p <- plot_puck_continuous(myRCTD@spatialRNA, barcodes_sing, Y, ylimit= c(0,100))
+p <- plot_puck_continuous(myRCTD@spatialRNA, barcodes_sing, Yn, ylimit= c(0,0.05))
+mean(Y[big_sing])
+mean(Y[sm_sing])
+mean(Yn[big_sing])
+mean(Yn[sm_sing])
+mean(myRCTD@spatialRNA@nUMI[big_sing])
+mean(myRCTD@spatialRNA@nUMI[sm_sing])
+gene_list_type <- gene_list_type[-grep("^(Rps|Rpl|mt-)",gene_list_type)]
+res_genes <- res_genes[intersect(rownames(res_genes),gene_list_type),]
+dim(res_genes)
+```
+
+### Plot EMT Gene Set
+
+```{r fig-1, fig.height = 6, fig.width = 6, fig.align='center'}
+gene_sets = GSA.read.gmt(file.path(datadir,'hallmark_genesets.gmt'))
+gene_set_names = gene_sets$geneset.names
+gene_set_descriptions = gene_sets$geneset.descriptions
+gene_sets = gene_sets$genesets
+names(gene_sets)=gene_set_names
+gene_sets = lapply(gene_sets, tolower)
+my_genes <- gene_list_type[tolower(gene_list_type) %in% gene_sets[[30]]]
+my_gl <-  intersect(my_genes,rownames(res_genes))
+plot_df <- data.frame(my_gl, log(exp(1),2)*gene_fits$mean_val[my_gl,1], log(exp(1),2)*gene_fits$I_mat[my_gl,2])
+colnames(plot_df) <- c('gene','mean','sd')
+plot_df$gene <- factor(plot_df$gene, levels = plot_df$gene[order(-plot_df$mean)])
+ggplot(plot_df, aes(x = gene, y = mean)) + geom_point() + geom_errorbar(aes(ymin = mean-1.96*sd,ymax=mean+1.96*sd)) +
+  geom_hline(yintercept=0)+ theme_classic() + ylab('GLAMDE estimated differential expression') + xlab('Gene')
+```

@@ -16,12 +16,12 @@ scRNA-seq data. Then simply run RCTD as:
 \code{myRCTD <- run.RCTD(myRCTD)}
 }
 
-\section{Running RCTDE}{
+\section{Running GLAMDE}{
 
 
 After running RCTD, create an explanatory variable (`explanatory.variable`) representing a covariate hypothesized to explain gene expression.
-Then, to detect cell type-specific differential expression, simply run RCTDE as:
+Then, to detect cell type-specific differential expression, simply run GLAMDE as:
 
-\code{myRCTD <- run.RCTDE.single(puck, explanatory.variable)}
+\code{myRCTD <- run.GLAMDE.single(puck, explanatory.variable)}
 }
 

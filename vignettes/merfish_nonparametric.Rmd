@@ -1,5 +1,5 @@
 ---
-title: "Applying RCTDE to Spatial Transcriptomics Data: Smooth spatial patterns in MERFISH"
+title: "Applying GLAMDE to Spatial Transcriptomics Data: Smooth spatial patterns in MERFISH"
 author: "Dylan Cable"
 date: "December 21st, 2021"
 output:
@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
+Generalized Linear Admixture Models for Differential Expression, or GLAMDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use GLAMDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
 
 ## Data Preprocessing and running RCTD
 
@@ -71,38 +71,38 @@ if(!file.exists(file.path(savedir,'myRCTD_merfish.rds'))) {
 }
 ```
 
-## Running RCTDE
+## Running GLAMDE
 
-We are now ready to run RCTDE using the `run.RCTDE.nonparametric` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+We are now ready to run GLAMDE using the `run.GLAMDE.nonparametric` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
-**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the RCTDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). Please see `?run.RCTDE.nonparametric` for more information on these parameters. 
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the GLAMDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). Please see `?run.GLAMDE.nonparametric` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
 myRCTD <- readRDS(file.path(savedir,'myRCTD_merfish.rds'))
 myRCTD@config$max_cores <- 2
 cell_types <- c('Excitatory', 'Inhibitory', 'Astrocytes')
-myRCTD <- run.RCTDE.nonparam(myRCTD, df = 6, cell_types = cell_types, gene_threshold = .001, cell_type_threshold = 10, fdr = 0.25) 
+myRCTD <- run.GLAMDE.nonparam(myRCTD, df = 6, cell_types = cell_types, gene_threshold = .001, cell_type_threshold = 10, fdr = 0.25) 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde_merfish.rds'))
 ```
 
-Equivalently to using the `run.RCTDE.nonparametric` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.nonparametric` function, which constructs the design matrix given `df` the number of basis functions. After constructing the design matrix, one can use the `run.RCTDE` function to run RCTDE with this general design matrix. We also plot the third basis function below.
+Equivalently to using the `run.GLAMDE.nonparametric` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.nonparametric` function, which constructs the design matrix given `df` the number of basis functions. After constructing the design matrix, one can use the `run.GLAMDE` function to run GLAMDE with this general design matrix. We also plot the third basis function below.
 
 ```{r design matrix}
 X <- build.designmatrix.nonparam(myRCTD,df = 6)
 print(head(X))
 barcodes <- rownames(X)
-myRCTD_identical <- run.RCTDE(myRCTD, X, barcodes, cell_types, gene_threshold = .001, 
+myRCTD_identical <- run.GLAMDE(myRCTD, X, barcodes, cell_types, gene_threshold = .001, 
                         cell_type_threshold = 10, fdr = 0.25)
 plot_puck_continuous(myRCTD@spatialRNA, myRCTD@internal_vars_de$barcodes, X[,3], ylimit = c(0,1), 
                        title ='plot of third basis function')
 ```
 
-## RCTDE results
+## GLAMDE results
 
-After running RCTDE, it is time to examine RCTDE results. We will focus on cell type Excitatory. Furthermore, we will examine the Irs4 gene. Notice below that the largest coefficient in magnitude is the third basis function, which was plotted above. This implies that Irs4 has large change in expression along the y-axis, which we will verify with spatial plots next.
+After running GLAMDE, it is time to examine GLAMDE results. We will focus on cell type Excitatory. Furthermore, we will examine the Irs4 gene. Notice below that the largest coefficient in magnitude is the third basis function, which was plotted above. This implies that Irs4 has large change in expression along the y-axis, which we will verify with spatial plots next.
 
-```{r rctde_results,  fig.width = 8, fig.height=8}
+```{r GLAMDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type 'Excitatory'
 cell_type <- 'Excitatory'
 gene <- 'Irs4'
@@ -116,17 +116,17 @@ print(myRCTD@de_results$gene_fits$all_vals[gene, , cell_type_ind])
 
 ## Look at significant genes.
 
-We will now examine the `myRCTD@de_results$sig_gene_list` object. `sig_gene_list` is a list, for each cell type, of data.frames that contain the hypothesis testing results for significant genes. For nonparametric RCTDE, each coefficient is tested for significance. In particular, notice the following columns: `p_val` (p value), `log_fc` (log-fold-change along that coefficient axis), `Z_score` (Z-score of testing that coefficient), `se` (standard error), `conv` (convergence), and `paramindex_best` (index of the parameter that achieved significance). For example, for Irs4, the third basis function, as discussed above, achieved signifcance.
+We will now examine the `myRCTD@de_results$sig_gene_list` object. `sig_gene_list` is a list, for each cell type, of data.frames that contain the hypothesis testing results for significant genes. For nonparametric GLAMDE, each coefficient is tested for significance. In particular, notice the following columns: `p_val` (p value), `log_fc` (log-fold-change along that coefficient axis), `Z_score` (Z-score of testing that coefficient), `se` (standard error), `conv` (convergence), and `paramindex_best` (index of the parameter that achieved significance). For example, for Irs4, the third basis function, as discussed above, achieved signifcance.
 
 ```{r load_testes}
 print(head(myRCTD@de_results$sig_gene_list[[cell_type]]))
 ```
 
-Finally, we will plot RCTDE results in the `savedir` directory!
+Finally, we will plot GLAMDE results in the `savedir` directory!
 
-The following plot shows a spatial visualization of the Irs4 gene, which was determined by RCTDE to be significantly differentially expressed in excitatory neurons. We below use the `plot_gene_raw` function to observe the raw gene values, whereas `plot_prediction_gene` plots the RCTDE fitted spatial patterns. Observe how the RCTDE fit smooths over the noisy single-pixel gene expression values.
+The following plot shows a spatial visualization of the Irs4 gene, which was determined by GLAMDE to be significantly differentially expressed in excitatory neurons. We below use the `plot_gene_raw` function to observe the raw gene values, whereas `plot_prediction_gene` plots the GLAMDE fitted spatial patterns. Observe how the GLAMDE fit smooths over the noisy single-pixel gene expression values.
 
-The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types. 
+The function `make_all_de_plots` will automatically generate several types of plots displaying the GLAMDE results across all genes and cell types. 
 
 ```{r results,  fig.width = 8, fig.height=8}
 myRCTD <- readRDS(file.path(savedir,'myRCTDde_merfish.rds'))

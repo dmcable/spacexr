@@ -1,0 +1,176 @@
+---
+output:  
+  html_document:
+    keep_md: true
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy = FALSE, results = 'hide')
+```
+
+# GLAMDE on the Slide-seq cerebellum
+
+### Visualize cerebellum regions
+
+```{r fig-1, fig.height = 6, fig.width = 6, fig.align = 'center'}
+library(spacexr)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+load_all()
+id <- '08'
+puck_no <- paste0('190926_', id)
+datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
+resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
+myRCTD<- readRDS(file.path(datadir,'myRCTD_cer_reps.rds'))
+load(file.path(datadir,"regions.RData"))
+nodular = substr(nodular_08, start=1,stop=nchar(nodular_08)-3)
+anterior = substr(anterior_08, start=1,stop=nchar(anterior_08)-3)
+explanatory.variable <- c(rep(0,length(nodular_08)), rep(1,length(anterior_08)))#FILL IN
+names(explanatory.variable) <- c(nodular_08, anterior_08)
+puck <- readRDS(file.path(resultsdir, 'puckCropped.rds'))
+region_no <- rep(0, length(names(puck@nUMI)))
+names(region_no) <- names(puck@nUMI)
+region_no[anterior] <- 1
+region_no[nodular] <- 2
+
+p1 <- plot_class(puck, names(region_no), factor(region_no)) + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ ggplot2::scale_color_manual("Region",values = c('grey','#009E73','#D55E00'), breaks = c(0,1,2), labels = c('Outside ROI','Anterior','Nodulus'))+
+  scale_x_continuous(breaks = c(1000,3000,5000), limits = c(900,5600)) + scale_y_continuous(breaks = c(1000,3000,5000), limits = c(1000,4900))+ geom_segment(aes(x = 1300, y = 1700, xend = 1684.6, yend = 1700), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+p1
+```
+
+### Merge samples and test for population-level DE
+
+```{r de-population-pre}
+datadir_list <- c('../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_08', '../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_09',
+                  '../../../spacexr/data/SpatialRNA/CerebellumReplicates/Puck_190926_11')
+cell_types <- c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes')
+cell_types_present <- c('Astrocytes','Bergmann','Granule','Purkinje','MLI1','MLI2','Oligodendrocytes')
+resultsdir <- '../../../spacexr/data/SpatialRNA/CerebellumReplicates/JointResults/'
+RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde.rds')))
+```
+
+```{r de-population, eval = FALSE}
+myRCTD <- RCTDde_list[[1]]
+de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
+de_pop <- get_de_pop(cell_type, de_results_list)
+plot_results <- F
+if(!dir.exists(resultsdir))
+  dir.create(resultsdir)
+de_pop_all <- list()
+gene_final_all <- list()
+for(cell_type in cell_types) {
+  res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, resultsdir, cell_types_present, plot_results = plot_results)
+  de_pop_all[[cell_type]] <- res$de_pop
+  gene_final_all[[cell_type]] <- res$gene_final
+}
+cell_type_1 <- 'Bergmann'
+cell_type_2 <- 'Purkinje'
+if(plot_results)
+  cell_type_comparison(de_results_list, RCTDde_list, cell_type_1, cell_type_2, cell_types_present)
+saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all.rds'))
+saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all.rds'))
+```
+
+### Load GLAMDE results
+
+```{r de-population-load}
+de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all.rds'))
+gene_final_all <- readRDS(file.path(resultsdir, 'gene_final_all.rds'))
+```
+
+### Plot genes discovered by GLAMDE to exhibit cell type-specific differential expression
+
+```{r fig-3, fig.height = 6, fig.width = 10, fig.align='center'}
+myRCTD <- RCTDde_list[[1]]
+my_pal_curr <- list()
+my_pal_curr["Oligodendrocytes"] <- "#CC79A7"
+my_pal_curr["MLI1"] <- "#E69F00"
+my_pal_curr["Astrocytes"] <- "#56B4E9"
+my_pal_curr["Granule"] <- "#009E73"
+my_pal_curr["MLI2"] <- "#F0E442"
+my_pal_curr["Bergmann"] <- "#0072B2"
+my_pal_curr["Purkinje"] <- "#D55E00"
+my_pal_curr["Golgi"] <- "#000000"
+init_gene_list <- rownames(myRCTD@de_results$gene_fits$mean_val)
+n_cell_types <- numeric(length(init_gene_list))
+names(n_cell_types) <- init_gene_list
+for(cell_type in cell_types) {
+  change_genes <- rownames(de_pop_all[[cell_type]])
+  n_cell_types[change_genes] <- n_cell_types[change_genes] + 1
+}
+sig_genes <- Reduce(union,gene_final_all)
+gene_list_base <- c('Plcb4', 'Aldoc','Mybpc1', 'Kcnd2') 
+genes_to_plot <- gene_list_base
+
+genes_to_plot <-intersect(sig_genes,names(which(n_cell_types >= 4))) 
+genes_to_plot <- union(genes_to_plot, gene_list_base)
+plot_df <- do.call("rbind",
+  lapply(cell_types, function(cell_type) cbind(cell_type, genes_to_plot, de_pop_all[[cell_type]][genes_to_plot,c('mean_est', 'sd_est')])))
+colnames(plot_df) <- c('cell_type','gene', 'mean', 'se')
+plot_df <- plot_df[!is.na(plot_df$mean),]
+plot_df$Z <- abs(plot_df$mean) / plot_df$se
+Z_THRESH = 3.29 # p = .001 
+gene_to_keep <- union(setdiff(genes_to_plot,names(which(table(plot_df[plot_df$Z > Z_THRESH,'gene']) > 1))), gene_list_base) # remove genes that appear as p < 0.001 in > 1 cell type
+plot_df <- plot_df[plot_df$gene %in% gene_to_keep, ]
+max_ct_fun <- function(gene) plot_df[plot_df$gene == gene,'cell_type'][which.max(plot_df[plot_df$gene == gene,'Z'])]
+max_ct <- unlist(lapply(gene_to_keep, max_ct_fun))
+names(max_ct) <- gene_to_keep
+max_ct <- max_ct[order(max_ct)]
+for(cell_type in unique(max_ct)) {
+  ct_plot_df <- plot_df[plot_df$cell_type == cell_type, ]
+  ct_names <- names(max_ct)[max_ct == cell_type]
+  names(max_ct)[which(max_ct == cell_type)] <- ct_names[order(-ct_plot_df[ct_names,'Z'])]
+}
+plot_df$gene <- factor(plot_df$gene, levels = names(max_ct))
+plot_df$max_ct <- factor(max_ct[plot_df$gene], levels = c('Granule','Purkinje','Bergmann'))
+jitter_obj <- position_jitter(width = 0.2, height = 0, seed = 123)
+v_line_list <- 2:length(names(max_ct)) - 0.5
+plot_df$mean <- plot_df$mean * log(exp(1),2) #convert to log 2
+for(cell_type in cell_types) {
+  cur_df <- plot_df[plot_df$cell_type == cell_type,]
+  plot_df[plot_df$cell_type == cell_type, 'sig'] <- cur_df$gene %in% gene_final_all[[cell_type]]
+}
+p <- ggplot(plot_df) + geom_point(aes(x = (gene), y = pmin(Z,15), color = cell_type, size = abs(mean), alpha = sig), position = jitter_obj) + 
+   geom_hline(yintercept=0) + theme_classic()+geom_vline(xintercept=v_line_list, linetype = 'dotted') + facet_grid(. ~ max_ct, scales = "free_x", space = "free_x") + ylab('Cell type-specific Z-score') + xlab('Gene')+ labs(color = "Cell Type", size = "Estimated DE Magnitude")+ theme(axis.text.x = element_text(size=10,angle=30,hjust = 1)) + ggplot2::scale_color_manual("Cell Type",values = my_pal_curr, breaks = c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes'), labels = c('Astrocytes','Bergmann','Granule','Purkinje','Oligo')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.5,1))
+p
+```
+### Plot HCR validation vs GLAMDE estimated DE
+```{r fig-4, fig.height = 6, fig.width = 8, fig.align='center'}
+hcr_estimates <- -c(2.990715,	0.3143165,0.8323186, 0.152781,-1.114702,-0.4867042)
+genes <- c('Aldoc', 'Aldoc', 'Mybpc1','Tmem132c','Plcb4', 'Plcb4')
+cell_types <- c('Purkinje','Bergmann', 'Bergmann','Granule', 'Purkinje', 'Bergmann')
+datadir <- '../../../spacexr/data/SpatialRNA/CerebellumReplicates/JointResults'
+de_p <- read.csv(file.path(datadir,
+                   'Purkinje_cell_type_genes.csv'))
+rownames(de_p) <- de_p$X
+de_b <- read.csv(file.path(datadir,
+                           'Bergmann_cell_type_genes.csv'))
+rownames(de_b) <- de_b$X
+de_g <- read.csv(file.path(datadir,
+                           'Granule_cell_type_genes.csv'))
+rownames(de_g) <- de_g$X
+de_bp <- read.csv(file.path(datadir,
+                            'Bergmann_Purkinje_both_genes.csv'))
+rownames(de_bp) <- de_bp$X
+means <- c(de_p[genes[1],'mean_est'],de_bp[genes[2],'b_mean_est'], de_b[genes[3],'mean_est'],
+           de_g[genes[4],'mean_est'], de_p[genes[5],'mean_est'], de_bp[genes[6],'b_mean_est'])
+sds <- c(de_p[genes[1],'sd_est'],de_bp[genes[2],'b_sd_est'], de_b[genes[3],'sd_est'],
+           de_g[genes[4],'sd_est'], de_p[genes[5],'sd_est'], de_bp[genes[6],'b_sd_est'])
+sds_tot <- sqrt(sds^2 + c(de_p[genes[1],'sig_p'],0, de_b[genes[3],'sig_p'],
+         de_g[genes[4],'sig_p'], de_p[genes[5],'sig_p'], 0.2511742 )^2)
+plot_df <- data.frame(genes, cell_types, means, sds_tot, hcr_estimates)
+R2 <- cor(means, hcr_estimates)^2
+print(R2)
+plot_df[,3:5] <- log(exp(1),2)*plot_df[,3:5]
+p <- ggplot(plot_df, aes(y=means, x = hcr_estimates, color = cell_types)) + geom_point() + geom_abline(linetype = 'dashed') + 
+  geom_hline(yintercept=0, linetype='dashed') + geom_vline(xintercept=0, linetype='dashed')  + theme_classic()  + 
+  geom_errorbar(aes(ymin = means - 1.96*sds_tot, ymax = means+1.96*sds_tot)) + xlab('Measured cell type-specific DE using HCR') + ylab('Estimated cell type-specific DE using GLAMDE') + geom_label_repel(aes(label = genes),nudge_x = 0.15,na.rm = TRUE, show.legend = FALSE)+ ggplot2::scale_color_manual("Cell Type",values = my_pal_curr[c('Bergmann','Granule','Purkinje')], breaks = c('Bergmann','Granule','Purkinje'), labels = c('Bergmann','Granule','Purkinje'))
+#geom_text(aes(label = genes), nudge_y = -0.1, show.legend = FALSE)
+p
+```

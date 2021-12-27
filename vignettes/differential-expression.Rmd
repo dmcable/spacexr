@@ -1,5 +1,5 @@
 ---
-title: "Applying RCTDE to Spatial Transcriptomics Data"
+title: "Applying GLAMDE to Spatial Transcriptomics Data"
 author: "Dylan Cable"
 date: "December 15th, 2021"
 output:
@@ -39,7 +39,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for differential expression in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression across a random explanatory variable.
+Generalized Linear Admixture Models for Differential Expression, or GLAMDE, is part of the spacexr R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use GLAMDE to test for differential expression in a toy cerebellum Slide-seq dataset. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression across a random explanatory variable.
 
 ## Data Preprocessing and running RCTD
 
@@ -73,10 +73,10 @@ if(!file.exists(file.path(savedir,'myRCTD.rds'))) {
 
 ## Create explanatory variable / covariate
 
-Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in RCTDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
+Now that we have successfully run RCTD, we can create a explanatory variable (i.e. covariate) used for predicting differential expression in GLAMDE. In this case, the variable, `explanatory.variable`, will be randomly generated, but in general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position.
 The explanatory variable itself is a vector of values, constrained between 0 and 1, with names matching the pixel names of the `myRCTD` object.
 
-Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high explanatory variable) to see whether RCTDE can detect this differentially expressed gene.
+Here, we also artifically upregulate the expression of the Lsamp gene (in regions of high explanatory variable) to see whether GLAMDE can detect this differentially expressed gene.
 
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 ### Create SpatialRNA object
@@ -95,26 +95,26 @@ myRCTD@originalSpatialRNA@counts[change_gene, high_barc] <- myRCTD@spatialRNA@co
 plot_puck_continuous(myRCTD@spatialRNA, names(explanatory.variable), explanatory.variable, ylimit = c(0,1), title ='plot of explanatory variable') 
 ```
 
-## Running RCTDE
+## Running GLAMDE
 
-After creating the explanatory variable, we are now ready to run RCTDE using the `run.RCTDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variable, we are now ready to run GLAMDE using the `run.GLAMDE.single` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
-**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the RCTDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.RCTDE.single` for more information on these parameters. 
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the GLAMDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.GLAMDE.single` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
 myRCTD@config$max_cores <- 2
-myRCTD <- run.RCTDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
+myRCTD <- run.GLAMDE.single(myRCTD, explanatory.variable, gene_threshold = .01, 
                         cell_type_threshold = 10, fdr = 0.25) 
 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde.rds'))
 ```
 
-## RCTDE results
+## GLAMDE results
 
-After running RCTDE, it is time to examine RCTDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. RCTDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
+After running GLAMDE, it is time to examine GLAMDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. GLAMDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
 
-```{r rctde_results,  fig.width = 8, fig.height=8}
+```{r GLAMDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'
 cell_type <- '10'
 results_de <- myRCTD@de_results$sig_gene_list[[cell_type]]
@@ -129,11 +129,11 @@ print('standard errors for non-intercept terms')
 print(myRCTD@de_results$gene_fits$s_mat[sig_gene, c(2,4)]) 
 ```
 
-Finally, we will plot RCTDE results in the `savedir` directory!
+Finally, we will plot GLAMDE results in the `savedir` directory!
 
 The following plot shows a spatial visualization of the Lsamp gene, which was determined to be differentially expressed.
 
-The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types.
+The function `make_all_de_plots` will automatically generate several types of plots displaying the GLAMDE results across all genes and cell types.
 
 ```{r results,  fig.width = 8, fig.height=8}
 myRCTD <- readRDS(file.path(savedir,'myRCTDde.rds'))

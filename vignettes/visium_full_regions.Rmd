@@ -1,5 +1,5 @@
 ---
-title: "Applying RCTDE to Spatial Transcriptomics Data: Multiple regions in Visium with full mode RCTD"
+title: "Applying GLAMDE to Spatial Transcriptomics Data: Multiple regions in Visium with full mode RCTD"
 author: "Dylan Cable"
 date: "December 20th, 2021"
 output:
@@ -39,7 +39,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use RCTDE to test for differential expression across multiple regions in a toy hippocampus Visium dataset. First, we will first use RCTD to assign cell types to a hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset. We will test for differential expression across three spatial regions.
+Generalized Linear Admixture Models for Differential Expression, or GLAMDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use GLAMDE to test for differential expression across multiple regions in a toy hippocampus Visium dataset. First, we will first use RCTD to assign cell types to a hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset. We will test for differential expression across three spatial regions.
 
 ## Data Preprocessing and running RCTD
 
@@ -89,7 +89,7 @@ plot_puck_continuous(myRCTD@spatialRNA, barcodes, norm_weights[,'Denate'], ylimi
 
 ## Choose regions
 
-Now that we have successfully run RCTD, we can create a set of regions used for predicting differential expression in RCTDE. In this case, we will create three lists representing membership in the left, middle, or right regions. We construct `region_list` which is a list of these three lists.
+Now that we have successfully run RCTD, we can create a set of regions used for predicting differential expression in GLAMDE. In this case, we will create three lists representing membership in the left, middle, or right regions. We construct `region_list` which is a list of these three lists.
 
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 ### Create SpatialRNA object
@@ -106,34 +106,34 @@ class_num[region_middle] <- 1; class_num[region_right] <- 2
 plot_class(myRCTD@spatialRNA, barcodes, factor(class_num),  title ='plot of regions') # plot regions
 ```
 
-## Running RCTDE
+## Running GLAMDE
 
-After creating the list of regions, we are now ready to run RCTDE using the `run.RCTDE.regions` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the list of regions, we are now ready to run GLAMDE using the `run.GLAMDE.regions` function. We will use two cores, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
-**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the RCTDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). Please see `?run.RCTDE.regions` for more information on these parameters. 
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the GLAMDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). Please see `?run.GLAMDE.regions` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
 myRCTD@config$max_cores <- 2
-myRCTD <- run.RCTDE.regions(myRCTD, region_list,cell_types = cell_types, gene_threshold = .01, cell_type_threshold = 10, fdr = 0.25, doublet_mode = F, weight_threshold = 0.1) 
+myRCTD <- run.GLAMDE.regions(myRCTD, region_list,cell_types = cell_types, gene_threshold = .01, cell_type_threshold = 10, fdr = 0.25, doublet_mode = F, weight_threshold = 0.1) 
 saveRDS(myRCTD,file.path(savedir,'myRCTDde_visium_regions.rds'))
 ```
 
-Equivalently to using the `run.RCTDE.regions` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.regions` function, which constructs the design matrix given a list of regions. After constructing the design matrix, one can use the `run.RCTDE` function to run RCTDE with this general design matrix.
+Equivalently to using the `run.GLAMDE.regions` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.regions` function, which constructs the design matrix given a list of regions. After constructing the design matrix, one can use the `run.GLAMDE` function to run GLAMDE with this general design matrix.
 
 ```{r design matrix}
 X <- build.designmatrix.regions(myRCTD,region_list)
 print(head(X))
 barcodes <- rownames(X)
-myRCTD_identical <- run.RCTDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, doublet_mode = F,
+myRCTD_identical <- run.GLAMDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, doublet_mode = F,
                         cell_type_threshold = 10, fdr = 0.25, weight_threshold = 0.1)
 ```
 
-## RCTDE results
+## GLAMDE results
 
-After running RCTDE, it is time to examine RCTDE results. We will focus on cell type Dentate. Furthermore, we will examine the original Fth1 gene.
+After running GLAMDE, it is time to examine GLAMDE results. We will focus on cell type Dentate. Furthermore, we will examine the original Fth1 gene.
 
-```{r rctde_results,  fig.width = 8, fig.height=8}
+```{r GLAMDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type 'Dentate'
 cell_type <- 'Denate'
 gene <- 'Fth1'
@@ -155,11 +155,11 @@ sig_gene_list <- readRDS(file.path(datadir,"testes_sig_gene_list.rds")) # load i
 print(head(sig_gene_list$`2`))
 ```
 
-Finally, we will plot RCTDE results in the `savedir` directory!
+Finally, we will plot GLAMDE results in the `savedir` directory!
 
 The following plot shows a spatial visualization of the Fth1 gene.
 
-The function `make_all_de_plots` will automatically generate several types of plots displaying the RCTDE results across all genes and cell types. Typically, one would want to plot one or multiple significant genes. For this toy dataset, no genes were significant.
+The function `make_all_de_plots` will automatically generate several types of plots displaying the GLAMDE results across all genes and cell types. Typically, one would want to plot one or multiple significant genes. For this toy dataset, no genes were significant.
 
 ```{r results,  fig.width = 8, fig.height=8}
 myRCTD <- readRDS(file.path(savedir,'myRCTDde_visium_regions.rds'))

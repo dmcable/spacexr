@@ -1,5 +1,5 @@
 ---
-title: "Applying RCTDE to Spatial Transcriptomics Data: Differential Expression with Multiple Experimental Replicates"
+title: "Applying GLAMDE to Spatial Transcriptomics Data: Differential Expression with Multiple Experimental Replicates"
 author: "Dylan Cable"
 date: "December 21st, 2021"
 output:
@@ -9,7 +9,7 @@ output:
   rmarkdown::html_vignette:
     keep_md: yes
 vignette: |
-  %\VignetteIndexEntry{rctde-replicates} 
+  %\VignetteIndexEntry{GLAMDE-replicates} 
   %\VignetteEncoding{UTF-8} 
   %\VignetteEngine{knitr::rmarkdown}
 ---
@@ -41,7 +41,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Robust Cell Type Differential Expression, or RCTDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and RCTDE on multiple replicates (slices) of cerebellum Slide-seq toy data. 
+Generalized Linear Admixture Models for Differential Expression, or GLAMDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and GLAMDE on multiple replicates (slices) of cerebellum Slide-seq toy data. 
 
 The ultimate goal will be to test for differential expression across two regions in the cerbellum. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression between the nodulus and anterior lobe regions.
 
@@ -59,9 +59,9 @@ puck4 <- read.SpatialRNA(datadir4, count_file = "MappedDGEForR.csv", coords_file
 
 ## Create explanatory variable / covariate
 
-In order to run RCTDE, we will for each replicate create a explanatory variable (i.e. covariate) used for predicting differential expression in RCTDE. In general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position. In this case, we will use the explanatory variable two divide each cerebellum replicate into two regions (left and right). In general, one can also create a custom function that will compute the explanatory variable on each `SpatialRNA` replicate. We will pass in a list of the explanatory variables to the `run.RCTDE.replicates` function.
+In order to run GLAMDE, we will for each replicate create a explanatory variable (i.e. covariate) used for predicting differential expression in GLAMDE. In general one should set the explanatory variable to biologically relevant predictors of gene expression such as spatial position. In this case, we will use the explanatory variable two divide each cerebellum replicate into two regions (left and right). In general, one can also create a custom function that will compute the explanatory variable on each `SpatialRNA` replicate. We will pass in a list of the explanatory variables to the `run.GLAMDE.replicates` function.
 
-Here, we also artifically upregulate the expression of the Kcnip4 gene in each dataset (in regions of high explanatory variable) to see whether RCTDE can detect this differentially expressed gene.
+Here, we also artifically upregulate the expression of the Kcnip4 gene in each dataset (in regions of high explanatory variable) to see whether GLAMDE can detect this differentially expressed gene.
 
 ```{r SpatialRNA, results = 'hide', fig.height = 6, fig.width = 6}
 explanatory.variable1 <- as.integer(puck1@coords$x > 3000)
@@ -98,7 +98,7 @@ cell_types <- as.factor(cell_types) # convert to factor data type
 nUMI <- meta_data$nUMI; names(nUMI) <- meta_data$barcode # create nUMI named list
 reference <- Reference(counts, cell_types, nUMI)
 ```
-Now, we are in a position to create a `RCTD.replicates` object, an object that can store multiple `SpatialRNA` objects allowing for joint processing with RCTD and RCTDE. We pass in `spatial.replicates`, a list of the four `SpatialRNA` objects, `replicate_names`, a list of names for each replicate, and `group_ids`, a list of the group number for each replicate. In this case, all replicates will come from the same group. However, we have the option to assign different replicates to different groups, which will allow for extra variation to be modeled across groups.
+Now, we are in a position to create a `RCTD.replicates` object, an object that can store multiple `SpatialRNA` objects allowing for joint processing with RCTD and GLAMDE. We pass in `spatial.replicates`, a list of the four `SpatialRNA` objects, `replicate_names`, a list of names for each replicate, and `group_ids`, a list of the group number for each replicate. In this case, all replicates will come from the same group. However, we have the option to assign different replicates to different groups, which will allow for extra variation to be modeled across groups.
 
 ```{r create, message = FALSE,warning = FALSE}
 spatial.replicates <- list(puck1, puck2, puck3, puck4)
@@ -114,28 +114,28 @@ We are now ready to run RCTD with the `run.RCTD.replicates` function to assign c
 ```{r run.RCTD, messages = FALSE}
 myRCTD.reps <- run.RCTD.replicates(myRCTD.reps)
 ```
-## Running RCTDE
+## Running GLAMDE
 
-After creating the explanatory variables and running RCTD, we are now ready to run RCTDE using the `run.RCTDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variables and running RCTD, we are now ready to run GLAMDE using the `run.GLAMDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
 
-**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the RCTDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.RCTDE.replicates` for more information on these parameters. 
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the GLAMDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.GLAMDE.replicates` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
 cell_types <- c('10','18')
-myRCTD.reps <- run.RCTDE.replicates(myRCTD.reps, exvar_list, cell_types, gene_threshold = .01, 
+myRCTD.reps <- run.GLAMDE.replicates(myRCTD.reps, exvar_list, cell_types, gene_threshold = .01, 
                          cell_type_threshold = 10, fdr = 0.25) 
 
 saveRDS(myRCTD.reps,file.path(savedir,'myRCTDde_reps.rds'))
 ```
 
-## RCTDE results
+## GLAMDE results
 
-After running RCTDE, it is time to examine RCTDE results. Note that the RCTD and RCTDE results on individual replicates are stored in `myRCTD.reps@RCTD.reps`, which is a list of `RCTD` objects containing individual RCTDE results as discussed in other vignettes. For this reason, we now focus on population-level RCTDE results across the four replicates.
+After running GLAMDE, it is time to examine GLAMDE results. Note that the RCTD and GLAMDE results on individual replicates are stored in `myRCTD.reps@RCTD.reps`, which is a list of `RCTD` objects containing individual GLAMDE results as discussed in other vignettes. For this reason, we now focus on population-level GLAMDE results across the four replicates.
 
 We will focus on cell type 10. Furthermore, we will examine the original Kcnip4 gene, which was detected to be significantly differentially expressed in cell type 10. Other genes, including nonsignificant genes, can be observed in `myRCTD.reps@population_de_results`. As shown below, DE results on significant genes are stored in `population_sig_gene_df`. In particular, notice the columns `Z_est` (Z-score), `log_fc_est` (estimated DE coefficient), `sd_est` (standard error of DE coefficient), `p` (p-value), and `q_val` (q-value). Other columns of interest include `tau`, the estimated variance across samples, and `mean i` and `sd i`, which represent the DE point estimate and standard error on each of the four replicates.
 
-```{r rctde_results,  fig.width = 8, fig.height=8}
+```{r GLAMDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'
 cell_type <- '10'
 sig_gene <- change_gene
@@ -143,9 +143,9 @@ print(paste("following results hold for", sig_gene))
 print(myRCTD.reps@population_sig_gene_df[[cell_type]]) 
 ```
 
-Finally, we will save population RCTDE results in the `savedir` directory:
+Finally, we will save population GLAMDE results in the `savedir` directory:
 
 ```{r results_save}
-save.RCTDE.replicates(myRCTD.reps, file.path(savedir,'population'))
+save.GLAMDE.replicates(myRCTD.reps, file.path(savedir,'population'))
 ```
 

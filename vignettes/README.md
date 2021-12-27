@@ -7,8 +7,8 @@
 
 Here, we will present examples and tutorials for how to run our
 computational methods for cell type identification (RCTD) and
-differential expression (RCTDE) on spatial transcriptomics datasets. You
-may access RCTD and RCTDE within our open-source R package
+differential expression (GLAMDE) on spatial transcriptomics datasets.
+You may access RCTD and GLAMDE within our open-source R package
 [here](https://github.com/dmcable/spacexr).
 
 In total, we currently have 9 vignettes demonstrating the various
@@ -44,25 +44,25 @@ more than two cell types per spot as an alternative option to
 -   Multi mode: [multi mode on Visium
     hippocampus](https://raw.githack.com/dmcable/spacexr/master/vignettes/visium_multi.html)
 
-## Cell type-specific differential expression with RCTDE
+## Cell type-specific differential expression with GLAMDE
 
-The best vignette for getting started with RCTDE is [differential
+The best vignette for getting started with GLAMDE is [differential
 expression
 vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/differential-expression.html).
 
-RCTDE can detect differential expression (DE) along one or multiple
+GLAMDE can detect differential expression (DE) along one or multiple
 user-defined axes, termed *explanatory variables*. Although the
 possibilities are not limited to what is presented here, we present the
 following examples:
 
--   DE across two regions: [RCTDE across two regions in Slide-seq
-    cerebellum](https://raw.githack.com/dmcable/spacexr/master/vignettes/RCTDE_two_regions.html).
--   DE across more than two regions: [Categorical RCTDE on Visium
+-   DE across two regions: [GLAMDE across two regions in Slide-seq
+    cerebellum](https://raw.githack.com/dmcable/spacexr/master/vignettes/GLAMDE_two_regions.html).
+-   DE across more than two regions: [Categorical GLAMDE on Visium
     hippocampus](https://raw.githack.com/dmcable/spacexr/master/vignettes/visium_full_regions.html)
--   DE from cell-to-cell interactions: [RCTDE for cell-to-cell
-    interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/RCTDE_celltocell_interactions.html).
--   DE from interactions with pathology: [RCTDE for pathology
-    interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/RCTDE_pathology_interactions.html).
+-   DE from cell-to-cell interactions: [GLAMDE for cell-to-cell
+    interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/GLAMDE_celltocell_interactions.html).
+-   DE from interactions with pathology: [GLAMDE for pathology
+    interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/GLAMDE_pathology_interactions.html).
 -   Nonparametric smooth spatial patterns on MERFISH: [MERFISH
     hypothalamus nonparametric
     vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/merfish_nonparametric.html).
@@ -70,8 +70,8 @@ following examples:
 ## Batch processing of multiple experimental replicates + population-level DE inference
 
 Finally, when multiple experimental replicates are available, RCTD and
-RCTDE can be run in batch across replicates as shown in
+GLAMDE can be run in batch across replicates as shown in
 [Population-level RCTD and
-RCTDE](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).
+GLAMDE](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).
 This approach also allows for population-level differential expression
 statistical inference.

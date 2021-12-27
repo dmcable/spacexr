@@ -1,0 +1,212 @@
+---
+output:  
+  pdf_document: default
+  html_document:
+    keep_md: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+library(spacexr)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+library(fields)
+library(stringr)
+library(GSA)
+load_all()
+```
+
+# Nonparametric GLAMDE on the Slide-seq KP tumor
+
+### Load in GLAMDE Results and cluster significant genes
+
+```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
+# Load in DE results and cluster
+pwd = getwd()
+datadir <- paste0('../../../DEGLAM/data/tumor','/')
+resultsdir <- paste0('../../../DEGLAM/results/ResultsTumorNonparam','/')
+new_X <- readRDS(file.path(resultsdir, 'new_X.rds'))
+orig_new_coords <- readRDS(file.path(resultsdir, 'orig_new_coords.rds'))
+myRCTDde <- readRDS(file.path(resultsdir,'myRCTDde.rds'))
+gene_fits <- myRCTDde@de_results$gene_fits
+cell_type <- 'CAF'
+sig_gene_list <- rownames(myRCTDde@de_results$res_gene_list[[cell_type]])
+sig_gene_list <- sig_gene_list[-grep("^(Rps|Rpl|mt-)",sig_gene_list)]
+barc_list <- names(which(myRCTDde@internal_vars_de$my_beta[,cell_type] > 0))
+Quant_mat <- matrix(0, length(sig_gene_list), length(barc_list))
+rownames(Quant_mat) <- sig_gene_list
+colnames(Quant_mat) <- barc_list
+Pred_mat <- matrix(0, length(sig_gene_list), length(barc_list))
+rownames(Pred_mat) <- sig_gene_list
+colnames(Pred_mat) <- barc_list
+for(gene in sig_gene_list) {
+  predictions <- predict_DEGLAM(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  quantiles <- rank(predictions) / length(predictions)
+  Quant_mat[gene, ] <- quantiles
+  Pred_mat[gene, ] <- predictions
+}
+library(cluster)    
+d <- dist(Quant_mat, method = 'euclidian')
+rd <- rdist(Quant_mat)
+hc1 <- hclust(d, method = "ward.D")
+plot(hc1, cex = 0.2, hang = -1)
+N_CLUST <- 7
+sub_grp <- cutree(hc1, k = N_CLUST)
+if(F) {
+  make_de_plots_predictions(myRCTDde, resultsdir, test_mode = 'direct')
+  write_de_summary(myRCTDde, resultsdir)
+}
+```
+
+### Calculate cluster spatial profiles
+
+```{r} 
+p <- list()
+resultsdir_par <- paste0('../../../DEGLAM/results/ResultsTumor','/')
+myRCTDpar = readRDS(paste0(resultsdir_par,'myRCTDde.rds'))
+res_genes <- myRCTDpar@de_results$res_gene_list$CAF
+over_genes <- tolower(rownames(res_genes[res_genes$log_fc > 0,]))
+under_genes <- tolower(rownames(res_genes[res_genes$log_fc < 0,]))
+R2_vals <- numeric(N_CLUST)
+other_ct <- c('CAF', 'LSEC', 'hepatocyte 2','vascular smooth mc')
+R2_vals_mat <- matrix(0, 8, length(other_ct))
+colnames(R2_vals_mat) <- other_ct
+exvar_list <- list()
+for(target_type in other_ct)
+  exvar_list[[target_type]] <- readRDS(paste0(resultsdir_par, paste0('exvar',target_type,'.rds')))
+
+for(i in 1:N_CLUST) {
+  tot_pred <- colSums(Pred_mat[sub_grp == i,])
+  p[[i]] <- plot_puck_continuous(myRCTDde@spatialRNA, barc_list, tot_pred, ylimit = c(0,quantile(tot_pred, 0.999))) + scale_colour_gradientn(colors = pals::brewer.blues(20)[2:20]) + ggtitle(paste("Cluster",i))
+  r <- cor(tot_pred,myRCTDpar@internal_vars_de$X2[names(tot_pred),2])
+  R2_vals[i] <- (r^2*sign(r))
+  for(target_type in other_ct) {
+    r <- cor(tot_pred,exvar_list[[target_type]][names(tot_pred)])
+    R2_vals_mat[i,target_type] <- (r^2*sign(r))
+  }
+}
+o_vals <- numeric(N_CLUST)
+u_vals <- numeric(N_CLUST)
+for(i in 1:N_CLUST) {
+  o_vals[i] <- length(intersect(tolower(names(which(sub_grp == i))), over_genes))
+  u_vals[i] <- length(intersect(tolower(names(which(sub_grp == i))), under_genes))
+}
+```
+
+### Analyze nonparametric vs parametric
+
+```{r fig-0.45, fig.height = 10, fig.width = 6, fig.align='center'}
+pre_df <- data.frame(o_vals, u_vals, table(sub_grp), R2_vals)
+pre_df$o_vals <- pre_df$o_vals / pre_df$Freq
+pre_df$u_vals <- pre_df$u_vals / pre_df$Freq
+pre_df$sub_grp <- factor(pre_df$sub_grp, levels = order(R2_vals))
+pre_df$diff_vals <- pre_df$o_vals - pre_df$u_vals
+p2 <- ggplot(pre_df, aes(R2_vals, diff_vals, color=sub_grp)) + geom_point() + theme_classic() + xlim(c(-1,1)) + ylim(c(-1,1))
+cor(pre_df$diff_vals, pre_df$R2_vals)^2
+plot_df <- reshape2::melt(pre_df[,c('o_vals','u_vals','sub_grp','R2_vals')],id=c('sub_grp'))
+plot_df$group <- 3*as.integer(plot_df$sub_grp)
+plot_df[plot_df$variable == 'R2_vals', 'group'] <- plot_df[plot_df$variable == 'R2_vals', 'group'] - 1
+plot_df[plot_df$variable == 'u_vals', 'value'] <- -plot_df[plot_df$variable == 'u_vals', 'value']
+p1 <- ggplot(data = plot_df, aes(group, value, group = group)) +
+  geom_col(aes(fill = variable), position = position_stack(reverse = TRUE)) +
+  geom_hline(yintercept = 0) + ylim(c(-1,1)) + theme_classic() + scale_fill_manual("", breaks = c('o_vals','u_vals','R2_vals'), labels = c('Genes overexpressed near Myeloid cells','Genes underexpressed near Myeloid cells','Signed R^2'), values = c("#D55E00", "#009E73", "#0072B2")) + ylab('') + scale_x_continuous("Cluster", breaks = (1:N_CLUST)*3 - 0.5, labels = levels(plot_df$sub_grp))+ theme(legend.position="top") + guides(fill=guide_legend(nrow=2,byrow=F))
+
+ggarrange(p1,p2, nrow = 2)
+```
+
+### Plot one EMT gene
+
+```{r fig-2, fig.height = 8, fig.width = 6, fig.align='center'}
+gene <- 'Kpnb1'
+
+CANCER_LOC <- names(which(myRCTDde@internal_vars_de$my_beta[,'CAF'] > 0.999))
+barc_list <- CANCER_LOC
+tot_pred <- Pred_mat[gene,CANCER_LOC]
+max_expr <- (unname(500*quantile(tot_pred, 0.999)))
+Y_norm <- myRCTDde@spatialRNA@counts[gene,CANCER_LOC] / myRCTDde@spatialRNA@nUMI[CANCER_LOC]
+p1 <- plot_puck_continuous(myRCTDde@spatialRNA, barc_list, tot_pred*500, ylimit = c(-.01,.01 + max_expr)) +scale_colour_gradientn("",colors = pals::brewer.blues(20)[2:20], breaks = c(0,max_expr), labels = c(0, round(max_expr,2)), limits = c(-.01,.01 + max_expr))+ ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ 
+  scale_y_continuous(limits = c(1100,3750)) + scale_x_continuous( limits = c(2300,4800))+ geom_segment(aes(x = 2400, y = 1300, xend = 2784.6, yend = 1300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+p2 <- plot_puck_continuous(myRCTDde@spatialRNA, barc_list, Y_norm*500, ylimit = c(-0.01,.01 + max_expr)) +
+  scale_colour_gradientn("",colors = pals::brewer.blues(20)[2:20], breaks = c(0,max_expr),labels = c(0, round(max_expr,2)))+ ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ 
+  scale_y_continuous(limits = c(1100,3750)) + scale_x_continuous( limits = c(2300,4800))+ geom_segment(aes(x = 2400, y = 1300, xend = 2784.6, yend = 1300), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+ggarrange(p1,p2,nrow = 2)
+
+```
+
+### Check correlation of clusters with cell types
+
+```{r cluster-cor}
+center <- colMeans(myRCTDde@spatialRNA@coords)
+distances <- apply(myRCTDde@spatialRNA@coords,1, function(x) .65*sqrt((x[1] - center[1])^2 + (x[2] - center[2])^2))
+distances <- distances[CANCER_LOC]
+all_mat <- cbind(R2_vals, R2_vals_mat)
+colnames(all_mat)[1] = "Myeloid"
+avg_r2 <- colMeans(abs(all_mat))
+print(avg_r2)
+all_var <- apply(all_mat, 2, var)
+print(all_var)
+high_clusters <- colSums(abs(all_mat) > 0.3)
+print(high_clusters)
+common_barc <- intersect(names(distances), names(exvar_list[[1]]))
+cor_dist <- list()
+for(cell_type in other_ct) {
+  r <- cor(exvar_list[[cell_type]][common_barc], distances[common_barc])
+  cor_dist[cell_type] <- r^2*sign(r)
+}
+r <-  cor(distances[common_barc],myRCTDpar@internal_vars_de$X2[common_barc,2])
+cor_dist[["Myeloid"]] <- r^2*sign(r)
+print(cor_dist)
+plot_df <- cbind(sqrt(all_var), high_clusters, unlist(cor_dist[names(high_clusters)]))
+colnames(plot_df) <- c('S.D. of cluster R^2 with cell type','Proportion of clusters correlated','Correlation with radial distance')
+plot_df[,2] <- plot_df[,2] / N_CLUST
+plot_df <- reshape2::melt(plot_df)
+colnames(plot_df)[1] <- 'Cell_type'
+ggplot(plot_df, aes(x=factor(Var2),y=value,fill=Cell_type)) + geom_bar(stat = 'identity', position = 'dodge') + theme_classic() +  theme(axis.text.x = element_text(angle=5,vjust = 1)) + ylab("") + xlab("")
+```
+
+### Analyze variance explained by spatial GLAMDE model
+
+```{r fig-0.5, fig.height = 6, fig.width = 6, fig.align='center'}
+gene <- 'Krt18'
+cell_type <- 'CAF'
+barc_list <- names(which(myRCTDde@internal_vars_de$my_beta[,cell_type] > 0.999))
+gene_sig_list <- rownames(myRCTDde@de_results$res_gene_list[[2]])
+gene_sig_list <- sig_gene_list[-grep("^(Rps|Rpl|mt-)",gene_sig_list)]
+gene_list_all <- get_gene_list_type_wrapper(myRCTDde,'CAF', myRCTDde@internal_vars_de$cell_types_present)
+over_cols <- c('mse_0', 'mse_1', 'var_poisson', 'R2_adj', 'var_odp')
+over_mat <- matrix(0, length(gene_list_all), length(over_cols))
+rownames(over_mat) <- gene_list_all; colnames(over_mat) <- over_cols
+for(gene in gene_list_all) {
+  predictions <- predict_DEGLAM(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  Y <- myRCTDde@spatialRNA@counts[gene, barc_list]
+  N <- myRCTDde@spatialRNA@nUMI[barc_list]
+  my_order <- order(predictions/N)
+  Y <- Y[my_order]
+  N <- N[my_order]
+  predictions <- predictions[my_order]
+  Yn <- Y / N
+  NR <- 10
+  Y_df <- aggregate(Yn, list((floor((1:length(Yn))/length(Yn)*NR)/NR)),mean)[1:NR,]
+  pred_df <- aggregate(predictions, list((floor((1:length(Yn))/length(Yn)*NR)/NR)),mean)[1:NR,]
+  cor(pred_df$x, Y_df$x)
+  # first with squared error
+  M <- mean(Yn)
+  mse_0 <- mean((Y - N*M)^2)
+  var_poisson <- mean(predictions*N)
+  mse_1 <- mean((Y - predictions*N)^2)
+  R2_adj <- 1 - (mse_1 - var_poisson) / (mse_0 - var_poisson) 
+  var_odp <- (mse_0 - var_poisson) / mse_0
+  over_mat[gene,] <- c(mse_0, mse_1, var_poisson, R2_adj, var_odp)
+}
+over_mat <- data.frame(over_mat)
+over_mat$R2 <- (over_mat$mse_0 - over_mat$mse_1) / over_mat$mse_0
+over_ind <- which((over_mat$mse_0 - over_mat$var_poisson > 0.01) & rownames(over_mat) %in% sig_gene_list)
+plot_df <- data.frame(pmax(pmin(over_mat[over_ind,'R2_adj'],1),0))
+colnames(plot_df) <- c('x')
+ggplot(plot_df, aes(x=x)) + geom_histogram() + theme_classic() + xlim(c(-0.001,1)) + xlab("Adjusted R Squared") + ylab('Number of genes')
+```
