@@ -1,48 +1,82 @@
 get_means_sds <- function(cell_type, gene, de_results_list) {
   ct_ind <- which(colnames(de_results_list[[1]]$gene_fits$mean_val) == cell_type)*2
-  means <- unlist(lapply(de_results_list, function(x) x$gene_fits$mean_val[gene,cell_type]))
-  sds <- unlist(lapply(de_results_list, function(x) x$gene_fits$s_mat[gene,ct_ind]))
+  means <- rep(0, length(de_results_list))
+  sds <- rep(-1, length(de_results_list))
+  con <- unlist(lapply(de_results_list, function(x)
+    ifelse(gene %in% rownames(x$gene_fits$con_mat),
+           x$gene_fits$con_mat[gene,cell_type], FALSE)))
+  means[con] <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val[gene,cell_type]))
+  sds[con] <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$s_mat[gene,ct_ind]))
   return(list(means = means, sds = sds))
 }
 
-get_de_pop <- function(cell_type, de_results_list, use.groups = F, group_ids = NULL) {
+get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
   if(!use.groups)
     group_ids <- NULL
   ct_ind <- which(colnames(de_results_list[[1]]$gene_fits$mean_val) == cell_type)*2
-  gene_list <- Reduce(intersect, lapply(de_results_list, function(x) names(which(x$gene_fits$con_mat[,cell_type]))))
+  gene_list <- Reduce(union, lapply(de_results_list, function(x) names(which(x$gene_fits$con_mat[,cell_type]))))
+  gene_list <- intersect(gene_list, rownames(cell_prop)[(which(cell_prop[,cell_type] >= 0.5))])
   if(!use.groups) {
     de_pop <- matrix(0, nrow = length(gene_list), ncol = 4)
     colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est')
   } else {
-    de_pop <- matrix(0, nrow = length(gene_list), ncol = 5 + 2*length(unique(group_ids)))
+    group_names <- unique(group_ids)
+    n_groups <- length(group_names)
+    de_pop <- matrix(0, nrow = length(gene_list), ncol = 5 + 2*n_groups)
     colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est', 'delta',
-                          unlist(lapply(unique(group_ids), function(x) paste0(x,'_group_mean'))),
-                          unlist(lapply(unique(group_ids), function(x) paste0(x,'_group_sd'))))
+                          unlist(lapply(group_names, function(x) paste0(x,'_group_mean'))),
+                          unlist(lapply(group_names, function(x) paste0(x,'_group_sd'))))
   }
   rownames(de_pop) <- gene_list
+  ii <- 1
   for(gene in gene_list) {
-    means <- unlist(lapply(de_results_list, function(x) x$gene_fits$mean_val[gene,cell_type]))
-    sds <- unlist(lapply(de_results_list, function(x) x$gene_fits$s_mat[gene,ct_ind]))
-    sds[is.na(sds)] <- 1000
-    sig_p <- estimate_tau(means, sds, group_ids = group_ids)
-    var_t <- sds^2 + sig_p^2
-    if(!use.groups) {
-      var_est <- 1/sum(1 / var_t)
-      mean_est <- sum(means / var_t)*var_est
-    } else {
-      S2 <- 1/(aggregate(1/var_t,list(group_ids),sum)$x)
-      E <- (aggregate(means/var_t,list(group_ids),sum)$x)*S2
-      Delta <- estimate_tau(E, sqrt(S2))
-      var_T <- (Delta^2 + S2)
-      var_est <- 1/sum(1/var_T) # A_var
-      mean_est <- sum(E / var_T) * var_est # A_est
-    }
-    sd_est <- sqrt(var_est)
-    Z_est <- mean_est / sd_est
+    ii <- ii + 1
+    if(ii %% 1000 == 0)
+      message(paste('get_de_pop: testing gene,', gene,', of index:', ii))
+    #con <- unlist(lapply(de_results_list, function(x) gene %in%
+    #         names(which(x$gene_fits$con_mat[,cell_type]))))
+    con <- unlist(lapply(de_results_list, function(x)
+                           ifelse(gene %in% rownames(x$gene_fits$con_mat),
+                                  x$gene_fits$con_mat[gene,cell_type], FALSE)))
     if(use.groups)
-      de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, Delta, E, sqrt(S2))
-    else
-      de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est)
+      con <- unname(con & table(group_ids[con])[as.character(group_ids)] >= 2)
+    used_groups <- names(table(group_ids[con]))
+    if(sum(con) < MIN.CONV.REPLICATES || (use.groups && length(used_groups) < MIN.CONV.GROUPS)) {
+      if(use.groups)
+        de_pop[gene, ] <- c(-1, 0, 0, 0, 0, rep(0, n_groups), rep(-1, n_groups))
+      else
+        de_pop[gene, ] <- c(-1, 0, 0, 0)
+    } else {
+      means <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val[gene,cell_type]))
+      sds <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$s_mat[gene,ct_ind]))
+      sds[is.na(sds)] <- 1000
+      if(is.null(group_ids))
+        gid <- NULL
+      else
+        gid <- group_ids[con]
+      sig_p <- estimate_tau(means, sds, group_ids = gid)
+      var_t <- sds^2 + sig_p^2
+      if(!use.groups) {
+        var_est <- 1/sum(1 / var_t)
+        mean_est <- sum(means / var_t)*var_est
+      } else {
+        S2 <- 1/(aggregate(1/var_t,list(group_ids[con]),sum)$x)
+        E <- (aggregate(means/var_t,list(group_ids[con]),sum)$x)*S2
+        Delta <- estimate_tau(E, sqrt(S2))
+        var_T <- (Delta^2 + S2)
+        var_est <- 1/sum(1/var_T) # A_var
+        mean_est <- sum(E / var_T) * var_est # A_est
+      }
+      sd_est <- sqrt(var_est)
+      Z_est <- mean_est / sd_est
+      E_all <- rep(0, n_groups); s_all <- rep(-1, n_groups)
+      names(E_all) <- group_names; names(s_all) <- group_names
+      E_all[used_groups] <- E; s_all[used_groups] <- sqrt(S2)
+      if(use.groups)
+        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, Delta, E_all, s_all)
+      else
+        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est)
+    }
   }
   de_pop <- as.data.frame(de_pop)
   return(de_pop)
@@ -50,14 +84,14 @@ get_de_pop <- function(cell_type, de_results_list, use.groups = F, group_ids = N
 
 one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, cell_types_present,
                          q_thresh = .01, p_thresh = 1, filter = T, order_gene = F, plot_results = T,
-                         use.groups = F, group_ids = NULL) {
+                         use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
   print(paste0('one_ct_genes: population inference on cell type, ', cell_type))
-  de_pop <- get_de_pop(cell_type, de_results_list, use.groups = use.groups, group_ids = group_ids)
   myRCTD <- myRCTD_list[[1]]
-  gene_big <- Reduce(intersect, lapply(myRCTD_list,
-                              function(myRCTD) get_gene_list_type_wrapper(myRCTD, cell_type, cell_types_present)))
-  cell_type_means <- myRCTD@cell_type_info$info[[1]][gene_big,cell_types_present]
+  cell_type_means <- myRCTD@cell_type_info$info[[1]][,cell_types_present]
   cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
+  de_pop <- get_de_pop(cell_type, de_results_list, cell_prop, use.groups = use.groups, group_ids = group_ids,
+                       MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS)
+  gene_big <- rownames(de_pop)[which(de_pop$tau >= 0)]
   p_vals <- 2*(1-pnorm(abs(de_pop[gene_big,'Z_est'])))
   names(p_vals) <- gene_big
   q_vals<- p.adjust(p_vals,'BH')
@@ -83,7 +117,7 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
     if(order_gene)
       final_df <- final_df[order(gene_final), ]
     else
-      final_df <- final_df[order(-abs(final_df$mean_est)),]
+      final_df <- final_df[order(-abs(final_df$log_fc_est)),]
   #plot(log(final_df$expr,10), log(final_df$p,10))
   if(plot_results) {
     print('writing')

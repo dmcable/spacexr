@@ -4,12 +4,18 @@
 \alias{GLAMDE.population.inference}
 \title{Runs population-level differential expression inference for a \code{\linkS4class{RCTD.replicates}} object}
 \usage{
-GLAMDE.population.inference(RCTD.replicates, use.groups = FALSE)
+GLAMDE.population.inference(
+  RCTD.replicates,
+  use.groups = FALSE,
+  MIN.CONV.REPLICATES = 2
+)
 }
 \arguments{
 \item{RCTD.replicates}{a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.}
 
 \item{use.groups}{(default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot}
+
+\item{MIN.CONV.REPLICATES}{(default 2) the minimum number of replicates (if not use.groups) for which a gene must converge}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}

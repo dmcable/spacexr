@@ -52,7 +52,7 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
     stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates.')
   RCTD.reps <- list()
   for(i in 1:length(spatialRNA.replicates)) {
-    print(paste('create.RCTD.replicates: creating RCTD for replicate',i))
+    message(paste('create.RCTD.replicates: creating RCTD for replicate',i))
     RCTD.reps[[i]] <- create.RCTD(spatialRNA.replicates[[i]], reference, max_cores = max_cores, test_mode = test_mode,
                                         gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg,
                                         fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_max = UMI_max, UMI_min_sigma = UMI_min_sigma,
@@ -80,7 +80,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
   if(!(doublet_mode %in% c('doublet','multi','full')))
     stop(paste0("run.RCTD.replicates: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
   for(i in 1:length(RCTD.replicates@RCTD.reps)) {
-    print(paste('run.RCTD.replicates: running RCTD for replicate',i))
+    message(paste('run.RCTD.replicates: running RCTD for replicate',i))
     RCTD.replicates@RCTD.reps[[i]] <- run.RCTD(RCTD.replicates@RCTD.reps[[i]], doublet_mode = doublet_mode)
   }
   return(RCTD.replicates)
@@ -109,20 +109,26 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{GLAMDE.population.inference}} function.)
+#' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for GLAMDE
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
 run.GLAMDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates, cell_types, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
-                                 sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, population_de = T) {
+                                 sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
+                                 fdr = .01, population_de = T, replicate_index = NULL) {
   if(is.null(cell_types))
     stop('run.GLAMDE.replicates: cell_types must not be null.')
   if(class(explanatory.variable.replicates) != 'list')
     stop('run.GLAMDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
   if(length(RCTD.replicates@RCTD.reps) != length(explanatory.variable.replicates))
     stop('create.RCTD.replicates: length(explanatory.variable.replicates) is not equal to the number of RCTD replicates, as required.')
-  for(i in 1:length(RCTD.replicates@RCTD.reps)) {
-    print(paste('run.GLAMDE.replicates: running GLAMDE for replicate',i))
+  if(is.null(replicate_index))
+    replicate_index <- 1:length(RCTD.replicates@RCTD.reps)
+  if(any(!(replicate_index %in% 1:length(RCTD.replicates@RCTD.reps))))
+    stop('run.GLAMDE.replicates: replicate_index must be a subest of 1:N_replicates')
+  for(i in replicate_index) {
+    message(paste('run.GLAMDE.replicates: running GLAMDE for replicate',i))
     RCTD.replicates@RCTD.reps[[i]] <- run.GLAMDE.single(
       RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
                                                     gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
@@ -167,11 +173,13 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #'
 #' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.
 #' @param use.groups (default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot
+#' @param MIN.CONV.REPLICATES (default 2) the minimum number of replicates (if not use.groups) for which a gene must converge
+#' @param MIN.CONV.GROUPS (default 2) the minimum number of groups (if use.groups) for which a gene must converge
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE) {
-  print(paste0('GLAMDE.population.inference: running population DE inference with use.groups=', use.groups))
+GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
+  message(paste0('GLAMDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
   de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   myRCTD <- RCTDde_list[[1]]
@@ -182,7 +190,9 @@ GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE) {
   final_df <- list()
   for(cell_type in cell_types) {
     res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present,
-                        plot_results = F, use.groups = use.groups, group_ids = RCTD.replicates@group_ids)
+                        plot_results = F, use.groups = use.groups,
+                        group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
+                        MIN.CONV.GROUPS = MIN.CONV.GROUPS)
     de_pop_all[[cell_type]] <- res$de_pop
     gene_final_all[[cell_type]] <- res$gene_final
     final_df[[cell_type]] <- res$final_df

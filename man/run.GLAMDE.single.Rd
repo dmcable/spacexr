@@ -25,10 +25,10 @@ run.GLAMDE.single(
 \item{explanatory.variable}{a named numeric vector representing the explanatory variable used for explaining differential expression in GLAMDE. Names of the variable
 are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
 
-\item{cell_types}{the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurences of
+\item{cell_types}{the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurrences of
 at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}}
 
-\item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
+\item{cell_type_threshold}{(default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
 
 \item{gene_threshold}{(default 5e-5) minimum average normalized expression required for selecting genes}
 
@@ -41,7 +41,7 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 
 \item{PRECISION.THRESHOLD}{(default 0.01) for checking for convergence, the maximum parameter change per algorithm step}
 
-\item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occuring often enough
+\item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occurring often enough
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}

@@ -16,7 +16,8 @@ run.GLAMDE.replicates(
   PRECISION.THRESHOLD = 0.01,
   cell_types_present = NULL,
   fdr = 0.01,
-  population_de = T
+  population_de = T,
+  replicate_index = NULL
 )
 }
 \arguments{
@@ -47,6 +48,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
 \item{population_de}{whether population-level DE should be run (can also be run later using the \code{\link{GLAMDE.population.inference}} function.)}
+
+\item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for GLAMDE}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE algorithm. See \code{\linkS4class{RCTD.replicates}}
