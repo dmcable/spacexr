@@ -10,20 +10,20 @@ get_means_sds <- function(cell_type, gene, de_results_list) {
   return(list(means = means, sds = sds))
 }
 
-get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
+get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5) {
   if(!use.groups)
     group_ids <- NULL
   ct_ind <- which(colnames(de_results_list[[1]]$gene_fits$mean_val) == cell_type)*2
   gene_list <- Reduce(union, lapply(de_results_list, function(x) names(which(x$gene_fits$con_mat[,cell_type]))))
-  gene_list <- intersect(gene_list, rownames(cell_prop)[(which(cell_prop[,cell_type] >= 0.5))])
+  gene_list <- intersect(gene_list, rownames(cell_prop)[(which(cell_prop[,cell_type] >= CT.PROP))])
   if(!use.groups) {
-    de_pop <- matrix(0, nrow = length(gene_list), ncol = 4)
-    colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est')
+    de_pop <- matrix(0, nrow = length(gene_list), ncol = 5)
+    colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est', 'p_cross')
   } else {
     group_names <- unique(group_ids)
     n_groups <- length(group_names)
-    de_pop <- matrix(0, nrow = length(gene_list), ncol = 5 + 2*n_groups)
-    colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est', 'delta',
+    de_pop <- matrix(0, nrow = length(gene_list), ncol = 6 + 2*n_groups)
+    colnames(de_pop) <- c('tau', 'log_fc_est', 'sd_est', 'Z_est', 'p_cross','delta',
                           unlist(lapply(group_names, function(x) paste0(x,'_group_mean'))),
                           unlist(lapply(group_names, function(x) paste0(x,'_group_sd'))))
   }
@@ -43,9 +43,9 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
     used_groups <- names(table(group_ids[con]))
     if(sum(con) < MIN.CONV.REPLICATES || (use.groups && length(used_groups) < MIN.CONV.GROUPS)) {
       if(use.groups)
-        de_pop[gene, ] <- c(-1, 0, 0, 0, 0, rep(0, n_groups), rep(-1, n_groups))
+        de_pop[gene, ] <- c(-1, 0, 0, 0, 0, 0, rep(0, n_groups), rep(-1, n_groups))
       else
-        de_pop[gene, ] <- c(-1, 0, 0, 0)
+        de_pop[gene, ] <- c(-1, 0, 0, 0, 0)
     } else {
       means <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val[gene,cell_type]))
       sds <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$s_mat[gene,ct_ind]))
@@ -59,6 +59,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
       if(!use.groups) {
         var_est <- 1/sum(1 / var_t)
         mean_est <- sum(means / var_t)*var_est
+        p_cross <- get_p_qf(means, sds)
       } else {
         S2 <- 1/(aggregate(1/var_t,list(group_ids[con]),sum)$x)
         E <- (aggregate(means/var_t,list(group_ids[con]),sum)$x)*S2
@@ -66,16 +67,17 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
         var_T <- (Delta^2 + S2)
         var_est <- 1/sum(1/var_T) # A_var
         mean_est <- sum(E / var_T) * var_est # A_est
+        p_cross <- get_p_qf(E, sqrt(S2))
+        E_all <- rep(0, n_groups); s_all <- rep(-1, n_groups)
+        names(E_all) <- group_names; names(s_all) <- group_names
+        E_all[used_groups] <- E; s_all[used_groups] <- sqrt(S2)
       }
       sd_est <- sqrt(var_est)
       Z_est <- mean_est / sd_est
-      E_all <- rep(0, n_groups); s_all <- rep(-1, n_groups)
-      names(E_all) <- group_names; names(s_all) <- group_names
-      E_all[used_groups] <- E; s_all[used_groups] <- sqrt(S2)
       if(use.groups)
-        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, Delta, E_all, s_all)
+        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, p_cross, Delta, E_all, s_all)
       else
-        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est)
+        de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, p_cross)
     }
   }
   de_pop <- as.data.frame(de_pop)
@@ -84,20 +86,20 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
 
 one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, cell_types_present,
                          q_thresh = .01, p_thresh = 1, filter = T, order_gene = F, plot_results = T,
-                         use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
+                         use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4) {
   print(paste0('one_ct_genes: population inference on cell type, ', cell_type))
   myRCTD <- myRCTD_list[[1]]
   cell_type_means <- myRCTD@cell_type_info$info[[1]][,cell_types_present]
   cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
   de_pop <- get_de_pop(cell_type, de_results_list, cell_prop, use.groups = use.groups, group_ids = group_ids,
-                       MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS)
+                       MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP)
   gene_big <- rownames(de_pop)[which(de_pop$tau >= 0)]
   p_vals <- 2*(1-pnorm(abs(de_pop[gene_big,'Z_est'])))
   names(p_vals) <- gene_big
   q_vals<- p.adjust(p_vals,'BH')
   if(filter)
     gene_final <- intersect(gene_big[which(q_vals < q_thresh & p_vals < p_thresh)],
-                       gene_big[which(abs(de_pop[gene_big,'log_fc_est']) > 0.4)])
+                       gene_big[which(abs(de_pop[gene_big,'log_fc_est']) > log_fc_thresh)])
   else
     gene_final <- gene_big
   final_df <- cbind(de_pop[gene_final,],cell_prop[gene_final,c(cell_type)],
@@ -134,4 +136,15 @@ estimate_tau <- function(x, s, group_ids = NULL) {
     return(sqrt(mean(unlist(lapply(unique(group_ids),function(val)
       max(var(x[group_ids == val]) - mean((s[group_ids == val])^2),0))))))
   }
+}
+
+get_p_qf <- function(x, se, delta = 0) {
+  S <- diag(se^2+delta^2)
+  n <- length(x)
+  A <- matrix(-1/(n*(n-1)), nrow = n, ncol =n)
+  diag(A) <- 1/n
+  A
+  AS <- A %*% S
+  lambda <- eigen(AS)$values
+  CompQuadForm::imhof(var(x), lambda)$Qq
 }

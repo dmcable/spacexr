@@ -175,10 +175,14 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param use.groups (default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot
 #' @param MIN.CONV.REPLICATES (default 2) the minimum number of replicates (if not use.groups) for which a gene must converge
 #' @param MIN.CONV.GROUPS (default 2) the minimum number of groups (if use.groups) for which a gene must converge
+#' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
+#' @param q_thresh (default 0.01) false discovery rate
+#' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2) {
+GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
+                                        MIN.CONV.GROUPS = 2, CT.PROP = 0.5, q_thresh = 0.01, log_fc_thresh = 0.4) {
   message(paste0('GLAMDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
   de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
@@ -192,7 +196,7 @@ GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN
     res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present,
                         plot_results = F, use.groups = use.groups,
                         group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
-                        MIN.CONV.GROUPS = MIN.CONV.GROUPS)
+                        MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP, q_thresh = q_thresh, log_fc_thresh = 0.4)
     de_pop_all[[cell_type]] <- res$de_pop
     gene_final_all[[cell_type]] <- res$gene_final
     final_df[[cell_type]] <- res$final_df
@@ -216,7 +220,9 @@ save.GLAMDE.replicates <- function(RCTD.replicates, resultsdir) {
   myRCTD <- RCTD.replicates@RCTD.reps[[1]]
   cell_types <- myRCTD@internal_vars_de$cell_types
   for(cell_type in cell_types) {
+    write.csv(RCTD.replicates@population_de_results[[cell_type]],
+              file.path(resultsdir,paste0(cell_type,'_cell_type_genes_all.csv')))
     write.csv(RCTD.replicates@population_sig_gene_df[[cell_type]],
-              file.path(resultsdir,paste0(cell_type,'_cell_type_genes.csv')))
+              file.path(resultsdir,paste0(cell_type,'_cell_type_genes_sig.csv')))
   }
 }

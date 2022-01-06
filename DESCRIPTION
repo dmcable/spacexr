@@ -24,6 +24,7 @@ Imports:
 	knitr,
 	rmarkdown,
 	fields,
-	mgcv
+	mgcv,
+	CompQuadForm
 RoxygenNote: 7.1.1
 VignetteBuilder: knitr
