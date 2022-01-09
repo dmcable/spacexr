@@ -102,10 +102,11 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
                        gene_big[which(abs(de_pop[gene_big,'log_fc_est']) > log_fc_thresh)])
   else
     gene_final <- gene_big
-  final_df <- cbind(de_pop[gene_final,],cell_prop[gene_final,c(cell_type)],
-                    cell_type_means[gene_final,cell_type], q_vals[gene_final])
-  colnames(final_df) <- c(colnames(de_pop), 'ct_prop' ,'expr' ,'q_val')
-  final_df$p <- 2*(1 - pnorm(abs(final_df$Z_est)))
+  gene_df <- cbind(de_pop[gene_big,],cell_prop[gene_big,c(cell_type)],
+                    cell_type_means[gene_big,cell_type], q_vals[gene_big])
+  colnames(gene_df) <- c(colnames(de_pop), 'ct_prop' ,'expr' ,'q_val')
+  gene_df$p <- 2*(1 - pnorm(abs(gene_df$Z_est)))
+  final_df <- gene_df[gene_final, ]
   L <- length(myRCTD_list)
   mean_sd_df <- matrix(0, nrow = length(gene_final), ncol = L*2)
   rownames(mean_sd_df) <- gene_final
@@ -126,7 +127,7 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
     write.csv(final_df,file.path(resultsdir,paste0(cell_type,'_cell_type_genes.csv')))
   }
   print('done')
-  return(list(de_pop = de_pop, gene_final = gene_final, final_df = final_df))
+  return(list(de_pop = gene_df, gene_final = gene_final, final_df = final_df))
 }
 
 estimate_tau <- function(x, s, group_ids = NULL) {
@@ -146,5 +147,5 @@ get_p_qf <- function(x, se, delta = 0) {
   A
   AS <- A %*% S
   lambda <- eigen(AS)$values
-  CompQuadForm::imhof(var(x), lambda)$Qq
+  max(CompQuadForm::imhof(var(x), pmax(lambda, 10^(-8)), epsabs = 10^(-8), epsrel = 10^(-8))$Qq, 0)
 }
