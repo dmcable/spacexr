@@ -23,17 +23,17 @@ and the single-cell RNA-sequencing references.
 
 For each single-cell dataset, we generated a Seurat object and saved as
 an RDS file. For example, the script
-[dropSeqProcess.R](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/dropSeqProcess.R)
+[dropSeqProcess.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/dropSeqProcess.R)
 is used to convert the hippocampus single-cell dataset to a Seurat
 object.
 
 To obtain a simulated doublet dataset from each of the single-cell and
 single-nucleus references, we ran the script
-[doubletsimulation.R](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/doubletsimulation.R).
+[doubletsimulation.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/doubletsimulation.R).
 
 To cluster interneuron subtypes into three subtype classes, we ran the
 script
-[subcluster.R](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/subcluster.R).
+[subcluster.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/subcluster.R).
 This script additionally creates a Seurat object for the interneuron
 subtypes and computes average cell type profiles.
 
@@ -42,7 +42,7 @@ subtypes and computes average cell type profiles.
 For each dataset, RCTD was run according to the instructions for the
 [spacexr package](https://github.com/dmcable/spacexr). Configuration
 files used are located in
-[conf](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/conf).
+[conf](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/conf).
 Specifically, ‘datasetCerPuck.yml’ was used for the Cerebellum Slide-seq
 dataset, ‘datasetHippoPuck.yml’ was used for the hippocampus Slide-seq
 dataset, ‘datasetCross.yml’ was used for the simulated Cerebellum
@@ -52,7 +52,7 @@ subtypes.
 
 On the simulated doublets dataset, in addition to running RCTD with the
 typical pipeline, the script
-[weightDecompose.R](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/weightDecompose.R)
+[weightDecompose.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/weightDecompose.R)
 was used to evaluate RCTD’s ability to predict cell type proportion.
 
 ### Generating Main Figures
@@ -60,49 +60,49 @@ was used to evaluate RCTD’s ability to predict cell type proportion.
 We provide R Markdown files that were used to create the main figures:
 
 -   [Unsupervised clustering on the Slide-seq
-    cerebellum](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure1.html)
+    cerebellum](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure1.html)
     (Figure 1)
 -   [Platform Effect
-    Prediction](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure2-platform-effect.html)
+    Prediction](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure2-platform-effect.html)
     (Figure 1,2)
 -   [Comparison of Ordinary Least Squares and
-    RCTD](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure2.html)
+    RCTD](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure2.html)
     (Figure 1,2)
 -   [Validation of RCTD on decomposition of simulated
-    doublets](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure3.html)
+    doublets](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure3.html)
     (Figure 3)
 -   [RCTD on the Slide-seq
-    cerebellum](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure4.html)
+    cerebellum](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure4.html)
     (Figure 4)
 -   [Spatially localizing 27 interneuron
-    subtypes](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure5-all.html)
+    subtypes](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure5-all.html)
     (Figure 5)
 -   [RCTD on the Hippocampus and spatially localizing three interneuron
-    subclasses](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure5-interneurons.html)
+    subclasses](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure5-interneurons.html)
     (Figure 5)
 -   [Finding Astrocyte Genes Dependent on Cellular
-    Colocalization](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure6-astrocytes.html)
+    Colocalization](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure6-astrocytes.html)
     (Figure 6)
 -   [Finding Spatially Variable
-    Genes](https://raw.githack.com/dmcable/spacexr/dev/AnalysisPaper/MainFigures/figure6-spatialgenes.html)
+    Genes](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure6-spatialgenes.html)
     (Figure 6)
 
 We have also provided
-[here](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/MainFigures/Updated-Compatability)
+[here](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/MainFigures/Updated-Compatability)
 additional R Markdown files to update these analyses to be compatible
 with the current version of spacexr:
 
 ### Supplemental Figures
 
 Prepocessing of the Visium dataset occured using
-[processVisium.R](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/processVisium.R).
+[processVisium.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/processVisium.R).
 NMFreg on the Slide-seq cerebellum occurred using the NMFreg IPython
 notebook, and we did
-[pre-processing](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/prepareNMF.R)
+[pre-processing](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/prepareNMF.R)
 and
-[post-processing](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/Rscripts/processNMF.R)
+[post-processing](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/processNMF.R)
 in R. Supplemental figures were generated with the
-[supp.Rmd](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/SuppFigures/supp.Rmd)
+[supp.Rmd](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/SuppFigures/supp.Rmd)
 and
-[supp_part2.Rmd](https://github.com/dmcable/spacexr/tree/dev/AnalysisPaper/SuppFigures/supp_part2.Rmd)
+[supp_part2.Rmd](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/SuppFigures/supp_part2.Rmd)
 R markdown files.

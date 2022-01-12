@@ -121,3 +121,13 @@ check_vector <- function(variable, var_name, f_name, require_int = FALSE) {
          stop(paste0(f_name,': variable does not contain integers'))
    }
 }
+
+convert.old.RCTD <- function(myRCTD) {
+   if(class(myRCTD@reference )[1] == 'Seurat') {
+      ref <- convert_old_reference(myRCTD@reference)
+   } else {
+      ref <- myRCTD@reference
+   }
+   new("RCTD", spatialRNA = myRCTD@spatialRNA, originalSpatialRNA = myRCTD@spatialRNA, reference = ref,
+       config = myRCTD@config, cell_type_info = myRCTD@cell_type_info, internal_vars = myRCTD@internal_vars, results = myRCTD@results)
+}
