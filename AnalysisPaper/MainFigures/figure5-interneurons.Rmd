@@ -28,14 +28,6 @@ source('../../R/prob_model.R')
 
 ```{r inter}
 #given a puck object, returns a puck with counts filtered based on UMI threshold and gene list
-restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000) {
-  keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max)
-  puck@counts = puck@counts[gene_list,keep_loc]
-  if(length(puck@cell_labels) > 0) #check cell_labels non null
-    puck@cell_labels = puck@cell_labels[keep_loc]
-  puck@nUMI = puck@nUMI[keep_loc]
-  return(puck)
-}
 
 #Command used to save the data from the gather_results.R script:
 #save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
@@ -54,11 +46,11 @@ second_type_list <- unlist(list(results_df[doub_first,]$second_type,results_df[d
 names(second_type_list) <- doublet_barcodes
 inter_barcodes <- c(singlet_barcodes, doublet_barcodes)
 
-puck <- readRDS('../../Data/SpatialRNA/Puck_200115_08/puckCropped.RDS')
+puck <- readRDS("/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/Share/scp_rctd_round2/puckCropped_hippocampus.rds")
 cell_type_info <- readRDS(file.path(refdir,'info_renorm_coarse.RDS'))
 gene_list <- intersect(rownames(cell_type_info[[1]]),rownames(puck@counts))
-puck <- restrict_puck(puck, names(which(puck@nUMI >= 100)))
-puck <- restrict_counts(puck, gene_list, UMI_max = 200000)
+puck <- spacexr:::restrict_puck(puck, names(which(puck@nUMI >= 100)))
+puck <- spacexr:::restrict_counts(puck, gene_list, UMI_max = 200000)
 
 Q_mat <- readRDS(file.path('../../Data/SpatialRNA/Puck_200115_08/results','Q_mat.RDS'))
 N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
@@ -273,14 +265,14 @@ cell_type = "Interneuron"
 marker_data_de <- readRDS('../../Data/SpatialRNA/Puck_200115_08/results/marker_data_de_standard.RDS')
 cur_range <- c(0,0.010*MULT)
 gran_genes <- intersect(rownames(marker_data_de[marker_data_de$cell_type == cell_type,]), rownames(puck@counts))
-p7 <- RCTD::plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = .4, alpha = 1, small_point = T)
+p7 <- spacexr::plot_puck_continuous(puck,colnames(puck@counts)[puck@nUMI >= 300], MULT*colSums(puck@counts[gran_genes,])/puck@nUMI, ylimit = cur_range, size = .4, alpha = 1, small_point = T)
 p7 <- my_mod(p7)+ggplot2::scale_colour_gradientn(paste(cell_type,"Markers"), colors = my_pal, limits = cur_range, breaks = cur_range)
 
 cur_range <- c(0,1)
 all_weights <- results$weights_doublet[puck@nUMI >= 300 & results_df$spot_class == "doublet_certain" & results_df$second_type == cell_type,2, drop=FALSE]
 all_weights <- rbind(all_weights, results$weights_doublet[puck@nUMI >= 100 & !(results_df$spot_class == "reject") & results_df$first_type == cell_type,1,drop=FALSE])
 all_weights_vec <- as.vector(all_weights); names(all_weights_vec) <- rownames(all_weights)
-p8 <- RCTD::plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range, size = .6, alpha = 1, small_point = T)
+p8 <- spacexr::plot_puck_continuous(puck, rownames(all_weights), all_weights_vec, ylimit = cur_range, size = .6, alpha = 1, small_point = T)
 p8 <- my_mod(p8)+ggplot2::scale_colour_gradientn(paste(cell_type,"Weight"), colors = my_pal, limits = cur_range, breaks = cur_range)
 ggarrange(p7,p8,nrow=1,ncol=2)
 ```
