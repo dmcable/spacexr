@@ -28,8 +28,8 @@ load_all()
 ```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
 # Load in DE results and cluster
 pwd = getwd()
-datadir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/data/tumor','/')
-resultsdir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/results/ResultsTumorNonparam','/')
+datadir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/data/tumor','/')
+resultsdir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/results/ResultsTumorNonparam','/')
 new_X <- readRDS(file.path(resultsdir, 'new_X.rds'))
 orig_new_coords <- readRDS(file.path(resultsdir, 'orig_new_coords.rds'))
 myRCTDde <- readRDS(file.path(resultsdir,'myRCTDde.rds'))
@@ -67,7 +67,7 @@ if(F) {
 
 ```{r} 
 p <- list()
-resultsdir_par <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/results/ResultsTumor','/')
+resultsdir_par <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/results/ResultsTumor','/')
 myRCTDpar = readRDS(paste0(resultsdir_par,'myRCTDde.rds'))
 res_genes <- myRCTDpar@de_results$res_gene_list$CAF
 over_genes <- tolower(rownames(res_genes[res_genes$log_fc > 0,]))

@@ -87,7 +87,7 @@ region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < 
 de_gene <- 'Nrxn3'
 for(condi in 1:COND) {
   de_ground_truth <- c(gt_val, de_gt_vals[condi])
-  de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+  de_res <- sim_CSIDE(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
                        UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta,UMI_vect,
                        other_methods = T, region_orig = region) 
   alpha_res[,, condi] <- de_res$e_res
@@ -166,7 +166,7 @@ for(condi in 1:COND) {
   thresh <- de_gt_vals[condi]
   region <- region_base
   region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < thresh]
-  de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+  de_res <- sim_CSIDE(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
                        UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect, 
                        other_methods = T,region_orig = region) 
   alpha_res[,, condi] <- de_res$e_res
@@ -259,7 +259,7 @@ for(non_null in c(T,F)) {
     print(i)
     de_gene <- cur_gene_list[i]
     de_ground_truth[2] <- exp(de_vals[i])
-    de_res <- sim_DEGLAM(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+    de_res <- sim_CSIDE(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
                          UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect) 
     e_all[,, i] <- de_res$e_res
     s_all[,,i] <- de_res$s_res

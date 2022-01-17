@@ -3,7 +3,7 @@ library(spacexr)
 library(doParallel)
 library(ggplot2)
 library(geometry)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/personal_utils.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/analysis/personal_utils.R')
 #datadir <- '../RCTD/data/SpatialRNA/Puck_210605/24'
 datadir <- '../RCTD/data/SpatialRNA/Puck_210605/James_Results'
 puck_no <- 'Puck_210605_24'

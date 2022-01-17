@@ -1,4 +1,4 @@
-sim_DEGLAM <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+sim_CSIDE <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
                        UMI1, UMI_tot, sigma_init, puck, cell_type_info, beta, UMI_vect,
                        other_methods = F,region_orig = NULL, subset_cells = NULL, regularize_expr = F) {
   puck_mod <- puck

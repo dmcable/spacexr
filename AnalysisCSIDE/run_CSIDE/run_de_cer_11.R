@@ -6,20 +6,20 @@ library(ggplot2)
 #source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/de.R')
 #source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/R/prob_model.R')
 #load in RCTD obj
-id <- '09'
+id <- '11'
 puck_no <- paste0('190926_', id)
 datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
 resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
 myRCTD<- readRDS(file.path(datadir,'myRCTD_cer_reps.rds'))
 load(file.path(datadir,"regions.RData"))
-explanatory.variable <- c(rep(0,length(nodular_09)), rep(1,length(anterior_09)))#FILL IN
-names(explanatory.variable) <- c(nodular_09, anterior_09)
+explanatory.variable <- c(rep(0,length(nodular_11)), rep(1,length(anterior_11)))#FILL IN
+names(explanatory.variable) <- c(nodular_11, anterior_11)
 #Check cell types
 cell_types = c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes')
-#DEGLAM:::aggregate_cell_types(myRCTD, names(explanatory.variable))
+#CSIDE:::aggregate_cell_types(myRCTD, names(explanatory.variable))
 #de
 puck <- readRDS(file.path(resultsdir, 'puckCropped.rds'))
-myRCTD@originalSpatialRNA <- DEGLAM:::coerce_old(puck)
+myRCTD@originalSpatialRNA <- CSIDE:::coerce_old(puck)
 colnames(myRCTD@originalSpatialRNA@counts) <- unlist(lapply(colnames(myRCTD@originalSpatialRNA@counts), function(x) paste0(x,'_',id)))
 rownames(myRCTD@originalSpatialRNA@coords) <- unlist(lapply(rownames(myRCTD@originalSpatialRNA@coords), function(x) paste0(x,'_',id)))
 names(myRCTD@originalSpatialRNA@nUMI) <- unlist(lapply(names(myRCTD@originalSpatialRNA@nUMI), function(x) paste0(x,'_',id)))

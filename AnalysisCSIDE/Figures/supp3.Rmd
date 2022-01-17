@@ -33,7 +33,7 @@ IM_DIR <- '../../../RCTD/data/Images/Plaque/210715/Processed/'
 ALIGN_DIR <- '../../../RCTD/data/Images/Plaque/210715/AlignmentResults/'
 myRCTD <- readRDS(file.path(datadir, 'myRCTDde_thresh.rds'))   
 cell_types <- myRCTD@internal_vars_de$cell_types
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/analysis/helper_functions/merge_de_helper.R')
 ```
 
 ### Save plaque image

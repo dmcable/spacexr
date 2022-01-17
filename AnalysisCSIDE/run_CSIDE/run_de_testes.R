@@ -2,7 +2,7 @@ library(spacexr)
 library(Matrix)
 library(ggplot2)
 library(devtools)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/analysis/helper_functions/testes_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/analysis/helper_functions/testes_helper.R')
 load_all()
 datadir <- '../RCTD/data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))

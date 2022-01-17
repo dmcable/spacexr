@@ -128,7 +128,7 @@ plot_puck_continuous(cropped_puck, colnames(cropped_puck@counts) , explanatory.v
 saveRDS(explanatory.variable, file.path(resultsdir, paste0('exvar',target_type,'.rds')))
 
 # run DE. Won't run on all genes, only the highly expressed ones in both spatialRNA and reference
-# DEGLAM automatically checks for what cell types to use but since ev is distance from monocytes, it doesn't make sense to measure DE of monocytes so we have a custom list
+# CSIDE automatically checks for what cell types to use but since ev is distance from monocytes, it doesn't make sense to measure DE of monocytes so we have a custom list
 cell_types = c("CAF","hepatocyte 2","vascular smooth mc")
 cell_types_present = c("CAF","hepatocyte 2","vascular smooth mc", 'monocyte/DC')
 myRCTD@config$max_cores <- 4
