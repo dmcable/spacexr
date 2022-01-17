@@ -44,7 +44,8 @@ read.VisiumSpatialRNA <- function (datadir)
 #' @export
 read.SpatialRNA <- function(datadir, count_file = "counts.csv", coords_file = 'coords.csv') {
   coords <- readr::read_csv(file = paste(datadir,coords_file,sep="/"))
-  counts <- readr::read_csv(file = paste(datadir,count_file,sep="/"))
+  counts <- data.table::fread(file = paste(datadir,count_file,sep="/"), check.names = T)
+  counts <- tibble::as_tibble(counts)
   colnames(coords)[2] = 'x' #renaming xcoord -> x
   colnames(coords)[3] = 'y' #renaming ycoord -> y
   counts = tibble::column_to_rownames(counts, var = colnames(counts)[1])

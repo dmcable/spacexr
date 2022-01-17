@@ -94,7 +94,7 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
   de_pop <- get_de_pop(cell_type, de_results_list, cell_prop, use.groups = use.groups, group_ids = group_ids,
                        MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP)
   gene_big <- rownames(de_pop)[which(de_pop$tau >= 0)]
-  p_vals <- 2*(1-pnorm(abs(de_pop[gene_big,'Z_est'])))
+  p_vals <- 2*(pnorm(-abs(de_pop[gene_big,'Z_est'])))
   names(p_vals) <- gene_big
   q_vals<- p.adjust(p_vals,'BH')
   if(filter)
@@ -105,7 +105,7 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
   gene_df <- cbind(de_pop[gene_big,],cell_prop[gene_big,c(cell_type)],
                     cell_type_means[gene_big,cell_type], q_vals[gene_big])
   colnames(gene_df) <- c(colnames(de_pop), 'ct_prop' ,'expr' ,'q_val')
-  gene_df$p <- 2*(1 - pnorm(abs(gene_df$Z_est)))
+  gene_df$p <- 2*(pnorm(-abs(gene_df$Z_est)))
   final_df <- gene_df[gene_final, ]
   L <- length(myRCTD_list)
   mean_sd_df <- matrix(0, nrow = length(gene_final), ncol = L*2)
