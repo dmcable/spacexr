@@ -2,15 +2,15 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{make_de_plots_genes}
 \alias{make_de_plots_genes}
-\title{Makes spatial gene GLAMDE plots (colored continuously) on RCTD object, after running GLAMDE}
+\title{Makes spatial gene CSIDE plots (colored continuously) on RCTD object, after running CSIDE}
 \usage{
 make_de_plots_genes(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }
 \description{
-Makes spatial gene GLAMDE plots (colored continuously) on RCTD object, after running GLAMDE
+Makes spatial gene CSIDE plots (colored continuously) on RCTD object, after running CSIDE
 }

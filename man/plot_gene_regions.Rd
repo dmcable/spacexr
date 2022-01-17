@@ -15,7 +15,7 @@ plot_gene_regions(
 )
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{cell_type}{cell_type to be plotted (only single cell type pixels)}
 

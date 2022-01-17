@@ -9,7 +9,7 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy = FALSE, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq cerebellum
+# CSIDE on the Slide-seq cerebellum
 
 ### Setup
 
@@ -62,7 +62,7 @@ saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all.rds'))
 saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all.rds'))
 ```
 
-### Load GLAMDE results
+### Load CSIDE results
 
 ```{r de-population-load}
 de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all.rds'))
@@ -92,7 +92,7 @@ plot_df$label[!plot_df$sig] <- NA
 plot_df$mean <- plot_df$mean * log(exp(1),2) #convert to log scale
 p <- ggplot(plot_df, aes(x=mean, y = y, color = ct)) + geom_point() + theme_classic()  +
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
-  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = FALSE) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE') + ylab('GLAMDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") )
+  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = FALSE) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE') + ylab('CSIDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") )
 p
 ```
 

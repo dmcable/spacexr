@@ -21,9 +21,9 @@ library(GSA)
 load_all()
 ```
 
-# Nonparametric GLAMDE on the Slide-seq KP tumor
+# Nonparametric CSIDE on the Slide-seq KP tumor
 
-### Load in GLAMDE Results and cluster significant genes
+### Load in CSIDE Results and cluster significant genes
 
 ```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
 # Load in DE results and cluster
@@ -169,7 +169,7 @@ colnames(plot_df)[1] <- 'Cell_type'
 ggplot(plot_df, aes(x=factor(Var2),y=value,fill=Cell_type)) + geom_bar(stat = 'identity', position = 'dodge') + theme_classic() +  theme(axis.text.x = element_text(angle=5,vjust = 1)) + ylab("") + xlab("")
 ```
 
-### Analyze variance explained by spatial GLAMDE model
+### Analyze variance explained by spatial CSIDE model
 
 ```{r fig-0.5, fig.height = 6, fig.width = 6, fig.align='center'}
 gene <- 'Krt18'

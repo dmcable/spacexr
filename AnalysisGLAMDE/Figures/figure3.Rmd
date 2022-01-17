@@ -9,7 +9,7 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy = FALSE, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq cerebellum
+# CSIDE on the Slide-seq cerebellum
 
 ### Visualize cerebellum regions
 
@@ -77,14 +77,14 @@ saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all.rds'))
 saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all.rds'))
 ```
 
-### Load GLAMDE results
+### Load CSIDE results
 
 ```{r de-population-load}
 de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all.rds'))
 gene_final_all <- readRDS(file.path(resultsdir, 'gene_final_all.rds'))
 ```
 
-### Plot genes discovered by GLAMDE to exhibit cell type-specific differential expression
+### Plot genes discovered by CSIDE to exhibit cell type-specific differential expression
 
 ```{r fig-3, fig.height = 6, fig.width = 10, fig.align='center'}
 myRCTD <- RCTDde_list[[1]]
@@ -140,7 +140,7 @@ p <- ggplot(plot_df) + geom_point(aes(x = (gene), y = pmin(Z,15), color = cell_t
    geom_hline(yintercept=0) + theme_classic()+geom_vline(xintercept=v_line_list, linetype = 'dotted') + facet_grid(. ~ max_ct, scales = "free_x", space = "free_x") + ylab('Cell type-specific Z-score') + xlab('Gene')+ labs(color = "Cell Type", size = "Estimated DE Magnitude")+ theme(axis.text.x = element_text(size=10,angle=30,hjust = 1)) + ggplot2::scale_color_manual("Cell Type",values = my_pal_curr, breaks = c('Astrocytes','Bergmann','Granule','Purkinje','Oligodendrocytes'), labels = c('Astrocytes','Bergmann','Granule','Purkinje','Oligo')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.5,1))
 p
 ```
-### Plot HCR validation vs GLAMDE estimated DE
+### Plot HCR validation vs CSIDE estimated DE
 ```{r fig-4, fig.height = 6, fig.width = 8, fig.align='center'}
 hcr_estimates <- -c(2.990715,	0.3143165,0.8323186, 0.152781,-1.114702,-0.4867042)
 genes <- c('Aldoc', 'Aldoc', 'Mybpc1','Tmem132c','Plcb4', 'Plcb4')
@@ -170,7 +170,7 @@ print(R2)
 plot_df[,3:5] <- log(exp(1),2)*plot_df[,3:5]
 p <- ggplot(plot_df, aes(y=means, x = hcr_estimates, color = cell_types)) + geom_point() + geom_abline(linetype = 'dashed') + 
   geom_hline(yintercept=0, linetype='dashed') + geom_vline(xintercept=0, linetype='dashed')  + theme_classic()  + 
-  geom_errorbar(aes(ymin = means - 1.96*sds_tot, ymax = means+1.96*sds_tot)) + xlab('Measured cell type-specific DE using HCR') + ylab('Estimated cell type-specific DE using GLAMDE') + geom_label_repel(aes(label = genes),nudge_x = 0.15,na.rm = TRUE, show.legend = FALSE)+ ggplot2::scale_color_manual("Cell Type",values = my_pal_curr[c('Bergmann','Granule','Purkinje')], breaks = c('Bergmann','Granule','Purkinje'), labels = c('Bergmann','Granule','Purkinje'))
+  geom_errorbar(aes(ymin = means - 1.96*sds_tot, ymax = means+1.96*sds_tot)) + xlab('Measured cell type-specific DE using HCR') + ylab('Estimated cell type-specific DE using CSIDE') + geom_label_repel(aes(label = genes),nudge_x = 0.15,na.rm = TRUE, show.legend = FALSE)+ ggplot2::scale_color_manual("Cell Type",values = my_pal_curr[c('Bergmann','Granule','Purkinje')], breaks = c('Bergmann','Granule','Purkinje'), labels = c('Bergmann','Granule','Purkinje'))
 #geom_text(aes(label = genes), nudge_y = -0.1, show.legend = FALSE)
 p
 ```

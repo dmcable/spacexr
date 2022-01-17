@@ -21,9 +21,9 @@ library(GSA)
 load_all()
 ```
 
-# Nonparametric GLAMDE on the Slide-seq KP tumor
+# Nonparametric CSIDE on the Slide-seq KP tumor
 
-### Load in GLAMDE Results and cluster significant genes
+### Load in CSIDE Results and cluster significant genes
 
 ```{r cluster, fig.height=6, fig.width=6, fig.align='center'}
 # Load in DE results and cluster
@@ -45,7 +45,7 @@ Pred_mat <- matrix(0, length(sig_gene_list), length(barc_list))
 rownames(Pred_mat) <- sig_gene_list
 colnames(Pred_mat) <- barc_list
 for(gene in sig_gene_list) {
-  predictions <- predict_GLAMDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  predictions <- predict_CSIDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
   quantiles <- rank(predictions) / length(predictions)
   Quant_mat[gene, ] <- quantiles
   Pred_mat[gene, ] <- predictions
@@ -109,7 +109,7 @@ cell_type <- 'CAF'
 Pred_mat_all <- matrix(0, length(sig_gene_list), dim(new_X)[1])
 rownames(Pred_mat_all) <- sig_gene_list
 for(gene in sig_gene_list) {
-  predictions <- predict_GLAMDE(2, gene_fits, gene, new_X)[,1]
+  predictions <- predict_CSIDE(2, gene_fits, gene, new_X)[,1]
   Pred_mat_all[gene, ] <- predictions
 }
 p <- list()
@@ -122,7 +122,7 @@ for(i in 1:N_CLUST) {
 ggarrange(plotlist = p, nrow = 4, ncol = 2)
 ```
 
-### Analyze variance explained by spatial GLAMDE model
+### Analyze variance explained by spatial CSIDE model
 
 ```{r fig-0.5, fig.height = 6, fig.width = 6, fig.align='center'}
 gene <- 'Krt18'
@@ -135,7 +135,7 @@ over_cols <- c('mse_0', 'mse_1', 'var_poisson', 'R2_adj', 'var_odp')
 over_mat <- matrix(0, length(gene_list_all), length(over_cols))
 rownames(over_mat) <- gene_list_all; colnames(over_mat) <- over_cols
 for(gene in gene_list_all) {
-  predictions <- predict_GLAMDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
+  predictions <- predict_CSIDE(2, gene_fits, gene, myRCTDde@internal_vars_de$X2[barc_list,])[,1]
   Y <- myRCTDde@spatialRNA@counts[gene, barc_list]
   N <- myRCTDde@spatialRNA@nUMI[barc_list]
   my_order <- order(predictions/N)
@@ -169,7 +169,7 @@ plot_df[c('Nolc1','Krt19','S100a4','Calm1','Ddx21','Kpnb1','Neat1','Ncl','Cmss1'
 #plot_df$label <- rownames(plot_df)
 #plot_df$label[!plot_df$sig] <- NA
 plot_df <- plot_df[rownames(plot_df)[-grep("^(Rps|Rpl|mt-)",rownames(plot_df))], ]
-ggplot(plot_df, aes(var_odp, R2, color = sig, alpha = 0.1)) + geom_point() + geom_abline(intercept = 0, slope = 1) + theme_classic() + xlab('Proportion of variance not due to sampling noise') + ylab('Proportion of variance explained by GLAMDE model') + geom_label_repel(aes(label = label, alpha = 0.1),nudge_x = 0.01,na.rm = TRUE, show.legend = F) + scale_color_manual(values = c("#D55E00", "#0072B2"), labels = c('Not signifcant', 'Significant'))
+ggplot(plot_df, aes(var_odp, R2, color = sig, alpha = 0.1)) + geom_point() + geom_abline(intercept = 0, slope = 1) + theme_classic() + xlab('Proportion of variance not due to sampling noise') + ylab('Proportion of variance explained by CSIDE model') + geom_label_repel(aes(label = label, alpha = 0.1),nudge_x = 0.01,na.rm = TRUE, show.legend = F) + scale_color_manual(values = c("#D55E00", "#0072B2"), labels = c('Not signifcant', 'Significant'))
 ```
 
 ### Gene ontology testing

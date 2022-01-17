@@ -10,9 +10,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq J20 Hippocampus
+# CSIDE on the Slide-seq J20 Hippocampus
 
-### Load in GLAMDE Results and calculate significant genes
+### Load in CSIDE Results and calculate significant genes
 
 ```{r prelude}
 library(spacexr)
@@ -34,7 +34,7 @@ IM_DIR <- '../../../spacexr/data/Images/Plaque/210715/Processed/'
 ALIGN_DIR <- '../../../spacexr/data/Images/Plaque/210715/AlignmentResults/'
 myRCTD <- readRDS(file.path(datadir, 'myRCTDde_thresh.rds'))   
 cell_types <- myRCTD@internal_vars_de$cell_types
-source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisGLAMDE/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/merge_de_helper.R')
 ```
 
 ### Save plaque image
@@ -83,7 +83,7 @@ p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(gg
 ggarrange(p1,p2,nrow = 2)
 ```
 
-### Load GLAMDE results
+### Load CSIDE results
 
 ```{r de-load}
 datadir_list <- c('../../../spacexr/data/SpatialRNA/Puck_210605/21', '../../../spacexr/data/SpatialRNA/Puck_210605/22',
@@ -151,7 +151,7 @@ plot_df$mean <- as.numeric(plot_df$mean)
 plot_df$y <- as.numeric(plot_df$y)
 p <- ggplot(plot_df, aes(x=mean*log(exp(1),2), y = y, color = ct, alpha = sig)) + geom_point() + theme_classic() + 
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
-  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = F, max.overlaps = 20, label.padding = 0.1) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE by GLAMDE') + ylab('GLAMDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") ) +  ggplot2::scale_color_manual("Cell type",values = my_pal_curr[c('Astrocyte','CA1','CA3','Microglia_Macrophages')], breaks = c('Astrocyte','CA1','CA3','Microglia_Macrophages'), labels = c('Astrocyte','CA1','CA3','Microglia/Macrophages')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
+  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = F, max.overlaps = 20, label.padding = 0.1) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE by CSIDE') + ylab('CSIDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") ) +  ggplot2::scale_color_manual("Cell type",values = my_pal_curr[c('Astrocyte','CA1','CA3','Microglia_Macrophages')], breaks = c('Astrocyte','CA1','CA3','Microglia_Macrophages'), labels = c('Astrocyte','CA1','CA3','Microglia/Macrophages')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
 p
 ```
 

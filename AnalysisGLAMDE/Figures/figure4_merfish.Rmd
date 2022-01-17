@@ -10,9 +10,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the MERFISH Hypothalamus
+# CSIDE on the MERFISH Hypothalamus
 
-### Load in GLAMDE results and calculate significant genes
+### Load in CSIDE results and calculate significant genes
 
 ```{r prelude}
 # Load in spatialRNA data and Reference data
@@ -26,7 +26,7 @@ library(dplyr)
 library(ggrepel)
 library(fields)
 library(stringr)
-source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisGLAMDE/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/merge_de_helper.R')
 load_all()
 pwd = getwd()
 datadir <- paste0('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/DEGLAM/data/moffitt','/')
@@ -86,7 +86,7 @@ ggplot(plot_df) +  geom_bar(aes(x = ct, y = value, group = variable, fill = vari
 
 ```
 
-### Plot GLAMDE predictions vs raw data for each gene
+### Plot CSIDE predictions vs raw data for each gene
 
 ```{r define-vars}
 all_barc <- myRCTD@internal_vars_de$all_barc

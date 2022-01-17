@@ -10,9 +10,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the MERFISH Hypothalamus
+# CSIDE on the MERFISH Hypothalamus
 
-### Load in GLAMDE results and calculate significant genes
+### Load in CSIDE results and calculate significant genes
 
 ```{r prelude}
 # Load in spatialRNA data and Reference data

@@ -2,15 +2,15 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{make_de_plots_regions}
 \alias{make_de_plots_regions}
-\title{Makes spatial gene GLAMDE plots (colored by discrete regions) on RCTD object, after running GLAMDE}
+\title{Makes spatial gene CSIDE plots (colored by discrete regions) on RCTD object, after running CSIDE}
 \usage{
 make_de_plots_regions(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }
 \description{
-Makes spatial gene GLAMDE plots (colored by discrete regions) on RCTD object, after running GLAMDE
+Makes spatial gene CSIDE plots (colored by discrete regions) on RCTD object, after running CSIDE
 }

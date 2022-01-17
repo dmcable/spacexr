@@ -9,9 +9,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq KP tumor (immune cell-dependent DE)
+# CSIDE on the Slide-seq KP tumor (immune cell-dependent DE)
 
-### Load in GLAMDE Results and calculate significant genes
+### Load in CSIDE Results and calculate significant genes
 
 ```{r prelude}
 library(spacexr)
@@ -180,7 +180,7 @@ my_gl <-  intersect(my_genes,rownames(res_genes))
 plot_df[rownames(plot_df) %in% my_gl, 'group'] <- 'emt'
 p <- ggplot(plot_df, aes(x=log_fc, y = p_val, color = group, alpha = sig)) + geom_point() + theme_classic()  +
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
-  geom_label_repel(data = plot_df,aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15)+ xlab('Estimated cell type-specific DE by GLAMDE') + ylab('GLAMDE p-value') + scale_color_manual("", labels = c('EMT', 'Other'), values = c('#D55E00','black')) + xlab('Estimated cell type-specific DE by GLAMDE') + ylab('GLAMDE p-value') + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))#+ geom_label_repel(data = plot_df[plot_df$group == 'emt',],aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15) #plot_df[plot_df$group != 'emt',]
+  geom_label_repel(data = plot_df,aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15)+ xlab('Estimated cell type-specific DE by CSIDE') + ylab('CSIDE p-value') + scale_color_manual("", labels = c('EMT', 'Other'), values = c('#D55E00','black')) + xlab('Estimated cell type-specific DE by CSIDE') + ylab('CSIDE p-value') + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))#+ geom_label_repel(data = plot_df[plot_df$group == 'emt',],aes(label = label),nudge_x = 0,na.rm = TRUE, show.legend = F, size = 4, label.padding = 0.1, max.overlaps = 15) #plot_df[plot_df$group != 'emt',]
 p
 
 ```

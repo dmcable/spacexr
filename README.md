@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# spacexr (Spatial-eXpression-R): Robust Cell Type Decomposition (RCTD) and Generalized Linear Admixture Models for Differential Expression (GLAMDE)
+# spacexr (Spatial-eXpression-R): Robust Cell Type Decomposition (RCTD) and Cell type-Specific Inference of Differential Expression (C-SIDE)
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -28,18 +28,18 @@ effects* of the spatial transcriptomics dataset. A platform effect is
 the tendency of a sequencing technology to capture individual genes at
 different rates than another sequencing technology.
 
-Generalized Linear Admixture Models for Differential Expression (GLAMDE)
-learns cell type-specific differential expression on spatial
-transcriptomics dataset. GLAMDE inputs one or more user-defined
-*covariates*, which are biologically-relevant axes along which
-differential expression is hypothesized. These variables can be
-generally defined, but some choices for covariates include spatial
-position, cellular microenvironment, or cell-to-cell interactions.
-GLAMDE then identifies, for each cell type, genes that are significantly
-differentially expressed as a function of the covariates. Similar to
-RCTD, GLAMDE can operate on spatial data containing single cells or cell
-type mixtures. Differential expression can be learned at the population
-level across one or multiple biological replicates or samples.
+Cell type-Specific Inference of Differential Expression (C-SIDE) learns
+cell type-specific differential expression on spatial transcriptomics
+dataset. C-SIDE inputs one or more user-defined *covariates*, which are
+biologically-relevant axes along which differential expression is
+hypothesized. These variables can be generally defined, but some choices
+for covariates include spatial position, cellular microenvironment, or
+cell-to-cell interactions. C-SIDE then identifies, for each cell type,
+genes that are significantly differentially expressed as a function of
+the covariates. Similar to RCTD, C-SIDE can operate on spatial data
+containing single cells or cell type mixtures. Differential expression
+can be learned at the population level across one or multiple biological
+replicates or samples.
 
 Code for generating the figures of our RCTD paper, Robust decomposition
 of cell type mixtures in spatial transcriptomics, is located
@@ -47,19 +47,19 @@ of cell type mixtures in spatial transcriptomics, is located
 Our *Nature Biotechnology* paper can be found
 [here](https://www.nature.com/articles/s41587-021-00830-w).
 
-Code for generating the figures of our GLAMDE paper, Cell type-specific
-differential expression in spatial transcriptomics, is located
-[here](https://github.com/dmcable/spacexr/tree/master/AnalysisGLAMDE).
-Our GLAMDE paper will be available soon. <!--[here](BIORXIV LINK). -->
+Code for generating the figures of our C-SIDE paper, Cell type-specific
+differential expression inference in spatial transcriptomics, is located
+[here](https://github.com/dmcable/spacexr/tree/master/AnalysisCSIDE).
+Our C-SIDE paper will be available soon. <!--[here](BIORXIV LINK). -->
 
 ## News and Updates
 
 December, 22nd, 2021: We are renaming this package (formerly RCTD) as
 *spacexr* (Spatial eXpression R package). We are also releasing
 *spacexr* 2.0, now featuring cell type-specific differential expression.
-The new algorithm, called GLAMDE, is introduced in our new paper which
+The new algorithm, called C-SIDE, is introduced in our new paper which
 will be available soon. <!--[here](BIORXIV LINK). --> We are also
-introducing a feature where RCTD and GLAMDE can be run in batch across
+introducing a feature where RCTD and C-SIDE can be run in batch across
 multiple experimental replicates.
 
 March, 18th, 2021: Our RCTD paper has been published in *Nature
@@ -87,9 +87,9 @@ the above by setting `build_vignettes = TRUE`.
 
 A complete guide to spacexr vignettes can be found
 [here](https://github.com/dmcable/spacexr/tree/master/vignettes), which
-includes diverse applications of RCTD and GLAMDE on Slide-seq, MERFISH,
+includes diverse applications of RCTD and C-SIDE on Slide-seq, MERFISH,
 and Visium datasets. These vignettes also include multiple applications
-of GLAMDE to differential expression problems including spatial
+of C-SIDE to differential expression problems including spatial
 position, cell-to-cell interactions, and joint analysis of multiple
 experimental samples/replicates.
 
@@ -152,23 +152,23 @@ myRCTD <- run.RCTD(myRCTD, doublet_mode = 'doublet')
 For some example of summary plots, follow the ‘RCTD results’ section of
 the ‘spatial-transcriptomics’ vignette.
 
-## Quick Guide to Getting Started with GLAMDE
+## Quick Guide to Getting Started with C-SIDE
 
-Here, we discuss how to run GLAMDE on your data and detect cell
+Here, we discuss how to run C-SIDE on your data and detect cell
 type-specific differential expression:
 
 1.  Open the ‘differential-expression.Rmd’ vignette for a complete
-    explanation of the GLAMDE workflow. Expected output of the vignette
+    explanation of the C-SIDE workflow. Expected output of the vignette
     is provided
     [here](https://raw.githack.com/dmcable/spacexr/master/vignettes/differential-expression.html).
-    If you have any questions about how to run GLAMDE, please first make
+    If you have any questions about how to run C-SIDE, please first make
     sure you run this Vignette on your computer and make sure you
-    understand how it works. For other applications of GLAMDE, be sure
+    understand how it works. For other applications of C-SIDE, be sure
     to check out the rest of our
     [vignettes](https://github.com/dmcable/spacexr/tree/master/vignettes).
 
 2.  Assign cell types to your spatial transcriptomics dataset. Since
-    GLAMDE detects cell type-specific differential expression, it needs
+    C-SIDE detects cell type-specific differential expression, it needs
     to first identify cell types. It is recommended to use the internal
     RCTD procedure to identify cell types, as described above. However,
     cell types can also be imported from another source using the
@@ -181,25 +181,25 @@ type-specific differential expression:
     and 1, and the names of each covariate variable should match the
     names, or barcodes, of the spatial transcriptomics pixels.
 
-4.  Run GLAMDE. If a single covariate is present, the simplest way to
-    run GLAMDE is to use the `run.GLAMDE.single` function as in the
+4.  Run C-SIDE. If a single covariate is present, the simplest way to
+    run C-SIDE is to use the `run.CSIDE.single` function as in the
     ‘differential-expression.Rmd’ vignette. Here you will pass in your
     covariate and the RCTD object containing previously-computed cell
     type assignments. If multiple covariates are present, consider our
-    other functions for running: `run.GLAMDE.regions` (multiple
-    regions), `run.GLAMDE.nonparametric` (nonparametric modelling), or
-    `run.GLAMDE` (inputs a general design matrix).
+    other functions for running: `run.CSIDE.regions` (multiple regions),
+    `run.CSIDE.nonparametric` (nonparametric modelling), or `run.CSIDE`
+    (inputs a general design matrix).
 
-5.  Observed GLAMDE results. We recommend making plots representing DE
+5.  Observe C-SIDE results. We recommend making plots representing DE
     results using the `make_all_de_plots` function. Also, DE results can
     be directly examined in the `@de_results` object. Please see the
     vignettes for more examples.
 
 6.  Multiple replicates. If multiple experimental replicates are
-    available, we recommend running RCTD and GLAMDE in batch mode
-    (operates on a `RCTD.replicates` object) and using GLAMDE to do
+    available, we recommend running RCTD and C-SIDE in batch mode
+    (operates on a `RCTD.replicates` object) and using C-SIDE to do
     population-level statistical inference. This procedure is detailed
-    in the [Population-level RCTD and GLAMDE
+    in the [Population-level RCTD and C-SIDE
     vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).
 
 ### Dependencies
@@ -210,17 +210,17 @@ type-specific differential expression:
     fields, and mgcv.
 
 For optimal performance, we recommend at least 4 GB of RAM, and multiple
-cores may be used for RCTD and GLAMDE to speed up runtime.
+cores may be used for RCTD and C-SIDE to speed up runtime.
 
 Installation time: Less than five minutes, after installing dependent
 packages. RCTD takes up approximately 145 MB of space due to
 pre-computed data tables that substantially improve performance.
 
 Runtime: The example datasets provided can be run in less than 5 minutes
-on a normal desktop computer (both RCTD and GLAMDE vignettes). RCTD runs
+on a normal desktop computer (both RCTD and C-SIDE vignettes). RCTD runs
 in approximately 20 minutes on a Slide-seq cerebellum dataset
 (approximately 3,000 genes and 11,000 pixels) on a laptop computer with
-4 cores. Using less cores will lead to longer runtime. GLAMDE (excluding
+4 cores. Using less cores will lead to longer runtime. C-SIDE (excluding
 cell type identification step) was found to run in approximately 15
 minutes (4 cores) on differential expression between two regions for the
 Slide-seq cerebellum dataset (approximately 2,776 pixels, 4,812 genes,

@@ -2,18 +2,18 @@
 % Please edit documentation in R/GLAMDE_class.R
 \name{build.designmatrix.single}
 \alias{build.designmatrix.single}
-\title{Constructs a design matrix for running GLAMDE with a single explanatory variable}
+\title{Constructs a design matrix for running CSIDE with a single explanatory variable}
 \usage{
 build.designmatrix.single(myRCTD, explanatory.variable)
 }
 \arguments{
 \item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 
-\item{explanatory.variable}{a named numeric vector representing the explanatory variable used for explaining differential expression in GLAMDE. Names of the variable
+\item{explanatory.variable}{a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
 }
 \value{
-A design matrix containing the covariates for running GLAMDE. The rownames represent pixel names and
+A design matrix containing the covariates for running CSIDE. The rownames represent pixel names and
 are a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 explaining differential expression.
 }

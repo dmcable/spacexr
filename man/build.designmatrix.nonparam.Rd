@@ -2,7 +2,7 @@
 % Please edit documentation in R/GLAMDE_class.R
 \name{build.designmatrix.nonparam}
 \alias{build.designmatrix.nonparam}
-\title{Constructs a design matrix for running GLAMDE nonparametrically}
+\title{Constructs a design matrix for running CSIDE nonparametrically}
 \usage{
 build.designmatrix.nonparam(myRCTD, barcodes = NULL, df = 15)
 }
@@ -14,7 +14,7 @@ build.designmatrix.nonparam(myRCTD, barcodes = NULL, df = 15)
 \item{df}{(default 15) the degrees of freedom, or number of basis functions to be used in the design matrix}
 }
 \value{
-A design matrix containing the covariates for running GLAMDE. The rownames represent pixel names and
+A design matrix containing the covariates for running CSIDE. The rownames represent pixel names and
 are a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 explaining differential expression.
 }

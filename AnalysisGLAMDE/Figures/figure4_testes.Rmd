@@ -9,7 +9,7 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, cache.lazy = FALSE, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq testes data
+# CSIDE on the Slide-seq testes data
 
 ### Pre-process testes data
 
@@ -23,8 +23,8 @@ library(ggpubr)
 library(reshape2)
 library(dplyr)
 library(ggrepel)
-source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisGLAMDE/helper_functions/testes_helper.R')
-source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisGLAMDE/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/testes_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/merge_de_helper.R')
 load_all()
 datadir <- '../../../spacexr/data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))
@@ -151,7 +151,7 @@ p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(gg
 ggarrange(p1,p2,nrow = 2)
 ```
 
-### Run GLAMDE
+### Run CSIDE
 
 ```{r deglam, eval = FALSE}
 myRCTDde <- run.de.regions(myRCTD, region_list, datadir = datadir, cell_types = cur_cell_types,
@@ -260,7 +260,7 @@ p<- ggplot(results_df, aes(x = category, y = log(pmax(500*Y, 500*10^(-4.5)),2), 
   geom_errorbar(aes(ymin = log(pmax(500*(Y - 1.96*se),500*10^(-4.5)),2), ymax = log(500*(Y + 1.96*se),2)), width = 0.2, position = position_dodge(0.2)) + 
   theme_classic() + ylab('Log average expression') + xlab('Cell types present') + scale_color_manual("Stage", breaks = c(1,4), labels = c('I-III','IX-XII'), values = c('#E69F00',"#000000"))
 p_df <- cbind(results_df, 'Raw data')
-p_df_2 <- cbind(results_df, 'GLAMDE model')
+p_df_2 <- cbind(results_df, 'CSIDE model')
 p_df_2$Y <- p_df_2$pred
 colnames(p_df_2)[11] <- 'model'
 colnames(p_df)[11] <- 'model'

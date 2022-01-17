@@ -10,9 +10,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq J20 Hippocampus
+# CSIDE on the Slide-seq J20 Hippocampus
 
-### Load in GLAMDE Results and calculate significant genes
+### Load in CSIDE Results and calculate significant genes
 
 ```{r prelude}
 library(spacexr)
@@ -50,7 +50,7 @@ plot(final_im)
 save.image(final_im, file.path(datadir,'rotated_plaque_img.png'))
 ```
 
-### Load GLAMDE results
+### Load CSIDE results
 
 ```{r de-load}
 datadir_list <- c('../../../RCTD/data/SpatialRNA/Puck_210605/21', '../../../RCTD/data/SpatialRNA/Puck_210605/22',
@@ -83,7 +83,7 @@ de_pop_all <-  readRDS(file.path(resultsdir, 'de_pop_all_thresh.rds'))
 gene_final_all <- readRDS(file.path(resultsdir, 'gene_final_all_thresh.rds'))
 ```
 
-### Plot GLAMDE model vs raw data
+### Plot CSIDE model vs raw data
 
 ```{r calc-quant-plots fig-3, fig.height = 6, fig.width = 6, fig.align='center'}
 n_levels = myRCTD@cell_type_info$info[[3]]

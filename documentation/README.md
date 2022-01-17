@@ -1,4 +1,4 @@
-RCTD and GLAMDE Documentation
+RCTD and C-SIDE Documentation
 ================
 Dylan Cable
 12/22/2021
@@ -14,7 +14,7 @@ manual files, which can be accessed with `?` or `help`. For example:
 
 ``` r
 ?run.RCTD
-?run.GLAMDE.single
+?run.CSIDE.single
 ```
 
 This page is intended to be a resource for frequently asked questions,
@@ -39,7 +39,7 @@ Terminology:
 
 ### Creating a RCTD object
 
-Both RCTD and GLAMDE require the construction of an `RCTD` object. In
+Both RCTD and C-SIDE require the construction of an `RCTD` object. In
 order to construct an RCTD object, you should use the `create.RCTD`
 function:
 
@@ -56,7 +56,7 @@ Important options for the `create.RCTD` function include (see
 `?create.RCTD` for details):
 
 -   `max_cores`: (default 4) number of cores used for running RCTD (and
-    later GLAMDE). A rule of thumb is to use half the maximum number of
+    later C-SIDE). A rule of thumb is to use half the maximum number of
     cores on your machine.
 -   `MAX_MULTI_TYPES`: (default 4) if using RCTD multi mode, the maximum
     number of cell types per pixel.
@@ -165,24 +165,24 @@ pixel, which contains `all_weights` (weights from full-mode),
 types are confident on multi-mode) and `sub_weights` (proportions of
 cell types on multi-mode).
 
-## GLAMDE
+## C-SIDE
 
-### Constructing design matrix / explanatory variables and running GLAMDE
+### Constructing design matrix / explanatory variables and running C-SIDE
 
 In order to learn cell type-specific differential expression, one must
 first define one or multiple axis along which to expect differential
 gene expression. These axis are termed *explanatory variables*. Each
 explanatory variable is a vector of values, constrained between 0 and 1,
 with names matching the pixel names of the `myRCTD` object. For example,
-in the GLAMDE vignettes, many examples are provided of using
+in the C-SIDE vignettes, many examples are provided of using
 e.g. spatial position, cell-to-cell interactions, or discrete regions as
 explanatory variables.
 
 In the most common case, if a single explanatory variable is present,
-GLAMDE can be run using the `run.GLAMDE.single` function:
+C-SIDE can be run using the `run.CSIDE.single` function:
 
 ``` r
-myRCTD <- run.GLAMDE.single(myRCTD, explanatory.variable)
+myRCTD <- run.CSIDE.single(myRCTD, explanatory.variable)
 ```
 
 If multiple explanatory variables are present, then one can contruct the
@@ -200,25 +200,25 @@ X <- build.designmatrix.regions(myRCTD, region_list)
 ```
 
 After constructing the design matrix, one can use the general purpose
-`run.GLAMDE` as follows:
+`run.CSIDE` as follows:
 
 ``` r
-myRCTD <- run.GLAMDE(myRCTD, X, barcodes, cell_types)
+myRCTD <- run.CSIDE(myRCTD, X, barcodes, cell_types)
 ```
 
 Here, `barcodes` represents a list of pixel names that should be
 included, while `cell_types` is a list of cell types that should be
 included in the model.
 
-In addition to using `run.GLAMDE`, one can also consider
-`run.GLAMDE.regions`, which can detect DE across multiple regions, and
-`run.GLAMDE.nonparametric` for running nonparametric GLAMDE to fit
-smooth functions.
+In addition to using `run.CSIDE`, one can also consider
+`run.CSIDE.regions`, which can detect DE across multiple regions, and
+`run.CSIDE.nonparametric` for running nonparametric C-SIDE to fit smooth
+functions.
 
-Consider also the following options for any of the `run.GLAMDE.x` family
+Consider also the following options for any of the `run.CSIDE.x` family
 of functions: \* `gene_threshold`: (default 5e-5) the minimum expression
-of genes to be included in the GLAMDE model. \* `doublet_mode`: (default
-TRUE) whether doublet mode or full mode weights are used in GLAMDE. \*
+of genes to be included in the C-SIDE model. \* `doublet_mode`: (default
+TRUE) whether doublet mode or full mode weights are used in C-SIDE. \*
 `test_mode`: (default individual) if individual, tests DE coefficients
 individually for significant DE. If categorical (e.g. in case of
 multiple regions), then tests for differences across categories. \*
@@ -229,20 +229,20 @@ for counting cell type pixels). \* `cell_types_present`: List of other
 cell types that could be present in the dataset that could contaminate
 the measurements for cell types being analyzed. \* `params_to_test`:
 List of indices for which parameters should be tested. \*
-`test_genes_sig`: Whether GLAMDE should test genes for significance. \*
-`fdr`: False discovery rate for GLAMDE gene testing.
+`test_genes_sig`: Whether C-SIDE should test genes for significance. \*
+`fdr`: False discovery rate for C-SIDE gene testing.
 
-### GLAMDE results structure
+### C-SIDE results structure
 
-GLAMDE results are stored in `myRCTD@de_results`. All gene expression
+C-SIDE results are stored in `myRCTD@de_results`. All gene expression
 results are computed in the natural log. The first object of interest
-containing GLAMDE results for all genes is
+containing C-SIDE results for all genes is
 `myRCTD@de_results$gene_fits`, referred to henceforth as `gene_fits`.
 This object is itself a list of several vectors and matrices of
 interest, including:
 
 -   `gene_fits$mean_val`: A genes by cell types matrix representing the
-    GLAMDE point estimate of the differential expression coefficient of
+    C-SIDE point estimate of the differential expression coefficient of
     the explanatory variable. For example, if the explanatory variable
     represents two regions (0 and 1 variable), the `mean_val` represents
     the log-fold-change between regions. For example,
@@ -250,7 +250,7 @@ interest, including:
     `geneA` in cell type `Neuron`. If multiple explanatory variables are
     present, one should consult the `all_vals` table instead, as
     described below.
--   `gene_fits$all_vals`: All coefficients estimated by the GLAMDE
+-   `gene_fits$all_vals`: All coefficients estimated by the C-SIDE
     model. Dimensions: genes X explanatory variables X cell types. For
     example, consider the case where the design matrix has categorical
     variables for four regions. In this case,
@@ -276,7 +276,7 @@ interest, including:
     value of `sigma_g` indicates a higher level of noise compared to the
     Poisson distribution.
 
-GLAMDE significant gene results are stored in
+C-SIDE significant gene results are stored in
 `myRCTD@de_results$gene_fits`, which is a list of dataframes for each
 cell type. For example the following extracts the significant gene
 dataframe for the ‘Neuron’ cell type:
@@ -286,7 +286,7 @@ sig_df_neuron <- myRCTD@de_results$sig_gene_list[['Neuron']]
 ```
 
 This dataframe has rows for each significant gene. Columns will vary
-depending on GLAMDE mode, and one should consult the vignette of each
+depending on C-SIDE mode, and one should consult the vignette of each
 mode for specific information. In most cases the following columns will
 be present:
 
@@ -298,15 +298,15 @@ be present:
     explanatory variables need to be distinguished.
 -   `Z_score`: the Z-score for a statistical Z-test, if applicable.
 -   `p_val`: the p-value for the statistical test of DE for this gene.
--   `conv`: whether GLAMDE converged for this gene (required to achieve
+-   `conv`: whether C-SIDE converged for this gene (required to achieve
     significance).
 
 ### Multiple replicates
 
-RCTD and GLAMDE can be run in batch mode on multiple replicates. This
+RCTD and C-SIDE can be run in batch mode on multiple replicates. This
 involves the creation of an `RCTD.replicates` object, which stores
 multiple `SpatialRNA` experimental replicates. Then, one can use
-`run.RCTD.replicates` and `run.GLAMDE.replicates` to run RCTD and
-GLAMDE, respectively. This procedure is documented in detail in the
-[Population-level RCTD and GLAMDE
+`run.RCTD.replicates` and `run.CSIDE.replicates` to run RCTD and C-SIDE,
+respectively. This procedure is documented in detail in the
+[Population-level RCTD and C-SIDE
 vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).

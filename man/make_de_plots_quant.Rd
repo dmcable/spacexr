@@ -2,15 +2,15 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{make_de_plots_quant}
 \alias{make_de_plots_quant}
-\title{Makes quantitative GLAMDE plots on RCTD object, after running GLAMDE}
+\title{Makes quantitative CSIDE plots on RCTD object, after running CSIDE}
 \usage{
 make_de_plots_quant(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }
 \description{
-Makes quantitative GLAMDE plots on RCTD object, after running GLAMDE
+Makes quantitative CSIDE plots on RCTD object, after running CSIDE
 }

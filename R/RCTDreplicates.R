@@ -86,7 +86,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
   return(RCTD.replicates)
 }
 
-#' Runs GLAMDE on a \code{\linkS4class{RCTD.replicates}} object
+#' Runs CSIDE on a \code{\linkS4class{RCTD.replicates}} object
 #'
 #' Identifies cell type specific differential expression (DE) as a function of the explanatory variable
 #' for each replicate. The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
@@ -94,9 +94,9 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' genes with significant nonzero DE.
 #'
 #' @param RCTD.replicates an \code{\linkS4class{RCTD.replicates}} object with annotated cell types e.g. from the \code{\link{run.RCTD.replicates}} function.
-#' @param explanatory.variable.replicates a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in GLAMDE.
+#' @param explanatory.variable.replicates a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
 #' Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
-#' @param cell_types the cell types used for GLAMDE. Each cell type must occur
+#' @param cell_types the cell types used for CSIDE. Each cell type must occur
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
@@ -108,35 +108,35 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
-#' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{GLAMDE.population.inference}} function.)
-#' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for GLAMDE
-#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE algorithm. See \code{\linkS4class{RCTD.replicates}}
+#' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)
+#' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE
+#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-run.GLAMDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates, cell_types, cell_type_threshold = 125,
+run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates, cell_types, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                                  fdr = .01, population_de = T, replicate_index = NULL) {
   if(is.null(cell_types))
-    stop('run.GLAMDE.replicates: cell_types must not be null.')
+    stop('run.CSIDE.replicates: cell_types must not be null.')
   if(class(explanatory.variable.replicates) != 'list')
-    stop('run.GLAMDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
+    stop('run.CSIDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
   if(length(RCTD.replicates@RCTD.reps) != length(explanatory.variable.replicates))
     stop('create.RCTD.replicates: length(explanatory.variable.replicates) is not equal to the number of RCTD replicates, as required.')
   if(is.null(replicate_index))
     replicate_index <- 1:length(RCTD.replicates@RCTD.reps)
   if(any(!(replicate_index %in% 1:length(RCTD.replicates@RCTD.reps))))
-    stop('run.GLAMDE.replicates: replicate_index must be a subest of 1:N_replicates')
+    stop('run.CSIDE.replicates: replicate_index must be a subest of 1:N_replicates')
   for(i in replicate_index) {
-    message(paste('run.GLAMDE.replicates: running GLAMDE for replicate',i))
-    RCTD.replicates@RCTD.reps[[i]] <- run.GLAMDE.single(
+    message(paste('run.CSIDE.replicates: running CSIDE for replicate',i))
+    RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.single(
       RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
                                                     gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
                                                     sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr)
 
   }
   if(population_de)
-    RCTD.replicates <- GLAMDE.population.inference(RCTD.replicates)
+    RCTD.replicates <- CSIDE.population.inference(RCTD.replicates)
   return(RCTD.replicates)
 }
 
@@ -169,7 +169,7 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 
 #' Runs population-level differential expression inference for a \code{\linkS4class{RCTD.replicates}} object
 #'
-#' First, GLAMDE must have been run on all replicates using e.g. the \code{\link{run.GLAMDE.replicates}} function.
+#' First, CSIDE must have been run on all replicates using e.g. the \code{\link{run.CSIDE.replicates}} function.
 #'
 #' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.
 #' @param use.groups (default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot
@@ -178,12 +178,12 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
 #' @param q_thresh (default 0.01) false discovery rate
 #' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
-#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the GLAMDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
+#' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
+CSIDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
                                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, q_thresh = 0.01, log_fc_thresh = 0.4) {
-  message(paste0('GLAMDE.population.inference: running population DE inference with use.groups=', use.groups))
+  message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
   de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   myRCTD <- RCTDde_list[[1]]
@@ -207,14 +207,14 @@ GLAMDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN
   return(RCTD.replicates)
 }
 
-#' Saves the GLAMDE population-level differential expression results for a \code{\linkS4class{RCTD.replicates}} object
+#' Saves the CSIDE population-level differential expression results for a \code{\linkS4class{RCTD.replicates}} object
 #'
-#' First, GLAMDE must have been run on all replicates at the population level using e.g. the \code{\link{run.GLAMDE.replicates}} function.
+#' First, CSIDE must have been run on all replicates at the population level using e.g. the \code{\link{run.CSIDE.replicates}} function.
 #'
 #' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object containing population-level DE inference results.
 #' @param resultsdir a directory where to save the significant gene matrices for each cell type.
 #' @export
-save.GLAMDE.replicates <- function(RCTD.replicates, resultsdir) {
+save.CSIDE.replicates <- function(RCTD.replicates, resultsdir) {
   if(!dir.exists(resultsdir))
     dir.create(resultsdir)
   myRCTD <- RCTD.replicates@RCTD.reps[[1]]

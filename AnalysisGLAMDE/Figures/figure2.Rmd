@@ -9,7 +9,7 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# Benchmarking GLAMDE on a simulated spatial transcriptomics dataset
+# Benchmarking CSIDE on a simulated spatial transcriptomics dataset
 
 ```{r libraries}
 library(spacexr)
@@ -19,7 +19,7 @@ library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(dplyr)
-source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisGLAMDE/helper_functions/de_simulation_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/de_simulation_helper.R')
 devtools::load_all()
 load_all()
 set_global_Q_all()
@@ -42,7 +42,7 @@ UMI_vect <- rep(UMI_tot, N_samples)
 cell_type_names <- levels(ref@cell_types)
 ```
 
-### Run RCTD on simulated data (the first step of GLAMDE)
+### Run RCTD on simulated data (the first step of CSIDE)
 
 ```{r markers, eval = FALSE}
 puck.original <- SpatialRNA(NULL, ref@counts, nUMI = ref@nUMI, T)
@@ -68,7 +68,7 @@ beta <- as.matrix(norm_weights)
 cell_type_info <- myRCTD@cell_type_info$info
 ```
 
-### Run GLAMDE on contamination simulation
+### Run CSIDE on contamination simulation
 
 ```{r contamination, eval = FALSE}
 de_gt_vals <- exp((-3:3)/5)
@@ -112,15 +112,15 @@ REPLICATES <- 100
 de_gt_vals <- exp((-3:3)/5)
 gt_val <- 1
 plot_df <- as.data.frame(cbind( log(gt_val), log(de_gt_vals), apply(alpha_res,3:2,mean), apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd), apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
-colnames(plot_df) <- c('log_fc_b', 'log_fc_p', 'GLAMDE_b', 'GLAMDE_p', 'dec_b', 'dec_p', 'bulk','sing_b','sing_p', 'sd_GLAMDE_b','sd_GLAMDE_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b','sd_sing_p')
+colnames(plot_df) <- c('log_fc_b', 'log_fc_p', 'CSIDE_b', 'CSIDE_p', 'dec_b', 'dec_p', 'bulk','sing_b','sing_p', 'sd_CSIDE_b','sd_CSIDE_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b','sd_sing_p')
 graph_df <- plot_df %>% 
-  select(log_fc_p, GLAMDE_b, sd_GLAMDE_b) %>% 
-  rename(estimate=GLAMDE_b, sd=sd_GLAMDE_b) %>%
-  mutate(type = 'GLAMDE_b') %>%
+  select(log_fc_p, CSIDE_b, sd_CSIDE_b) %>% 
+  rename(estimate=CSIDE_b, sd=sd_CSIDE_b) %>%
+  mutate(type = 'CSIDE_b') %>%
   bind_rows(plot_df %>% 
-              select(log_fc_p, GLAMDE_p, sd_GLAMDE_p) %>% 
-              rename(estimate=GLAMDE_p, sd=sd_GLAMDE_p) %>%
-              mutate(type = 'GLAMDE_p')) %>%
+              select(log_fc_p, CSIDE_p, sd_CSIDE_p) %>% 
+              rename(estimate=CSIDE_p, sd=sd_CSIDE_p) %>%
+              mutate(type = 'CSIDE_p')) %>%
   bind_rows(plot_df %>% 
               select(log_fc_p, dec_b, sd_dec_b) %>% 
               rename(estimate=dec_b, sd=sd_dec_b) %>%
@@ -142,12 +142,12 @@ bind_rows(plot_df %>%
               rename(estimate=sing_b, sd=sd_sing_b) %>%
               mutate(type = 'sing_b'))
 graph_df[,1:3] <- graph_df[,1:3]*log(exp(1),2) #scale to log 2
-p1 <- ggplot(graph_df[graph_df$type %in% c('GLAMDE_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=1,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type A DE')+ xlab('Differential expression in cell type A') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00', '#EFCB00'), breaks = c('bulk', 'dec_p' ,'GLAMDE_p', 'sing_p'), labels = c('Bulk','Decompose','GLAMDE','Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
-p2 <- ggplot(graph_df[graph_df$type %in% c('GLAMDE_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)+ ylab('Estimated cell type B DE')+ xlab('Differential expression in the other cell type')+ ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'GLAMDE_b', 'sing_b'), labels = c('Bulk','Decompose','GLAMDE', 'Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+p1 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=1,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type A DE')+ xlab('Differential expression in cell type A') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00', '#EFCB00'), breaks = c('bulk', 'dec_p' ,'CSIDE_p', 'sing_p'), labels = c('Bulk','Decompose','CSIDE','Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)+ ylab('Estimated cell type B DE')+ xlab('Differential expression in the other cell type')+ ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'CSIDE_b', 'sing_b'), labels = c('Bulk','Decompose','CSIDE', 'Single')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
 ggarrange(p1,p2, nrow = 2)
 ```
 
-### Run GLAMDE on cell type proportion simulation
+### Run CSIDE on cell type proportion simulation
 
 ```{r proportion, eval = FALSE}
 de_ground_truth <- c(1,1)
@@ -193,15 +193,15 @@ sing_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/sing_res.rds
 N_int <- 10
 ct_prop <- de_gt_vals / N_int
 plot_df <- as.data.frame(cbind(ct_prop, log(de_ground_truth[1]), log(de_ground_truth[2]), apply(alpha_res,3:2,mean), apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd), apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
-colnames(plot_df) <- c('ct_prop','log_fc_b', 'log_fc_p', 'GLAMDE_b', 'GLAMDE_p', 'dec_b', 'dec_p', 'bulk', 'sing_b', 'sing_p', 'sd_GLAMDE_b','sd_GLAMDE_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b', 'sd_sing_p')
+colnames(plot_df) <- c('ct_prop','log_fc_b', 'log_fc_p', 'CSIDE_b', 'CSIDE_p', 'dec_b', 'dec_p', 'bulk', 'sing_b', 'sing_p', 'sd_CSIDE_b','sd_CSIDE_p','sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b', 'sd_sing_p')
 graph_df <- plot_df %>% 
-  select(ct_prop, GLAMDE_b, sd_GLAMDE_b) %>% 
-  rename(estimate=GLAMDE_b, sd=sd_GLAMDE_b) %>%
-  mutate(type = 'GLAMDE_b') %>%
+  select(ct_prop, CSIDE_b, sd_CSIDE_b) %>% 
+  rename(estimate=CSIDE_b, sd=sd_CSIDE_b) %>%
+  mutate(type = 'CSIDE_b') %>%
   bind_rows(plot_df %>% 
-              select(ct_prop, GLAMDE_p, sd_GLAMDE_p) %>% 
-              rename(estimate=GLAMDE_p, sd=sd_GLAMDE_p) %>%
-              mutate(type = 'GLAMDE_p')) %>%
+              select(ct_prop, CSIDE_p, sd_CSIDE_p) %>% 
+              rename(estimate=CSIDE_p, sd=sd_CSIDE_p) %>%
+              mutate(type = 'CSIDE_p')) %>%
   bind_rows(plot_df %>% 
               select(ct_prop, dec_b, sd_dec_b) %>% 
               rename(estimate=dec_b, sd=sd_dec_b) %>%
@@ -224,12 +224,12 @@ bind_rows(plot_df %>%
               mutate(type = 'sing_b'))
 graph_df[,2:3] <- graph_df[,2:3]*log(exp(1),2) #scale to log 2
 graph_df$ct_prop <- 2*(graph_df$ct_prop - 0.5)
-p1 <- ggplot(graph_df[graph_df$type %in% c('GLAMDE_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)  + ylab('Estimated cell type A DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_p' ,'GLAMDE_p', 'sing_p'), labels = c('Bulk','Decompose','GLAMDE','Single')) + scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
-p2 <- ggplot(graph_df[graph_df$type %in% c('GLAMDE_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type B DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'GLAMDE_b','sing_b'), labels = c('Bulk','Decompose','GLAMDE','Single'))+ scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+p1 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_p', 'dec_p', 'bulk', 'sing_p'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)  + ylab('Estimated cell type A DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_p' ,'CSIDE_p', 'sing_p'), labels = c('Bulk','Decompose','CSIDE','Single')) + scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_b', 'dec_b', 'bulk', 'sing_b'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type B DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00'), breaks = c('bulk', 'dec_b' ,'CSIDE_b','sing_b'), labels = c('Bulk','Decompose','CSIDE','Single'))+ scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
 ggarrange(p1,p2, nrow = 2)
 ```
 
-### Run GLAMDE on null and non-null DE case
+### Run CSIDE on null and non-null DE case
 
 ```{r nonnull, eval = FALSE}
 gene_list <- rownames(myRCTD@spatialRNA@counts)

@@ -2,7 +2,7 @@
 % Please edit documentation in R/GLAMDE_class.R
 \name{build.designmatrix.regions}
 \alias{build.designmatrix.regions}
-\title{Constructs a design matrix for running GLAMDE across a set of regions}
+\title{Constructs a design matrix for running CSIDE across a set of regions}
 \usage{
 build.designmatrix.regions(myRCTD, region_list)
 }
@@ -13,7 +13,7 @@ build.designmatrix.regions(myRCTD, region_list)
 should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object}
 }
 \value{
-A design matrix containing the covariates for running GLAMDE. The rownames represent pixel names and
+A design matrix containing the covariates for running CSIDE. The rownames represent pixel names and
 are a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 explaining differential expression.
 }

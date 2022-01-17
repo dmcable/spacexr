@@ -3,7 +3,7 @@
 \docType{class}
 \name{RCTD-class}
 \alias{RCTD-class}
-\title{An S4 class used to run the RCTD and GLAMDE algorithms}
+\title{An S4 class used to run the RCTD and CSIDE algorithms}
 \description{
 Created using the \code{\link{create.RCTD}} function, a user can run RCTD using the \code{\link{run.RCTD}} function.
 }
@@ -37,9 +37,9 @@ Note that in multi-mode, results consists of a list of results for each pixel, w
 cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and
 sub_weights (proportions of cell types on multi mode).}
 
-\item{\code{de_results}}{results of the GLAMDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
-whereas `res_gene_list` is a list, for each cell type, of significant genes detected by GLAMDE.}
+\item{\code{de_results}}{results of the CSIDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
+whereas `res_gene_list` is a list, for each cell type, of significant genes detected by CSIDE.}
 
-\item{\code{internal_vars_de}}{a list of variables that are used internally by GLAMDE}
+\item{\code{internal_vars_de}}{a list of variables that are used internally by CSIDE}
 }}
 

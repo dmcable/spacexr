@@ -2,12 +2,12 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{make_de_plots_spatial}
 \alias{make_de_plots_spatial}
-\title{Makes spatial gene GLAMDE plots (colored by two discrete regions) on RCTD object, after running GLAMDE}
+\title{Makes spatial gene CSIDE plots (colored by two discrete regions) on RCTD object, after running CSIDE}
 \usage{
 make_de_plots_spatial(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }

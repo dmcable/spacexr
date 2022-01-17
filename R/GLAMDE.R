@@ -1,4 +1,4 @@
-#' Runs GLAMDE on a \code{\linkS4class{RCTD}} object with a single explanatory variable
+#' Runs CSIDE on a \code{\linkS4class{RCTD}} object with a single explanatory variable
 #'
 #' Identifies cell type specific differential expression (DE) as a function of the explanatory variable.
 #' The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
@@ -6,9 +6,9 @@
 #' genes with significant nonzero DE.
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
-#' @param explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in GLAMDE. Names of the variable
+#' @param explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
-#' @param cell_types the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurrences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurrences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
@@ -21,24 +21,24 @@
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the GLAMDE algorithm. Contains objects \code{de_results},
-#' which contain the results of the GLAMDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by GLAMDE.
-#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by GLAMDE
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.GLAMDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
+run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T) {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
-  return(run.GLAMDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
+  return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', params_to_test = 2,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, fdr = fdr))
 }
 
-#' Runs GLAMDE on a \code{\linkS4class{RCTD}} object to detect nonparametric smooth gene expression patterns
+#' Runs CSIDE on a \code{\linkS4class{RCTD}} object to detect nonparametric smooth gene expression patterns
 #'
 #' Identifies cell type specific smooth gene expression patterns. The design matrix contains thin plate spline
 #' basis functions spanning the space of smooth functions. Uses maximum likelihood estimation to estimate
@@ -47,7 +47,7 @@ run.GLAMDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, 
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param df (default 15) the degrees of freedom, or number of basis functions to be used in the model.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
-#' @param cell_types the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
@@ -60,25 +60,25 @@ run.GLAMDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, 
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the GLAMDE algorithm. Contains objects \code{de_results},
-#' which contain the results of the GLAMDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by GLAMDE.
-#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by GLAMDE
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.GLAMDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NULL,
+run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
                             PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T) {
   X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
   barcodes <- rownames(X2)
-  return(run.GLAMDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold,
+  return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', cell_type_threshold = cell_type_threshold,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene,test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, params_to_test = 2:df, fdr = fdr))
 }
 
-#' Runs GLAMDE on a \code{\linkS4class{RCTD}} object for DE across multiple discrete regions
+#' Runs CSIDE on a \code{\linkS4class{RCTD}} object for DE across multiple discrete regions
 #'
 #' Identifies cell type specific differential expression (DE) across multiple discrete regions
 #' The design matrix contains for each region a column of 0s and 1s representing membership in that region. Uses maximum
@@ -88,7 +88,7 @@ run.GLAMDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = N
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param region_list a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object
-#' @param cell_types the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
@@ -101,25 +101,25 @@ run.GLAMDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = N
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the GLAMDE algorithm. Contains objects \code{de_results},
-#' which contain the results of the GLAMDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by GLAMDE.
-#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by GLAMDE
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.GLAMDE.regions <- function(myRCTD, region_list, cell_types = NULL,
+run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                           weight_threshold = NULL, sigma_gene = T,
                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T) {
   X2 <- build.designmatrix.regions(myRCTD, region_list)
   barcodes <- rownames(X2)
-  return(run.GLAMDE(myRCTD, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold,
+  return(run.CSIDE(myRCTD, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'categorical',
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, params_to_test = 1:dim(X2)[2],
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,test_genes_sig = test_genes_sig,
                        cell_types_present = cell_types_present, fdr = fdr))
 }
 
-#' Runs cell type specific GLAMDE on a \code{\linkS4class{RCTD}} object with a general design matrix
+#' Runs cell type specific CSIDE on a \code{\linkS4class{RCTD}} object with a general design matrix
 #'
 #' Identifies cell type specific differential expression (DE) across a general design matrix of covariates. Uses maximum
 #' likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
@@ -127,11 +127,11 @@ run.GLAMDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' is determined by \code{params_to_test}.
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
-#' @param X a matrix containing the covariates for running GLAMDE. The rownames represent pixel names and
+#' @param X a matrix containing the covariates for running CSIDE. The rownames represent pixel names and
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
-#' @param cell_types the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_specific: (default TRUE for all covariates). A logical vector of length the number of covariates
 #' indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.
@@ -150,16 +150,16 @@ run.GLAMDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the GLAMDE algorithm. Contains objects \code{de_results},
-#' which contain the results of the GLAMDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by GLAMDE.
-#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by GLAMDE
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.GLAMDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
+run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, cell_type_specific = NULL, params_to_test = NULL) {
-  X <- check_designmatrix(X, 'run.GLAMDE', require_2d = TRUE)
+  X <- check_designmatrix(X, 'run.CSIDE', require_2d = TRUE)
   if(is.null(cell_type_specific))
     cell_type_specific <- !logical(dim(X)[2])
   check_cell_type_specific(cell_type_specific, dim(X)[2])
@@ -168,14 +168,14 @@ run.GLAMDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, c
     X2 <- X[,cell_type_specific]
   else
     X2 <- X
-  return(run.GLAMDE.general(myRCTD, X1, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold,
+  return(run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold,
                            gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = test_mode, weight_threshold = weight_threshold,
                        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, params_to_test = params_to_test,
                        cell_types_present = cell_types_present, test_genes_sig = test_genes_sig, fdr = fdr))
 }
 
-#' Runs GLAMDE on a \code{\linkS4class{RCTD}} object with a general design matrix
+#' Runs CSIDE on a \code{\linkS4class{RCTD}} object with a general design matrix
 #'
 #' Identifies differential expression (DE) across a general design matrix of covariates. DE parameters can be
 #' cell type-specific or shared across all cell types. Uses maximum
@@ -191,7 +191,7 @@ run.GLAMDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, c
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
-#' @param cell_types the cell types used for GLAMDE. If null, cell types will be chosen with aggregate occurences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.
@@ -208,39 +208,39 @@ run.GLAMDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, c
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
-#' @return an \code{\linkS4class{RCTD}} object containing the results of the GLAMDE algorithm. Contains objects \code{de_results},
-#' which contain the results of the GLAMDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by GLAMDE.
-#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by GLAMDE
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.GLAMDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
+run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL) {
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
-    stop('run.GLAMDE.general: attempted to run GLAMDE in doublet mode, but RCTD was not run in doublet mode. Please run GLAMDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
+    stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!myRCTD@internal_vars$cell_types_assigned)
-    stop('run.GLAMDE.general: cannot run GLAMDE unless cell types have been assigned i.e. myRCTD@internal_vars$cell_types_assigned = TRUE')
+    stop('run.CSIDE.general: cannot run CSIDE unless cell types have been assigned i.e. myRCTD@internal_vars$cell_types_assigned = TRUE')
   cell_types <- choose_cell_types(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types)
-  X1 <- check_designmatrix(X1, 'run.GLAMDE.general')
-  X2 <- check_designmatrix(X2, 'run.GLAMDE.general', require_2d = TRUE)
+  X1 <- check_designmatrix(X1, 'run.CSIDE.general')
+  X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE)
   if(!(test_mode %in% c('individual', 'categorical')))
-    stop(c('run.GLAMDE.general: not valid test_mode = ',test_mode,'. Please set test_mode = "categorical" or "individual".'))
+    stop(c('run.CSIDE.general: not valid test_mode = ',test_mode,'. Please set test_mode = "categorical" or "individual".'))
   if(is.null(params_to_test))
     if(test_mode == 'individual')
       params_to_test <- 2
     else
       params_to_test <- 1:dim(X2)[2]
-  message(paste0("run.GLAMDE.general: configure params_to_test = ",params_to_test))
+  message(paste0("run.CSIDE.general: configure params_to_test = ",params_to_test))
   if(any(!(params_to_test %in% 1:dim(X2)[2])))
-    stop(c('run.GLAMDE.general: params_to_test must be a vector of integers from 1 to dim(X2)[2] = ', dim(X2)[2],
+    stop(c('run.CSIDE.general: params_to_test must be a vector of integers from 1 to dim(X2)[2] = ', dim(X2)[2],
            'please make sure that tested parameters are in the required range.'))
   if(test_mode == 'categorical' && any(!(X2[,params_to_test] %in% c(0,1))))
-    stop(c('run.GLAMDE.general: for test_mode = categorical, colums params_to_test, ',params_to_test,', must have values 0 or 1.'))
+    stop(c('run.CSIDE.general: for test_mode = categorical, colums params_to_test, ',params_to_test,', must have values 0 or 1.'))
   if(is.null(cell_types_present))
     cell_types_present <- cell_types
   if(any(!(barcodes %in% rownames(X1))) || any(!(barcodes %in% rownames(X2))))
-    stop('run.GLAMDE.general: some barcodes do not appear in the rownames of X1 or X2.')
+    stop('run.CSIDE.general: some barcodes do not appear in the rownames of X1 or X2.')
   puck = myRCTD@originalSpatialRNA
   gene_list_tot <- filter_genes(puck, threshold = gene_threshold)
   nUMI <- puck@nUMI[barcodes]

@@ -2,15 +2,15 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{make_all_de_plots}
 \alias{make_all_de_plots}
-\title{Makes all GLAMDE plots on RCTD object, after running GLAMDE}
+\title{Makes all CSIDE plots on RCTD object, after running CSIDE}
 \usage{
 make_all_de_plots(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }
 \description{
-Makes all GLAMDE plots on RCTD object, after running GLAMDE
+Makes all CSIDE plots on RCTD object, after running CSIDE
 }

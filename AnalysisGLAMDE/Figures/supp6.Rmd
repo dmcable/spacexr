@@ -9,9 +9,9 @@ output:
 knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
 ```
 
-# GLAMDE on the Slide-seq KP tumor (immune cell-dependent DE)
+# CSIDE on the Slide-seq KP tumor (immune cell-dependent DE)
 
-### Load in GLAMDE Results and calculate significant genes
+### Load in CSIDE Results and calculate significant genes
 
 ```{r prelude}
 library(spacexr)
@@ -77,5 +77,5 @@ plot_df <- data.frame(my_gl, log(exp(1),2)*gene_fits$mean_val[my_gl,1], log(exp(
 colnames(plot_df) <- c('gene','mean','sd')
 plot_df$gene <- factor(plot_df$gene, levels = plot_df$gene[order(-plot_df$mean)])
 ggplot(plot_df, aes(x = gene, y = mean)) + geom_point() + geom_errorbar(aes(ymin = mean-1.96*sd,ymax=mean+1.96*sd)) +
-  geom_hline(yintercept=0)+ theme_classic() + ylab('GLAMDE estimated differential expression') + xlab('Gene')
+  geom_hline(yintercept=0)+ theme_classic() + ylab('CSIDE estimated differential expression') + xlab('Gene')
 ```

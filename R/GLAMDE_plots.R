@@ -1,6 +1,6 @@
-#' Makes all GLAMDE plots on RCTD object, after running GLAMDE
+#' Makes all CSIDE plots on RCTD object, after running CSIDE
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 make_all_de_plots <- function(myRCTD, datadir) {
@@ -16,9 +16,9 @@ make_all_de_plots <- function(myRCTD, datadir) {
   }
 }
 
-#' Makes quantitative GLAMDE plots on RCTD object, after running GLAMDE
+#' Makes quantitative CSIDE plots on RCTD object, after running CSIDE
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 make_de_plots_quant <- function(myRCTD, datadir) {
@@ -37,9 +37,9 @@ make_de_plots_quant <- function(myRCTD, datadir) {
   }
 }
 
-#' Makes spatial gene GLAMDE plots (colored continuously) on RCTD object, after running GLAMDE
+#' Makes spatial gene CSIDE plots (colored continuously) on RCTD object, after running CSIDE
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 make_de_plots_genes <- function(myRCTD, datadir) {
@@ -50,12 +50,12 @@ make_de_plots_genes <- function(myRCTD, datadir) {
   }
 }
 
-#' Makes spatial gene GLAMDE plots (colored by two discrete regions) on RCTD object, after running GLAMDE
+#' Makes spatial gene CSIDE plots (colored by two discrete regions) on RCTD object, after running CSIDE
 #'
 #' These plots are colored by two discrete regions based on high or low explanatory variable values.
 #' Bold points represent expressed, whereas unbold points represent pixels not expressing the gene.
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 make_de_plots_spatial <- function(myRCTD, datadir) {
@@ -68,9 +68,9 @@ make_de_plots_spatial <- function(myRCTD, datadir) {
   }
 }
 
-#' Makes spatial gene GLAMDE plots (colored by discrete regions) on RCTD object, after running GLAMDE
+#' Makes spatial gene CSIDE plots (colored by discrete regions) on RCTD object, after running CSIDE
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 make_de_plots_regions <- function(myRCTD, datadir) {
@@ -94,9 +94,9 @@ make_de_plots_predictions <- function(myRCTD, datadir, test_mode = 'individual')
   }
 }
 
-#' Saves to csv the GLAMDE significant gene dataframes after running GLAMDE
+#' Saves to csv the CSIDE significant gene dataframes after running CSIDE
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param datadir output directory
 #' @export
 write_de_summary <- function(myRCTD, datadir) {
@@ -145,7 +145,7 @@ plot_prediction_genes <- function(cell_type, barcodes, my_beta, puck, X2, sig_ge
   if(length(gene_list_sig) > 0 & length(barcodes_sing) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
       gene = gene_list_sig[i]
-      predictions <- predict_GLAMDE(cell_type_ind, gene_fits, gene, X2[barcodes_sing,])[,1]
+      predictions <- predict_CSIDE(cell_type_ind, gene_fits, gene, X2[barcodes_sing,])[,1]
       plots[[i]] <- plot_puck_continuous(puck, barcodes_sing, predictions*MULT,
                                          ylimit = c(0,quantile(predictions*MULT, 0.95)), title = gene)
     }
@@ -155,11 +155,11 @@ plot_prediction_genes <- function(cell_type, barcodes, my_beta, puck, X2, sig_ge
   }
 }
 
-#' Makes a spatial plot of GLAMDE fitted gene expression
+#' Makes a spatial plot of CSIDE fitted gene expression
 #'
 #' Units counts per 500
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param gene gene to be plotted
 #' @param cell_type cell_type to be plotted (only single cell type pixels)
 #' @return plot of fitted gene expression
@@ -178,7 +178,7 @@ plot_prediction_gene <- function(myRCTD, cell_type, gene) {
   barcodes_sing <- names(which(my_beta[barcodes,cell_type] > sing_thresh))
   plots <- list()
   if(length(barcodes_sing) >= 10) {
-    predictions <- predict_GLAMDE(cell_type_ind, myRCTD@de_results$gene_fits, gene,
+    predictions <- predict_CSIDE(cell_type_ind, myRCTD@de_results$gene_fits, gene,
                                  myRCTD@internal_vars_de$X2[barcodes_sing,])[,1]
     p <- plot_puck_continuous(puck, barcodes_sing, predictions*MULT,
                                        ylimit = c(0,quantile(predictions*MULT, 0.95)), title = gene)
@@ -219,7 +219,7 @@ plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_g
 #' This plot is colored by two discrete regions based on high or low explanatory variable values.
 #' Bold points represent expressed, whereas unbold points represent pixels not expressing the gene.
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param gene gene to be plotted
 #' @param cell_type cell_type to be plotted (only single cell type pixels)
 #' @param min_UMI (default 200) minimum UMI for pixels that are included
@@ -303,7 +303,7 @@ plot_sig_genes_quant <- function(cell_type, barcodes, my_beta, puck, sig_genes, 
   }
 }
 
-predict_GLAMDE <- function(cell_type_ind, gene_fits, gene, X2_mat) {
+predict_CSIDE <- function(cell_type_ind, gene_fits, gene, X2_mat) {
   sigma <- as.numeric(gene_fits$sigma_g[gene])/100
   predictions <- exp(X2_mat %*% gene_fits$all_vals[gene, ,cell_type_ind])
   return(predictions * exp(sigma^2/2))
@@ -360,7 +360,7 @@ get_quant_df <- function(RCTDde, gene_fits, cell_types, cur_cell_types, gene, mu
   Y <- RCTDde@originalSpatialRNA@counts[gene, rownames(my_beta)] / nUMI
   for(cell_type_ind in 1:length(cell_types)) {
     sigma <- as.numeric(gene_fits$sigma_g[gene])/100
-    pred_ct <- predict_GLAMDE(cell_type_ind, gene_fits, gene, RCTDde@internal_vars_de$X2[rownames(my_beta),])
+    pred_ct <- predict_CSIDE(cell_type_ind, gene_fits, gene, RCTDde@internal_vars_de$X2[rownames(my_beta),])
     pred_tot <- pred_tot + pred_ct*my_beta[,cell_type_ind]
   }
   a_pred <- pred_tot / exp(sigma^2/2)
@@ -415,7 +415,7 @@ plot_quant_df <- function(myRCTD, gene_fits, cell_types, cell_type, gene, NR = 5
 #' This plot is colored by several discrete regions based on a categorical design matrix.
 #' Bold points represent expressed, whereas unbold points represent pixels not expressing the gene.
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param gene gene to be plotted
 #' @param cell_type cell_type to be plotted (only single cell type pixels)
 #' @param pixel_weight_thresh (default 0.8) minimum cell type weight for pixels that are included
@@ -459,7 +459,7 @@ plot_gene_regions <- function(myRCTD, cell_type, gene, pixel_weight_thresh = 0.8
 #'
 #' Units counts per 500
 #'
-#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE
+#' @param myRCTD \code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE
 #' @param gene gene to be plotted
 #' @param cell_type cell_type to be plotted (only single cell type pixels)
 #' @param ymax (default 10) maximum expression (in counts per 500) for color scale

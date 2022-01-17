@@ -2,15 +2,15 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{write_de_summary}
 \alias{write_de_summary}
-\title{Saves to csv the GLAMDE significant gene dataframes after running GLAMDE}
+\title{Saves to csv the CSIDE significant gene dataframes after running CSIDE}
 \usage{
 write_de_summary(myRCTD, datadir)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{datadir}{output directory}
 }
 \description{
-Saves to csv the GLAMDE significant gene dataframes after running GLAMDE
+Saves to csv the CSIDE significant gene dataframes after running CSIDE
 }

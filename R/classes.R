@@ -10,12 +10,12 @@
 #'
 #' \code{myRCTD <- run.RCTD(myRCTD)}
 #'
-#' @section Running GLAMDE:
+#' @section Running CSIDE:
 #'
 #' After running RCTD, create an explanatory variable (`explanatory.variable`) representing a covariate hypothesized to explain gene expression.
-#' Then, to detect cell type-specific differential expression, simply run GLAMDE as:
+#' Then, to detect cell type-specific differential expression, simply run CSIDE as:
 #'
-#' \code{myRCTD <- run.GLAMDE.single(puck, explanatory.variable)}
+#' \code{myRCTD <- run.CSIDE.single(puck, explanatory.variable)}
 #'
 #' @docType package
 #' @name spacexr
@@ -69,7 +69,7 @@ setClass("Reference",
   )
 )
 
-#' An S4 class used to run the RCTD and GLAMDE algorithms
+#' An S4 class used to run the RCTD and CSIDE algorithms
 #'
 #' Created using the \code{\link{create.RCTD}} function, a user can run RCTD using the \code{\link{run.RCTD}} function.
 #'
@@ -94,9 +94,9 @@ setClass("Reference",
 #' cell_type_list (cell types on multi mode), conf_list (which cell types are confident on multi mode) and
 #' sub_weights (proportions of cell types on multi mode).
 #'
-#' @slot de_results results of the GLAMDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
-#' whereas `res_gene_list` is a list, for each cell type, of significant genes detected by GLAMDE.
-#' @slot internal_vars_de a list of variables that are used internally by GLAMDE
+#' @slot de_results results of the CSIDE algorithm. Contains `gene_fits`, which contains the results of fits on individual genes,
+#' whereas `res_gene_list` is a list, for each cell type, of significant genes detected by CSIDE.
+#' @slot internal_vars_de a list of variables that are used internally by CSIDE
 #' @export
 #' @import Matrix
 #' @import doParallel
@@ -131,12 +131,12 @@ setClass("RCTD",
 #' An S4 class used to store multiple replicates as \code{\linkS4class{SpatialRNA}} objects.
 #'
 #' By storing multiple \code{\linkS4class{SpatialRNA}} replicates in this one object, it is convenient
-#' to run RCTD and GLAMDE across all replicates. Finally, multiple replicates can be combined with population-level
-#' differential expression inference using the \code{\link{GLAMDE.population.inference}} function
+#' to run RCTD and CSIDE across all replicates. Finally, multiple replicates can be combined with population-level
+#' differential expression inference using the \code{\link{CSIDE.population.inference}} function
 #'
 #' Created using the \code{\link{create.RCTD.replicates}} or \code{\link{merge.RCTD.objects}} functions.
-#' One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run GLAMDE using the
-#' \code{\link{run.GLAMDE.replicates}} function.
+#' One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run CSIDE using the
+#' \code{\link{run.CSIDE.replicates}} function.
 #'
 #' @export
 #' @slot RCTD.reps a list of \code{\linkS4class{RCTD}} objects, one for each replicate

@@ -2,12 +2,12 @@
 % Please edit documentation in R/GLAMDE_plots.R
 \name{plot_prediction_gene}
 \alias{plot_prediction_gene}
-\title{Makes a spatial plot of GLAMDE fitted gene expression}
+\title{Makes a spatial plot of CSIDE fitted gene expression}
 \usage{
 plot_prediction_gene(myRCTD, cell_type, gene)
 }
 \arguments{
-\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running GLAMDE}
+\item{myRCTD}{\code{\linkS4class{RCTD}} object containing \code{de_results}, after running CSIDE}
 
 \item{cell_type}{cell_type to be plotted (only single cell type pixels)}
 
