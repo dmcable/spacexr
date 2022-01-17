@@ -51,10 +51,6 @@ cell_type_info <- readRDS(file.path(refdir,'info_renorm_coarse.RDS'))
 gene_list <- intersect(rownames(cell_type_info[[1]]),rownames(puck@counts))
 puck <- spacexr:::restrict_puck(puck, names(which(puck@nUMI >= 100)))
 puck <- spacexr:::restrict_counts(puck, gene_list, UMI_max = 200000)
-
-Q_mat <- readRDS(file.path('../../Data/SpatialRNA/Puck_200115_08/results','Q_mat.RDS'))
-N_X = dim(Q_mat)[2]; delta = 1e-5; X_vals = (1:N_X)^1.5*delta
-K_val = dim(Q_mat)[1] - 3; use_Q = T
 ```
 
 ### Run RCTD on interneurons to classify into 3 interneuron subtypes
