@@ -50,6 +50,37 @@ make_de_plots_genes <- function(myRCTD, datadir) {
   }
 }
 
+#' Makes spatial gene CSIDE plots (colored by two discrete regions) on RCTD replicates object, after running CSIDE
+#'
+#' Runs on genes that were identified as significant at the population level
+#'
+#' These plots are colored by two discrete regions based on high or low explanatory variable values.
+#' Bold points represent expressed, whereas unbold points represent pixels not expressing the gene.
+#'
+#' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object after performing population-level DE inference.
+#' @param datadir output directory
+#' @export
+make_de_plots_replicates <- function(RCTD.replicates, datadir) {
+  cell_types <- RCTD.replicates@RCTD.reps[[1]]@internal_vars_de$cell_types
+  for(cell_type in cell_types) {
+    sig_gene_df <- RCTD.replicates@population_sig_gene_df[[cell_type]]
+    i <- 0
+    for(myRCTD in RCTD.replicates@RCTD.reps) {
+      i <- i + 1
+      datadir_ct <- file.path(datadir, paste0('rep_',i))
+      if(!dir.exists(datadir_ct))
+        dir.create(datadir_ct)
+      if(!dir.exists(file.path(datadir_ct,'de_plots_two_regions')))
+        dir.create(file.path(datadir_ct,'de_plots_two_regions'))
+      plot_sig_genes_two_regions(cell_type,myRCTD@internal_vars_de$barcodes,
+                                 myRCTD@internal_vars_de$my_beta,myRCTD@originalSpatialRNA,
+                                 sig_gene_df,datadir_ct,myRCTD@internal_vars_de$X2,
+                                 param_index_best = 2, log_fc_name = 'log_fc_est',
+                                 p_val_name = 'p')
+    }
+  }
+}
+
 #' Makes spatial gene CSIDE plots (colored by two discrete regions) on RCTD object, after running CSIDE
 #'
 #' These plots are colored by two discrete regions based on high or low explanatory variable values.
@@ -188,7 +219,8 @@ plot_prediction_gene <- function(myRCTD, cell_type, gene) {
   }
 }
 
-plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2) {
+plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes, plotdir, X2, param_index_best = NULL,
+                                       log_fc_name = 'log_fc', p_val_name = 'p_val') {
   gene_list_sig <- rownames(sig_genes)
   barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.999))
   MULT = 500
@@ -197,17 +229,22 @@ plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_g
   if(length(gene_list_sig) > 0) {
     for(i in 1:length(gene_list_sig)) {#length(gene_list_sig)
       gene = gene_list_sig[i]
-      Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
-      my_title = paste(gene,": log_fc=",round(sig_genes[gene,'log_fc'],2),', p=',sig_genes[gene,'p_val'])
-      my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
-      param_index <- sig_genes[gene,'paramindex_best']
-      my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] == 0)] <- 1
-      my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] > 0)] <- 3
-      my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] == 0)] <- 2
-      my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] > 0)] <- 4
-      p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
-      suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
-      plots[[i]] <- p3
+      if(gene %in% rownames(puck@counts)) {
+        Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
+        my_title = paste(gene,": log_fc=",round(sig_genes[gene,log_fc_name],2),', p=',sig_genes[gene,p_val_name])
+        my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
+        if(is.null(param_index_best))
+          param_index <- sig_genes[gene,'paramindex_best']
+        else
+          param_index <- param_index_best
+        my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] == 0)] <- 1
+        my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] > 0)] <- 3
+        my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] == 0)] <- 2
+        my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] > 0)] <- 4
+        p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
+        suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
+        plots[[i]] <- p3
+      }
     }
     pdf(file.path(plotdir,paste0("de_plots_two_regions/de_genes_",stringr::str_replace(cell_type,'/','_'),".pdf")))
     invisible(lapply(plots, print))
