@@ -5,7 +5,7 @@ get_means_sds <- function(cell_type, gene, de_results_list) {
   con <- unlist(lapply(de_results_list, function(x)
     ifelse(gene %in% rownames(x$gene_fits$con_mat),
            x$gene_fits$con_mat[gene,cell_type], FALSE)))
-  means[con] <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val[gene,cell_type]))
+  means[con] <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val_cor[gene]))
   sds[con] <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$s_mat[gene,ct_ind]))
   return(list(means = means, sds = sds))
 }
@@ -47,7 +47,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
       else
         de_pop[gene, ] <- c(-1, 0, 0, 0, 0)
     } else {
-      means <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val[gene,cell_type]))
+      means <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$mean_val_cor[gene]))
       sds <- unlist(lapply(de_results_list[con], function(x) x$gene_fits$s_mat[gene,ct_ind]))
       sds[is.na(sds)] <- 1000
       if(is.null(group_ids))
@@ -86,9 +86,13 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
 
 one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, cell_types_present,
                          q_thresh = .01, p_thresh = 1, filter = T, order_gene = F, plot_results = T,
-                         use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4) {
+                         use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2,
+                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4, normalize_expr = T) {
   print(paste0('one_ct_genes: population inference on cell type, ', cell_type))
   myRCTD <- myRCTD_list[[1]]
+  for(i in 1:length(de_results_list)) {
+    de_results_list[[i]] <- normalize_de_estimates(de_results_list[[i]], cell_type, normalize_expr)
+  }
   cell_type_means <- myRCTD@cell_type_info$info[[1]][,cell_types_present]
   cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
   de_pop <- get_de_pop(cell_type, de_results_list, cell_prop, use.groups = use.groups, group_ids = group_ids,
@@ -149,3 +153,28 @@ get_p_qf <- function(x, se, delta = 0) {
   lambda <- eigen(AS)$values
   max(CompQuadForm::imhof(var(x), pmax(lambda, 10^(-8)), epsabs = 10^(-8), epsrel = 10^(-8))$Qq, 0)
 }
+
+normalize_de_estimates <- function(de_results, cell_type, normalize_expr, remove_junk = T) {
+  if(remove_junk) {
+    all_genes <- rownames(de_results$gene_fits$con_mat)
+    junk_genes <- all_genes[c(grep("MT-",all_genes),grep("RPS",all_genes),
+                              grep("RPL",all_genes))]
+    junk_genes <- c(junk_genes, 'MALAT1')
+  } else {
+    junk_genes <- c()
+  }
+  con_genes_all <- names(which(de_results$gene_fits$con_mat[,cell_type]))
+  con_genes <- con_genes_all[!(tolower(con_genes_all) %in% tolower(junk_genes))]
+  if(normalize_expr) {
+    reg_1 <- de_results$gene_fits$all_vals[con_genes_all,1,cell_type]
+    reg_2 <- reg_1 + de_results$gene_fits$all_vals[con_genes_all,2,cell_type]
+    reg_1_cor <- reg_1 - log(sum(exp(reg_1)[con_genes]))
+    reg_2_cor <- reg_2 - log(sum(exp(reg_2)[con_genes]))
+    mean_val_cor <- reg_2_cor - reg_1_cor
+    de_results$gene_fits$mean_val_cor <- mean_val_cor
+  } else {
+    de_results$gene_fits$mean_val_cor <- de_results$gene_fits$mean_val[,cell_type]
+  }
+  return(de_results)
+}
+
