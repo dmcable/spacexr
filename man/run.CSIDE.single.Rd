@@ -16,7 +16,8 @@ run.CSIDE.single(
   PRECISION.THRESHOLD = 0.01,
   cell_types_present = NULL,
   fdr = 0.01,
-  test_genes_sig = T
+  test_genes_sig = T,
+  normalize_expr = T
 )
 }
 \arguments{
@@ -47,6 +48,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
+
+\item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},

@@ -17,7 +17,8 @@ run.CSIDE.replicates(
   cell_types_present = NULL,
   fdr = 0.01,
   population_de = T,
-  replicate_index = NULL
+  replicate_index = NULL,
+  norm_expr = T
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{population_de}{whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)}
 
 \item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE}
+
+\item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}

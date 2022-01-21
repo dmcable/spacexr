@@ -20,7 +20,8 @@ run.CSIDE(
   test_genes_sig = T,
   fdr = 0.01,
   cell_type_specific = NULL,
-  params_to_test = NULL
+  params_to_test = NULL,
+  normalize_expr = F
 )
 }
 \arguments{
@@ -57,6 +58,9 @@ to consider for gene expression contamination during the step filtering out mark
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
+
+\item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
+Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

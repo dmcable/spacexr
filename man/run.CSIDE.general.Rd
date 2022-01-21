@@ -20,7 +20,8 @@ run.CSIDE.general(
   cell_types_present = NULL,
   test_genes_sig = T,
   fdr = 0.01,
-  params_to_test = NULL
+  params_to_test = NULL,
+  normalize_expr = F
 )
 }
 \arguments{
@@ -62,13 +63,17 @@ to consider for gene expression contamination during the step filtering out mark
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
+\item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
+Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
+
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
-in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE, whereas
+`all_gene_list` is the analogous list for all genes (including nonsignificant).
 Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 }
 \description{

@@ -11,7 +11,8 @@ CSIDE.population.inference(
   MIN.CONV.GROUPS = 2,
   CT.PROP = 0.5,
   q_thresh = 0.01,
-  log_fc_thresh = 0.4
+  log_fc_thresh = 0.4,
+  normalize_expr = T
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ CSIDE.population.inference(
 \item{q_thresh}{(default 0.01) false discovery rate}
 
 \item{log_fc_thresh}{(default 0.4) minimum natural log estimated DE threshold}
+
+\item{normalize_expr}{(default TRUE) if TRUE, constrains total gene expression to sum to 1 in each condition}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}

@@ -108,6 +108,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
+#' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
 #' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)
 #' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
@@ -116,7 +117,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates, cell_types, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
-                                 fdr = .01, population_de = T, replicate_index = NULL) {
+                                 fdr = .01, population_de = T, replicate_index = NULL, norm_expr = T) {
   if(is.null(cell_types))
     stop('run.CSIDE.replicates: cell_types must not be null.')
   if(class(explanatory.variable.replicates) != 'list')
@@ -178,25 +179,32 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
 #' @param q_thresh (default 0.01) false discovery rate
 #' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
+#' @param normalize_expr (default TRUE) if TRUE, constrains total gene expression to sum to 1 in each condition
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
 CSIDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
-                                        MIN.CONV.GROUPS = 2, CT.PROP = 0.5, q_thresh = 0.01, log_fc_thresh = 0.4) {
+                                        MIN.CONV.GROUPS = 2, CT.PROP = 0.5,
+                                       q_thresh = 0.01, log_fc_thresh = 0.4,
+                                       normalize_expr = T) {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
-  de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   myRCTD <- RCTDde_list[[1]]
   cell_types <- myRCTD@internal_vars_de$cell_types
   cell_types_present <- myRCTD@internal_vars_de$cell_types_present
   de_pop_all <- list()
   gene_final_all <- list()
   final_df <- list()
+  for(i in 1:length(RCTDde_list)) {
+    RCTDde_list[[i]] <- normalize_de_estimates(RCTDde_list[[i]], normalize_expr)
+  }
+  de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   for(cell_type in cell_types) {
     res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present,
                         plot_results = F, use.groups = use.groups,
                         group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
-                        MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP, q_thresh = q_thresh, log_fc_thresh = 0.4)
+                        MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
+                        q_thresh = q_thresh, log_fc_thresh = 0.4, normalize_expr = normalize_expr)
     de_pop_all[[cell_type]] <- res$de_pop
     gene_final_all[[cell_type]] <- res$gene_final
     final_df[[cell_type]] <- res$final_df
