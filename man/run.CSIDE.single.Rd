@@ -17,7 +17,7 @@ run.CSIDE.single(
   cell_types_present = NULL,
   fdr = 0.01,
   test_genes_sig = T,
-  normalize_expr = T
+  normalize_expr = F
 )
 }
 \arguments{

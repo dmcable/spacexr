@@ -8,6 +8,7 @@ replintegrate <- function(means, sds) {
 }
 
 estimate_tau <- function(x, s) {
+  #return(sigma_p)
   return(sqrt(max(var(x) - mean(s^2),0)))
 }
 
@@ -57,4 +58,5 @@ replintegrate_two_groups <- function(mean_list, sd_list, shrink_eb = T) {
   }
   return(results_df)
 }
+
 

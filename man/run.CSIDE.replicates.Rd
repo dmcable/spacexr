@@ -18,7 +18,7 @@ run.CSIDE.replicates(
   fdr = 0.01,
   population_de = T,
   replicate_index = NULL,
-  norm_expr = T
+  normalize_expr = F
 )
 }
 \arguments{

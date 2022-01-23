@@ -87,7 +87,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
 one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, cell_types_present,
                          q_thresh = .01, p_thresh = 1, filter = T, order_gene = F, plot_results = T,
                          use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2,
-                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4, normalize_expr = T) {
+                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4, normalize_expr = F) {
   print(paste0('one_ct_genes: population inference on cell type, ', cell_type))
   myRCTD <- myRCTD_list[[1]]
   cell_type_means <- myRCTD@cell_type_info$info[[1]][,cell_types_present]
