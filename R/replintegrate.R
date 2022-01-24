@@ -7,9 +7,13 @@ replintegrate <- function(means, sds) {
   return(list(mean_est = mean_est, sd_est = sd_est, sig_p = sig_p))
 }
 
-estimate_tau <- function(x, s) {
-  #return(sigma_p)
-  return(sqrt(max(var(x) - mean(s^2),0)))
+estimate_tau <- function(x, s, group_ids = NULL) {
+  if(is.null(group_ids))
+    return(sqrt(max(var(x) - mean(s^2),0)))
+  else {
+    return(sqrt(mean(unlist(lapply(unique(group_ids),function(val)
+      max(var(x[group_ids == val]) - mean((s[group_ids == val])^2),0))))))
+  }
 }
 
 replintegrate_batch <- function(mean_mat, sd_mat) {
@@ -37,8 +41,8 @@ replintegrate_shrink_estimates <- function(estimates, sds) {
 }
 
 replintegrate_two_groups <- function(mean_list, sd_list, shrink_eb = T) {
-  pop_est_1 <- get_batch_est(mean_list[[1]], sd_list[[1]])
-  pop_est_2 <- get_batch_est(mean_list[[2]], sd_list[[2]])
+  pop_est_1 <- replintegrate(mean_list[[1]], sd_list[[1]])
+  pop_est_2 <- replintegrate(mean_list[[2]], sd_list[[2]])
   #plot(pop_est_1$mean, pop_est_2$mean)
   est_diff <- pop_est_1$mean - pop_est_2$mean
   sd_est <- sqrt(pop_est_1$sd^2 + pop_est_2$sd^2)

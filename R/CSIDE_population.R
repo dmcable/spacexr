@@ -131,15 +131,6 @@ one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, ce
   return(list(de_pop = gene_df, gene_final = gene_final, final_df = final_df))
 }
 
-estimate_tau <- function(x, s, group_ids = NULL) {
-  if(is.null(group_ids))
-    return(sqrt(max(var(x) - mean(s^2),0)))
-  else {
-    return(sqrt(mean(unlist(lapply(unique(group_ids),function(val)
-      max(var(x[group_ids == val]) - mean((s[group_ids == val])^2),0))))))
-  }
-}
-
 get_p_qf <- function(x, se, delta = 0) {
   S <- diag(se^2+delta^2)
   n <- length(x)
