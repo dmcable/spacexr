@@ -106,7 +106,12 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
 #' @return the \code{\linkS4class{RCTD}} object with weights assigned.
 #' @export
 import_weights <- function(myRCTD, weights) {
-  myRCTD@results <- weights
+  myRCTD@results$weights <- weights
+  myRCTD@internal_vars$cell_types_assigned <- TRUE
+  myRCTD@internal_vars$sigma <- 1
+  set_global_Q_all()
+  myRCTD@internal_vars$Q_mat <- Q_mat_all[['100']]
+  myRCTD@internal_vars$X_vals <- X_vals
   return(myRCTD)
 }
 
