@@ -107,6 +107,7 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
 #' @export
 import_weights <- function(myRCTD, weights) {
   myRCTD@results$weights <- weights
+  myRCTD@internal_vars$proportions <- colMeans(weights)/sum(colMeans(weights))
   myRCTD@internal_vars$cell_types_assigned <- TRUE
   myRCTD@internal_vars$sigma <- 1
   set_global_Q_all()
