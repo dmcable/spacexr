@@ -483,7 +483,7 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
 }
 
 get_de_gene_fits <- function(X1,X2,my_beta, nUMI, gene_list, cell_types, puck, barcodes, sigma_init, test_mode,
-                             numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.01, params_to_test = 2) {
+                             numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.01, params_to_test = 2, logs=F) {
   results_list <- fit_de_genes(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_init, test_mode, numCores = numCores, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
   N_genes <- length(results_list)
   intercept_val <- matrix(0,nrow = N_genes, ncol = length(cell_types))
@@ -555,14 +555,18 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
                 'choose_sigma_gene', 'estimate_gene_wrapper', 'check_converged_vec')
     if(sigma_gene)
       environ <- c(environ, 'Q_mat_all')
-    out_file = "logs/de_log.txt"
-    if(!dir.exists('logs'))
-      dir.create('logs')
-    if(file.exists(out_file))
-      file.remove(out_file)
+    if (logs) {
+      out_file = "logs/de_log.txt"
+      if(!dir.exists('logs'))
+        dir.create('logs')
+      if(file.exists(out_file))
+        file.remove(out_file)
+    }
     results_list <- foreach::foreach(i = 1:length(gene_list), .packages = c("quadprog", "spacexr"), .export = environ) %dopar% {
-      if(i %% 10 == 0) {
-        cat(paste0("Finished sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
+      if (logs) {
+        if(i %% 10 == 0) {
+          cat(paste0("Finished sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
+        }
       }
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
