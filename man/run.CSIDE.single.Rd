@@ -17,7 +17,8 @@ run.CSIDE.single(
   cell_types_present = NULL,
   fdr = 0.01,
   test_genes_sig = T,
-  normalize_expr = F
+  normalize_expr = F,
+  logs = F
 )
 }
 \arguments{
@@ -50,6 +51,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
+
+\item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
