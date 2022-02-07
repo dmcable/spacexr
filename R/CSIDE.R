@@ -73,8 +73,9 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
-                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T) {
-  X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df, logs=F)
+                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T,
+                            logs=F) {
+  X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
   barcodes <- rownames(X2)
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', cell_type_threshold = cell_type_threshold,
