@@ -21,7 +21,8 @@ run.CSIDE(
   fdr = 0.01,
   cell_type_specific = NULL,
   params_to_test = NULL,
-  normalize_expr = F
+  normalize_expr = F,
+  logs = F
 )
 }
 \arguments{
@@ -61,6 +62,8 @@ to consider for gene expression contamination during the step filtering out mark
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
 Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
+
+\item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

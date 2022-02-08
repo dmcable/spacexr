@@ -49,6 +49,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
+
+\item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
