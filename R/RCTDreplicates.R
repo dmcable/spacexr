@@ -165,7 +165,7 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
   check_vector(group_ids, 'group_ids','create.RCTD.replicates', require_int = T)
   if(min(table(group_ids)) < 2)
     stop('create.RCTD.replicates: each group in group_ids must contain at least two replicates.')
-  new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = groups_ids)
+  new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = group_ids)
 }
 
 #' Runs population-level differential expression inference for a \code{\linkS4class{RCTD.replicates}} object
