@@ -228,8 +228,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_thresho
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F) {
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
     stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
-  if(!myRCTD@internal_vars$cell_types_assigned)
-    stop('run.CSIDE.general: cannot run CSIDE unless cell types have been assigned i.e. myRCTD@internal_vars$cell_types_assigned = TRUE')
+  if(!any("cell_types_assigned" %in% myRCTD@internal_vars) || !myRCTD@internal_vars$cell_types_assigned)
+    stop('run.CSIDE.general: cannot run CSIDE unless cell types have been assigned. If cell types have been assigned, you may run "myRCTD <- set_cell_types_assigned(myRCTD)".')
   cell_types <- choose_cell_types(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types)
   X1 <- check_designmatrix(X1, 'run.CSIDE.general')
   X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE)

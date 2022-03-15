@@ -8,8 +8,6 @@ run.RCTD(RCTD, doublet_mode = "doublet")
 }
 \arguments{
 \item{RCTD}{an \code{\linkS4class{RCTD}} object created using the \code{\link{create.RCTD}} function.}
-
-\item{doublet_mode}{\code{character string}, either "doublet", "multi", or "full" on which mode to run RCTD. Please see above description.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the RCTD algorithm. Please see \code{\linkS4class{RCTD}}

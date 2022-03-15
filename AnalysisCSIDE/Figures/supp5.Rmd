@@ -22,10 +22,10 @@ library(ggpubr)
 library(reshape2)
 library(dplyr)
 library(ggrepel)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisCSIDE/helper_functions/testes_helper.R')
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisCSIDE/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/testes_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/merge_de_helper.R')
 devtools::load_all()
-datadir <- '../../../RCTD/data/SpatialRNA/Testes'
+datadir <- '../../data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))
 ### END PRELUDE
 myRCTD <- readRDS(file.path(datadir,'myRCTD_testes.rds'))
@@ -248,7 +248,7 @@ library(ggnewscale)
 cell_type <- '1'; region <- 4
 gene_thresh <- 7.5; gene <- 'Tnp1'
 make_ct_region_plot(cur_cell_types, cell_type, region, my_beta, X2, gene_thresh, puck, gene, sing_thresh = 0.8) + new_scale_color()+
-  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dashed') + scale_color_manual('Stage', values = c('#E69F00','#CC79A7', '#EFCB00',"#000000"), labels = c('I-III','IV-VI', 'VII-VIII', 'IX-XII'))+ geom_segment(aes(x = 1300, y = 1000, xend = 1684.6, yend = 1000), color = "black")+labs(color='') +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dashed') + scale_color_manual('Stage', values = c('#E69F00','#CC79A7', '#EFCB00',"#000000"), labels = c('I-III','IV-VI', 'VII-VIII', 'IX-XII'))+ geom_segment(aes(x = 1300, y = 1000, xend = 1684.6, yend = 1000), color = "black")+labs(color='') +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + coord_fixed()
 ```
 
 ### Plot metagene signature
@@ -259,7 +259,7 @@ gene_list <- rownames(info_1)[info_1$first_region == region]
 cell_type <- '1'; region <- 4
 gene_thresh <- 45; gene <- 'Tnp1'
 make_ct_region_plot(cur_cell_types, cell_type, region, my_beta, X2, gene_thresh, puck, gene_list, sing_thresh = 0.8) + new_scale_color()+
-  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dashed') + scale_color_manual('Stage', values = c('#E69F00','#CC79A7', '#EFCB00',"#000000"), labels = c('I-III','IV-VI', 'VII-VIII', 'IX-XII'))+ geom_segment(aes(x = 1300, y = 1000, xend = 1684.6, yend = 1000), color = "black")+labs(color='') +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+  geom_path(data = cvx_df,aes(x=x,y=y, group = id, color = stage), linetype = 'dashed') + scale_color_manual('Stage', values = c('#E69F00','#CC79A7', '#EFCB00',"#000000"), labels = c('I-III','IV-VI', 'VII-VIII', 'IX-XII'))+ geom_segment(aes(x = 1300, y = 1000, xend = 1684.6, yend = 1000), color = "black")+labs(color='') +  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank()) + coord_fixed()
 ```
 
 ### Find and plot cyclic genes

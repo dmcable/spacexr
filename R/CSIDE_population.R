@@ -10,7 +10,8 @@ get_means_sds <- function(cell_type, gene, de_results_list) {
   return(list(means = means, sds = sds))
 }
 
-get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5) {
+get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, group_ids = NULL,
+                       MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5, S.MAX = 4) {
   if(!use.groups)
     group_ids <- NULL
   ct_ind <- which(colnames(de_results_list[[1]]$gene_fits$mean_val) == cell_type)*2
@@ -35,9 +36,12 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
       message(paste('get_de_pop: testing gene,', gene,', of index:', ii))
     #con <- unlist(lapply(de_results_list, function(x) gene %in%
     #         names(which(x$gene_fits$con_mat[,cell_type]))))
-    con <- unlist(lapply(de_results_list, function(x)
-                           ifelse(gene %in% rownames(x$gene_fits$con_mat),
-                                  x$gene_fits$con_mat[gene,cell_type], FALSE)))
+    check_con <- function(x) {
+      ifelse(gene %in% rownames(x$gene_fits$con_mat),
+             x$gene_fits$con_mat[gene,cell_type] && !is.na(x$gene_fits$s_mat[gene, ct_ind]) &&
+               (x$gene_fits$s_mat[gene, ct_ind] < S.MAX), FALSE)
+    }
+    con <- unlist(lapply(de_results_list, check_con))
     if(use.groups)
       con <- unname(con & table(group_ids[con])[as.character(group_ids)] >= 2)
     used_groups <- names(table(group_ids[con]))
@@ -54,7 +58,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
         gid <- NULL
       else
         gid <- group_ids[con]
-      sig_p <- estimate_tau(means, sds, group_ids = gid)
+      sig_p <- estimate_tau_group(means, sds, group_ids = gid)
       var_t <- sds^2 + sig_p^2
       if(!use.groups) {
         var_est <- 1/sum(1 / var_t)
@@ -63,7 +67,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, use.groups = F, gr
       } else {
         S2 <- 1/(aggregate(1/var_t,list(group_ids[con]),sum)$x)
         E <- (aggregate(means/var_t,list(group_ids[con]),sum)$x)*S2
-        Delta <- estimate_tau(E, sqrt(S2))
+        Delta <- estimate_tau_group(E, sqrt(S2))
         var_T <- (Delta^2 + S2)
         var_est <- 1/sum(1/var_T) # A_var
         mean_est <- sum(E / var_T) * var_est # A_est
@@ -142,3 +146,29 @@ get_p_qf <- function(x, se, delta = 0) {
   max(CompQuadForm::imhof(var(x), pmax(lambda, 10^(-8)), epsabs = 10^(-8), epsrel = 10^(-8))$Qq, 0)
 }
 
+estimate_tau_group <- function(x, s, n.iter = 20, epsilon = .001, group_ids = NULL) {
+  if(is.null(group_ids))
+    return(estimate_tau(x,s))
+  else {
+    return(mean(unlist(lapply(unique(group_ids),function(val)
+      estimate_tau(x[group_ids == val], s[group_ids == val])))))
+  }
+}
+
+estimate_tau <- function(x, s, n.iter = 100, epsilon = .001) {
+  k <- length(x)
+  tau <- 0
+  for(i in 1:n.iter) {
+    w <- 1/(s^2 + tau^2)
+    u <- sum(x*w)/sum(w)
+    Q <- sum((x - u)^2 * w)
+    tau_new <- sqrt(max((Q - (k - 1)) / (sum(w) - sum(w^2)/sum(w)), 0))
+    tau_last <- tau
+    tau <- (tau_new + tau_last) / 2
+    if(abs(tau - tau_last) < epsilon) {
+      return(tau)
+    }
+  }
+  warning('estimate_tau: not converged')
+  return(tau)
+}

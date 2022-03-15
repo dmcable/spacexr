@@ -204,7 +204,7 @@ CSIDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.
                         plot_results = F, use.groups = use.groups,
                         group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
                         MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
-                        q_thresh = q_thresh, log_fc_thresh = 0.4, normalize_expr = normalize_expr)
+                        q_thresh = q_thresh, log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
     de_pop_all[[cell_type]] <- res$de_pop
     gene_final_all[[cell_type]] <- res$gene_final
     final_df[[cell_type]] <- res$final_df

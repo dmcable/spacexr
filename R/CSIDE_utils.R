@@ -35,6 +35,17 @@ get_doublet_weights <- function(myRCTD) {
   get_beta_doublet(barcodes, cell_type_names, myRCTD@results$results_df, myRCTD@results$weights_doublet)
 }
 
+#' If cell types have been assigned to the RCTD object, running this function will
+#' toggle the cell_types_assigned variable, which enables CSIDE to be run.
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types from the \code{\link{run.RCTD}} function.
+#' @return the `myRCTD` object with cell_types_assigned set to TRUE
+#' @export
+set_cell_types_assigned <- function(myRCTD) {
+  myRCTD@internal_vars$cell_types_assigned <- TRUE
+  return(myRCTD)
+}
+
 filter_barcodes_cell_types <- function(barcodes, cell_types, my_beta, thresh = 0.9999) {
   barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types]) >= thresh)]
   my_beta <- my_beta[barcodes,cell_types]

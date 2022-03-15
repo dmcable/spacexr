@@ -126,6 +126,7 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
     I <- solve(H)
   }
   precision <- abs(solve(D_mat) %*% d_vec)
+  precision[is.na(diag(I))] <- PRECISION.THRESHOLD + 100
   converged_vec <- check_converged_vec(X1,X2,my_beta, itera, n.iter,
                                        error_vec, precision, PRECISION.THRESHOLD)
   names(error_vec) <- colnames(my_beta)

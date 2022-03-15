@@ -58,11 +58,6 @@ check_cell_types <- function(cell_types) {
     stop(paste0('Reference: levels(cell_types) contains a cell type with name containing prohibited character ', prohibited_character,'. Please rename this cell type.'))
 }
 
-convert_old_RCTD <- function(oldRCTD) {
-  oldRCTD@reference <- convert_old_reference(oldRCTD@reference)
-  return(oldRCTD)
-}
-
 convert_old_reference <- function(old_reference, n_max_cells = 10000) {
   cell_types <- old_reference@meta.data$liger_ident_coarse
   nUMI <- old_reference@meta.data$nUMI

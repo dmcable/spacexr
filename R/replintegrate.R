@@ -7,15 +7,6 @@ replintegrate <- function(means, sds) {
   return(list(mean_est = mean_est, sd_est = sd_est, sig_p = sig_p))
 }
 
-estimate_tau <- function(x, s, group_ids = NULL) {
-  if(is.null(group_ids))
-    return(sqrt(max(var(x) - mean(s^2),0)))
-  else {
-    return(sqrt(mean(unlist(lapply(unique(group_ids),function(val)
-      max(var(x[group_ids == val]) - mean((s[group_ids == val])^2),0))))))
-  }
-}
-
 replintegrate_batch <- function(mean_mat, sd_mat) {
   D <- nrow(mean_mat)
   results <- matrix(0, D, 3)
@@ -30,7 +21,8 @@ replintegrate_batch <- function(mean_mat, sd_mat) {
 ### mean estimates and sds to apply shrinkage
 replintegrate_shrink_estimates <- function(estimates, sds) {
   # qqnorm(estimates) # if looks pretty gaussian -> use a gaussian prior
-  var_prior <- var(estimates) - mean(sds^2)
+  var_prior <- var(estimates) #max(var(estimates) - mean(sds^2), 0)
+  print(paste0('Var_prior: ', var_prior))
   shrink_ratio <- var_prior / (var_prior + sds^2)
   mean_adjusted <- estimates * shrink_ratio
   var_adjusted <- shrink_ratio * (sds^2)
@@ -41,8 +33,8 @@ replintegrate_shrink_estimates <- function(estimates, sds) {
 }
 
 replintegrate_two_groups <- function(mean_list, sd_list, shrink_eb = T) {
-  pop_est_1 <- replintegrate(mean_list[[1]], sd_list[[1]])
-  pop_est_2 <- replintegrate(mean_list[[2]], sd_list[[2]])
+  pop_est_1 <- replintegrate_batch(mean_list[[1]], sd_list[[1]])
+  pop_est_2 <- replintegrate_batch(mean_list[[2]], sd_list[[2]])
   #plot(pop_est_1$mean, pop_est_2$mean)
   est_diff <- pop_est_1$mean - pop_est_2$mean
   sd_est <- sqrt(pop_est_1$sd^2 + pop_est_2$sd^2)
@@ -51,8 +43,9 @@ replintegrate_two_groups <- function(mean_list, sd_list, shrink_eb = T) {
     p_val <- 2*pnorm(-abs(Z_est))
     q_val <- p.adjust(p_val, method='BH')
     results_df <- data.frame(est_diff, sd_est, Z_est, p_val, q_val,
-                             pop_est_1$mean, pop_est_2$mean, pop_est_1$sd, pop_est_2$sd)
-    colnames(results_df) <- c('mean', 'sd', 'Z', 'p', 'q',  'm1' ,'m2', 's1', 's2')
+                             pop_est_1$mean, pop_est_2$mean, pop_est_1$sd, pop_est_2$sd,
+                             pop_est_1$sig_p, pop_est_2$sig_p)
+    colnames(results_df) <- c('mean', 'sd', 'Z', 'p', 'q',  'm1' ,'m2', 's1', 's2', 'sig_p1', 'sig_p2')
   } else {
     results_df <- replintegrate_shrink_estimates(est_diff, sd_est)
     results_df$m1 <- pop_est_1$mean

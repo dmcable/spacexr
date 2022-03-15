@@ -11,7 +11,8 @@ process_beads_batch(
   class_df = NULL,
   constrain = T,
   MAX_CORES = 8,
-  MIN.CHANGE = 0.001
+  MIN.CHANGE = 0.001,
+  CONFIDENCE_THRESHOLD = 10
 )
 }
 \arguments{
@@ -26,6 +27,8 @@ reference (see \code{\link{get_cell_type_info}})}
 classes}
 
 \item{constrain}{logical whether to constrain the weights to sum to one on each pixel}
+
+\item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
 
 \item{max_cores}{number of cores to use (will use parallel processing if more than one).}
 }
