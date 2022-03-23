@@ -5,7 +5,7 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
    message(paste("process_cell_type_info: number of cells in reference:", dim(reference@counts)[2]))
    message(paste("process_cell_type_info: number of genes in reference:", dim(reference@counts)[1]))
    cell_counts = table(reference@cell_types)
-   message(cell_counts)
+   print(cell_counts)
 
    if(min(cell_counts) < CELL_MIN)
       stop(paste0("process_cell_type_info error: need a minimum of ",CELL_MIN, " cells for each cell type in the reference"))
@@ -126,6 +126,14 @@ check_vector <- function(variable, var_name, f_name, require_int = FALSE) {
    }
 }
 
+
+#' Updates an old \code{\linkS4class{RCTD}} object to be compatible with the current
+#' version of \code{spacexr}.
+#'
+#' @param RCTD an \code{\linkS4class{RCTD}} object (potentially from an older version.
+#' @return an \code{\linkS4class{RCTD}} object updated to be compatible with the current version
+#' of \code{spacexr}.
+#' @export
 convert.old.RCTD <- function(myRCTD) {
    if(class(myRCTD@reference )[1] == 'Seurat') {
       ref <- convert_old_reference(myRCTD@reference)

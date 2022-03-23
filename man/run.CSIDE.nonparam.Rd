@@ -17,7 +17,8 @@ run.CSIDE.nonparam(
   PRECISION.THRESHOLD = 0.01,
   cell_types_present = NULL,
   fdr = 0.01,
-  test_genes_sig = T
+  test_genes_sig = T,
+  logs = F
 )
 }
 \arguments{

@@ -18,10 +18,10 @@ coordinates while the second column should be the y coordinate.}
 relevant interaction.}
 }
 \value{
-explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
+explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 are the \code{\linkS4class{SpatialRNA}} pixel names, and values  are standardized between 0 and 1. This variable represents density of the given point set.
 }
 \description{
-This explanatory variable can be used with RCTDE to detect DE in the proximity of these points. Density
+This explanatory variable can be used with CSIDE to detect DE in the proximity of these points. Density
 is computing using an exponentially-decaying filter.
 }

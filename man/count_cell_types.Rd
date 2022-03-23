@@ -2,7 +2,7 @@
 % Please edit documentation in R/CSIDE_utils.R
 \name{count_cell_types}
 \alias{count_cell_types}
-\title{Counts number of pixel occurrences for each cell type to be used in the RCTDE model}
+\title{Counts number of pixel occurrences for each cell type to be used in the CSIDE model}
 \usage{
 count_cell_types(
   myRCTD,
@@ -16,7 +16,7 @@ count_cell_types(
 \arguments{
 \item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when counting cell typel\.}
 
-\item{cell_types}{the cell types used for RCTDE. If null, cell types will be chosen with aggregate occurences of
+\item{cell_types}{the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}}
 
 \item{cell_type_threshold}{(default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
@@ -33,5 +33,5 @@ a named vector of number of pixel occurrences for each cell type
 }
 \description{
 The difference with \code{\link{aggregate_cell_types}} is that this function does filter out pixels
-based on total cell type weight, as occurs in the RCTDE algorithm.
+based on total cell type weight, as occurs in the CSIDE algorithm.
 }

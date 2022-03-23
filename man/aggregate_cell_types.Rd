@@ -18,5 +18,5 @@ a named vector of number of pixel occurrences for each cell type
 }
 \description{
 The difference with \code{\link{count_cell_types}} is that this function does not filter out pixels
-based on total cell type weight, as occurs in the RCTDE algorithm.
+based on total cell type weight, as occurs in the CSIDE algorithm.
 }

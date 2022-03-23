@@ -88,7 +88,7 @@ ggarrange(p1,p2,nrow = 2)
 ```{r de-load}
 datadir_list <- c('../../../spacexr/data/SpatialRNA/Puck_210605/21', '../../../spacexr/data/SpatialRNA/Puck_210605/22',
                   '../../../spacexr/data/SpatialRNA/Puck_210605/23', '../../../spacexr/data/SpatialRNA/Puck_210605/24')
-resultsdir <- '../../../spacexr/data/SpatialRNA/Puck_210605/JointResults2/'
+resultsdir <- '../../../spacexr/data/SpatialRNA/Puck_210605/JointResults_q5_ct25/'
 RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde_thresh.rds')))
 cell_types <- RCTDde_list[[1]]@internal_vars_de$cell_types
 cell_types_present <- cell_types
@@ -96,19 +96,25 @@ cell_types_present <- cell_types
 
 ```{r de-population, eval = FALSE}
 myRCTD <- RCTDde_list[[1]]
-de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
+for(i in 1:length(RCTDde_list)) {
+  RCTDde_list[[i]] <- normalize_de_estimates(RCTDde_list[[i]], F)
+}
+de_results_list <- lapply(RCTDde_list, function(x) {
+  x@de_results$gene_fits$s_mat <- x@de_results$gene_fits$I_mat
+  return(x@de_results)
+  })
 plot_results <- T
 if(!dir.exists(resultsdir))
   dir.create(resultsdir)
 de_pop_all <- list()
 gene_final_all <- list()
 for(cell_type in cell_types) {
-  res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, resultsdir, cell_types_present, plot_results = plot_results, q_thresh = 0.01, p_thresh = 1)
+  res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, resultsdir, cell_types_present, plot_results = plot_results, q_thresh = 0.05, p_thresh = 1, CT.PROP = 0.25, MIN.CONV.GROUPS = 4, MIN.CONV.REPLICATES = 4)
   de_pop_all[[cell_type]] <- res$de_pop
   gene_final_all[[cell_type]] <- res$gene_final
 }
-saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all_thresh.rds'))
-saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all_thresh.rds'))
+saveRDS(de_pop_all, file.path(resultsdir, 'de_pop_all_thresh_q5_ct25.rds'))
+saveRDS(gene_final_all, file.path(resultsdir, 'gene_final_all_thresh_q5_ct25.rds'))
 ```
 
 ```{r de-population-load}

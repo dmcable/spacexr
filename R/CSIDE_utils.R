@@ -118,7 +118,7 @@ get_gene_list_type_wrapper <- function(myRCTD, cell_type, cell_types_present) {
 #' Aggregates the pixel occurrences for each cell type in the \code{\linkS4class{RCTD}} object
 #'
 #' The difference with \code{\link{count_cell_types}} is that this function does not filter out pixels
-#' based on total cell type weight, as occurs in the RCTDE algorithm.
+#' based on total cell type weight, as occurs in the CSIDE algorithm.
 #'
 #' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when counting cell types.
@@ -134,14 +134,14 @@ aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
   }
 }
 
-#' Counts number of pixel occurrences for each cell type to be used in the RCTDE model
+#' Counts number of pixel occurrences for each cell type to be used in the CSIDE model
 #'
 #' The difference with \code{\link{aggregate_cell_types}} is that this function does filter out pixels
-#' based on total cell type weight, as occurs in the RCTDE algorithm.
+#' based on total cell type weight, as occurs in the CSIDE algorithm.
 #'
 #' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when counting cell typel\.
-#' @param cell_types the cell types used for RCTDE. If null, cell types will be chosen with aggregate occurences of
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 #' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 #' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
@@ -153,7 +153,7 @@ count_cell_types <- function(myRCTD, barcodes, cell_types, cell_type_threshold =
                              doublet_mode = T, weight_threshold = NULL) {
   cell_types <- choose_cell_types(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types)
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
-    stop('run.RCTDE.general: attempted to run RCTDE in doublet mode, but RCTD was not run in doublet mode. Please run RCTDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
+    stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   cell_type_info <- myRCTD@cell_type_info$info
   if(doublet_mode) {
     my_beta <- get_beta_doublet(barcodes, cell_type_info[[2]], myRCTD@results$results_df, myRCTD@results$weights_doublet)
@@ -215,7 +215,7 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   if(length(cell_types) == 1) {
     stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
   }
-  message(paste0("choose_cell_types: running de with cell types ",paste(cell_types, collapse = ', ')))
+  message(paste0("choose_cell_types: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
   return(cell_types)
 }
 
@@ -258,7 +258,7 @@ check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precisi
 
 #' Constructs an explanatory variable representing density of a cell type
 #'
-#' This explanatory variable can be used with RCTDE to detect cell-to-cell interactions. Density
+#' This explanatory variable can be used with CSIDE to detect cell-to-cell interactions. Density
 #' is computing using an exponentially-decaying filter. Currently only works for doublet mode RCTD.
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
@@ -266,7 +266,7 @@ check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precisi
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
-#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
+#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values  are standardized between 0 and 1. This variable represents density of the selected cell type.
 #' @export
 exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 50) {
@@ -335,7 +335,7 @@ exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 
 
 #' Constructs an explanatory variable representing density of a set of points
 #'
-#' This explanatory variable can be used with RCTDE to detect DE in the proximity of these points. Density
+#' This explanatory variable can be used with CSIDE to detect DE in the proximity of these points. Density
 #' is computing using an exponentially-decaying filter.
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
@@ -344,7 +344,7 @@ exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
-#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in RCTDE. Names of the variable
+#' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values  are standardized between 0 and 1. This variable represents density of the given point set.
 #' @export
 exvar.point.density <- function(myRCTD, barcodes, points, radius = 50) {
@@ -370,13 +370,13 @@ normalize_ev = function(explanatory.variable) {
   return(explanatory.variable)
 }
 
-#' On an RCTD object after running RCTDE, returns an array of standard errors of RCTDE coefficients
+#' On an RCTD object after running CSIDE, returns an array of standard errors of CSIDE coefficients
 #'
 #' The dimensions of the standard error array is N_genes x N_coefficients x N_cell_types
-#' The N_coefficients are the number of explanatory variables in the RCTDE model
+#' The N_coefficients are the number of explanatory variables in the CSIDE model
 #'
-#' @param myRCTD an \code{\linkS4class{RCTD}} object with fitted RCTDE e.g. from the \code{\link{run.RCTDE}} function.
-#' @return a three-dimensional array representing RCTDE standard errors for each gene,
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with fitted CSIDE e.g. from the \code{\link{run.CSIDE}} function.
+#' @return a three-dimensional array representing CSIDE standard errors for each gene,
 #' each coefficient, and each cell type.
 #' @export
 get_standard_errors <- function(myRCTD) {
