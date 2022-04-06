@@ -247,10 +247,10 @@ get_spline_matrix <- function(puck, df = 15) {
 check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precision, PRECISION.THRESHOLD) {
   cell_type_ind <- get_cell_type_ind(X1,X2, dim(my_beta)[2])
   converged_vec <- (1:dim(my_beta)[2]) == 0
-  if(itera < n.iter) {
-    converged_vec <- !converged_vec
-    converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
-  }
+  #if(itera < n.iter) {
+  converged_vec <- !converged_vec
+  converged_vec[unique(cell_type_ind[precision > PRECISION.THRESHOLD])] <- FALSE
+  #}
   converged_vec <- converged_vec & (!error_vec)
   names(converged_vec) <- colnames(my_beta)
   return(converged_vec)

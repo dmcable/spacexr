@@ -135,9 +135,9 @@ write_de_summary <- function(myRCTD, datadir) {
     dir.create(file.path(datadir,'de_summary'))
   for(cell_type in myRCTD@internal_vars_de$cell_types) {
     sig_genes <- myRCTD@de_results$sig_gene_list[[cell_type]]
-    write.csv(sig_genes,file.path(datadir,'de_summary',paste0(stringr::str_replace(cell_type,'/','_'),'.csv')))
+    write.csv(sig_genes,file.path(datadir,'de_summary',paste0("sig_",stringr::str_replace(cell_type,'/','_'),'.csv')))
     all_genes <- myRCTD@de_results$all_gene_list[[cell_type]]
-    write.csv(all_genes,file.path(datadir,'de_summary',paste0(stringr::str_replace(cell_type,'/','_'),'.csv')))
+    write.csv(all_genes,file.path(datadir,'de_summary',paste0("all_",stringr::str_replace(cell_type,'/','_'),'.csv')))
   }
 }
 

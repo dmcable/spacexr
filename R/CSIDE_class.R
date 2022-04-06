@@ -91,8 +91,7 @@ build.designmatrix.nonparam <- function(myRCTD, barcodes = NULL, df = 15) {
     stop(paste0('build.designmatrix.nonparam: ', length(barcodes),
                 ' common barcode names found between barcodes and myRCTD@spatialRNA. Please ensure that more common barcodes are found'))
   X2 <- get_spline_matrix(myRCTD@spatialRNA, df = df)
-  rownames(X2) <- barcodes;
-  return(X2)
+  return(X2[barcodes,])
 }
 
 #' Constructs a design matrix for running CSIDE across a set of regions
