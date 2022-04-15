@@ -1,0 +1,163 @@
+---
+output:
+  pdf_document: default
+  html_document:
+    keep_md: yes
+  word_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = 'hide')
+library(spacexr)
+library(Matrix)
+library(devtools)
+library(ggplot2)
+library(ggpubr)
+library(reshape2)
+library(dplyr)
+library(ggrepel)
+library(fields)
+library(stringr)
+library(GSA)
+load_all()
+set_global_Q_all()
+```
+
+# CSIDE technical validations 
+
+### MERFISH
+
+```{r fig-1, fig.height=12, fig.width=12, fig.align='center'}
+#myRCTDde <- readRDS("../../data/SpatialRNA/MERFISH_24/myRCTDde.rds")
+resultsdir <- '../../data/SpatialRNA/MERFISH_24'
+qdf_all <- readRDS(file.path(resultsdir, 'qdf_all.rds'))
+# Load in DE results and cluster
+plot_df_all <- data.frame(p = numeric(), x = numeric(), cat = factor(),
+                          se = numeric(), lam = numeric(), sig = numeric())
+for(lam_val in c(0.1, 0.5, 1, 1.5)) {
+  for(sig_val in c(0.5, 1, 1.5)) {
+    ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
+                   qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
+    #hist(pmin(qdf_all$y[ind],10))
+    my_ind <- max(which(X_vals < lam_val))
+    #res <- (qdf$Y - qdf$pred)/sqrt(qdf$var)
+    #var(res)
+    Q_mat <- Q_mat_all[[as.character(sig_val*100)]]
+    emp <- (table(pmin(qdf_all$y[ind],10)))[as.character(0:10)]
+    emp[is.na(emp)] <- 0
+    emp <- emp / length(ind)
+    se <- sqrt(emp*(1-emp)/length(ind))
+    plot_df <- data.frame(rbind(cbind(c(head(Q_mat[,my_ind],10),
+                                        sum(Q_mat[11:dim(Q_mat)[1],my_ind])),0:10,
+                                      'CSIDE Fitted Poisson-lognormal', 0*se),
+          cbind(emp, 0:10, 'Observed distribution', 1.96*se)))
+    colnames(plot_df) <- c('p', 'x', 'cat','se')
+    plot_df$p <- as.numeric(plot_df$p)
+    plot_df$x <- as.numeric(plot_df$x)
+    plot_df$se <- as.numeric(plot_df$se)
+    plot_df$lam <- lam_val
+    plot_df$sig <- sig_val
+    plot_df_all <- bind_rows(plot_df_all,plot_df)
+  }
+}
+plot_df_all$x <- as.character(plot_df_all$x)
+plot_df_all$x[plot_df_all$x == "10"] <- ">=10"
+plot_df_all$x <- factor(plot_df_all$x, levels = c(seq(0,9),'>=10'))
+p <- ggplot(plot_df_all, aes(x = factor(x), y = p, fill = cat)) + geom_bar(position="dodge", stat="identity") +
+  theme_bw() + xlab('Counts') + ylab('Probability distribution function') +  #ggtitle(paste('lambda = ',lam_val, "; sigma = ", sig_val))
+  geom_errorbar(aes(ymax = p+se, ymin = pmax(p-se,0)),color = 'black', position=position_dodge(width = 0.9), width=0.25) +
+  facet_grid(lam ~ sig, scales = "free") + scale_fill_manual('', breaks=c("CSIDE Fitted Poisson-lognormal","Observed distribution"),  values = c("#D55E00", "#0072B2"))
+p
+```
+
+### Visium
+
+```{r fig-2, fig.height=12, fig.width=12, fig.align='center'}
+#myRCTDde <- readRDS("../../data/SpatialRNA/VisiumLN/RCTD_object_with_CSIDE_single_T_CD4_density_weight_threshold_0.8.rds")
+resultsdir <- '../../data/SpatialRNA/VisiumLN'
+
+qdf_all <- readRDS(file.path(resultsdir, 'qdf_all.rds'))
+# Load in DE results and cluster
+plot_df_all <- data.frame(p = numeric(), x = numeric(), cat = factor(),
+                          se = numeric(), lam = numeric(), sig = numeric())
+for(lam_val in c(0.1, 0.5, 1, 1.5)) {
+  for(sig_val in c(0.1, 0.5, 1)) {
+    ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
+                   qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
+    #hist(pmin(qdf_all$y[ind],10))
+    my_ind <- max(which(X_vals < lam_val))
+    #res <- (qdf$Y - qdf$pred)/sqrt(qdf$var)
+    #var(res)
+    Q_mat <- Q_mat_all[[as.character(sig_val*100)]]
+    emp <- (table(pmin(qdf_all$y[ind],10)))[as.character(0:10)]
+    emp[is.na(emp)] <- 0
+    emp <- emp / length(ind)
+    se <- sqrt(emp*(1-emp)/length(ind))
+    plot_df <- data.frame(rbind(cbind(c(head(Q_mat[,my_ind],10),
+                                        sum(Q_mat[11:dim(Q_mat)[1],my_ind])),0:10,
+                                      'CSIDE Fitted Poisson-lognormal', 0*se),
+          cbind(emp, 0:10, 'Observed distribution', 1.96*se)))
+    colnames(plot_df) <- c('p', 'x', 'cat','se')
+    plot_df$p <- as.numeric(plot_df$p)
+    plot_df$x <- as.numeric(plot_df$x)
+    plot_df$se <- as.numeric(plot_df$se)
+    plot_df$lam <- lam_val
+    plot_df$sig <- sig_val
+    plot_df_all <- bind_rows(plot_df_all,plot_df)
+  }
+}
+plot_df_all$x <- as.character(plot_df_all$x)
+plot_df_all$x[plot_df_all$x == "10"] <- ">=10"
+plot_df_all$x <- factor(plot_df_all$x, levels = c(seq(0,9),'>=10'))
+p <- ggplot(plot_df_all, aes(x = factor(x), y = p, fill = cat)) + geom_bar(position="dodge", stat="identity") +
+  theme_bw() + xlab('Counts') + ylab('Probability distribution function') +  #ggtitle(paste('lambda = ',lam_val, "; sigma = ", sig_val))
+  geom_errorbar(aes(ymax = p+se, ymin = pmax(p-se,0)),color = 'black', position=position_dodge(width = 0.9), width=0.25) +
+  facet_grid(lam ~ sig, scales = "free") + scale_fill_manual('', breaks=c("CSIDE Fitted Poisson-lognormal","Observed distribution"),  values = c("#D55E00", "#0072B2"))
+p
+```
+
+### Slide-seq
+
+```{r fig-3, fig.height=12, fig.width=12, fig.align='center'}
+resultsdir <- "../../data/SpatialRNA/CerebellumReplicates/Puck_190926_08/"
+qdf_all <- readRDS(file.path(resultsdir, 'qdf_all.rds'))
+# Load in DE results and cluster
+plot_df_all <- data.frame(p = numeric(), x = numeric(), cat = factor(),
+                          se = numeric(), lam = numeric(), sig = numeric())
+for(lam_val in c(0.1, 0.5, 1, 1.5)) {
+  for(sig_val in c(0.1, 0.5, 1)) {
+    ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
+                   qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
+    #hist(pmin(qdf_all$y[ind],10))
+    my_ind <- max(which(X_vals < lam_val))
+    #res <- (qdf$Y - qdf$pred)/sqrt(qdf$var)
+    #var(res)
+    Q_mat <- Q_mat_all[[as.character(sig_val*100)]]
+    emp <- (table(pmin(qdf_all$y[ind],10)))[as.character(0:10)]
+    emp[is.na(emp)] <- 0
+    emp <- emp / length(ind)
+    se <- sqrt(emp*(1-emp)/length(ind))
+    plot_df <- data.frame(rbind(cbind(c(head(Q_mat[,my_ind],10),
+                                        sum(Q_mat[11:dim(Q_mat)[1],my_ind])),0:10,
+                                      'CSIDE Fitted Poisson-lognormal', 0*se),
+          cbind(emp, 0:10, 'Observed distribution', 1.96*se)))
+    colnames(plot_df) <- c('p', 'x', 'cat','se')
+    plot_df$p <- as.numeric(plot_df$p)
+    plot_df$x <- as.numeric(plot_df$x)
+    plot_df$se <- as.numeric(plot_df$se)
+    plot_df$lam <- lam_val
+    plot_df$sig <- sig_val
+    plot_df_all <- bind_rows(plot_df_all,plot_df)
+  }
+}
+plot_df_all$x <- as.character(plot_df_all$x)
+plot_df_all$x[plot_df_all$x == "10"] <- ">=10"
+plot_df_all$x <- factor(plot_df_all$x, levels = c(seq(0,9),'>=10'))
+p <- ggplot(plot_df_all, aes(x = factor(x), y = p, fill = cat)) + geom_bar(position="dodge", stat="identity") +
+  theme_bw() + xlab('Counts') + ylab('Probability distribution function') +  #ggtitle(paste('lambda = ',lam_val, "; sigma = ", sig_val))
+  geom_errorbar(aes(ymax = p+se, ymin = pmax(p-se,0)),color = 'black', position=position_dodge(width = 0.9), width=0.25) +
+  facet_grid(lam ~ sig, scales = "free") + scale_fill_manual('', breaks=c("CSIDE Fitted Poisson-lognormal","Observed distribution"),  values = c("#D55E00", "#0072B2"))
+p
+```
+
+```{r fig-4, fig.height=12, fig.width=12, fig.align='center'}

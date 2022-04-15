@@ -19,13 +19,13 @@ library(ggplot2)
 library(ggpubr)
 library(reshape2)
 library(dplyr)
-source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/AnalysisCSIDE/helper_functions/de_simulation_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/de_simulation_helper.R')
 devtools::load_all()
 load_all()
 set_global_Q_all()
 
-ref <- readRDS("../../../RCTD/data/Reference/10xCer/reference.rds")
-resultsdir <- '../../../RCTD/data/Reference/10xCer/de_simulation'
+ref <- readRDS("../../data/Reference/10xCer/reference.rds")
+resultsdir <- '../../data/Reference/10xCer/de_simulation'
 common_cell_types <- c('Bergmann', 'Purkinje')
 n_cell_types = length(common_cell_types)
 trials = 77 
@@ -66,6 +66,167 @@ results <- myRCTD@results
 norm_weights = sweep(results$weights, 1, rowSums(results$weights), '/')
 beta <- as.matrix(norm_weights)
 cell_type_info <- myRCTD@cell_type_info$info
+```
+
+### Run SPARC on contamination simulation
+
+```{r sparc-contam, eval = FALSE}
+de_gt_vals <- exp((-3:3)/5)
+gt_val <- 1
+COND <- length(de_gt_vals) # number of conditions for DE
+REPLICATES <- 100 # 100
+alpha_res <- array(0, dim = c(REPLICATES, 2, COND))
+thresh <- 5 #flip 50% of them
+region_base <- c(rep(0, floor(N_samples/2)), rep(1, ceiling(N_samples/2)))
+region <- region_base
+N_int <- 10
+region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < thresh]
+de_gene <- 'Nrxn3'
+for(condi in 1:COND) {
+  de_ground_truth <- c(gt_val, de_gt_vals[condi])
+  de_res <- sim_SPARK(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+                      UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta,UMI_vect,
+                      other_methods = T, region_orig = region)
+  alpha_res[,, condi] <- de_res
+}
+saveRDS(alpha_res, 'spark-contam.rds')
+```
+
+### Plot contamination simulation results
+
+```{r fig-2-spark, fig.height = 8, fig.width = 5, fig.align = 'center'}
+alpha_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/alpha_res.rds'))
+dec_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/dec_res.rds'))
+bulk_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/bulk_res.rds'))
+sing_res <- readRDS(file.path(resultsdir, 'other_methods_contamination/sing_res.rds'))
+spark_res <- readRDS(file.path(resultsdir, 'spark/spark-contam.rds'))
+REPLICATES <- 100
+de_gt_vals <- exp((-3:3)/5)
+gt_val <- 1
+plot_df <- as.data.frame(cbind( log(gt_val), log(de_gt_vals), apply(alpha_res,3:2,mean), apply(spark_res, 3:2, mean), apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd),apply(spark_res, 3:2, sd), apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
+colnames(plot_df) <- c('log_fc_b', 'log_fc_p', 'CSIDE_b', 'CSIDE_p', 'SPARK_b', 'SPARK_p','dec_b', 'dec_p', 'bulk','sing_b','sing_p', 'sd_CSIDE_b','sd_CSIDE_p','sd_SPARK_b','sd_SPARK_p', 'sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b','sd_sing_p')
+graph_df <- plot_df %>% 
+  select(log_fc_p, CSIDE_b, sd_CSIDE_b) %>% 
+  rename(estimate=CSIDE_b, sd=sd_CSIDE_b) %>%
+  mutate(type = 'CSIDE_b') %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, CSIDE_p, sd_CSIDE_p) %>% 
+              rename(estimate=CSIDE_p, sd=sd_CSIDE_p) %>%
+              mutate(type = 'CSIDE_p')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, SPARK_p, sd_SPARK_p) %>% 
+              rename(estimate=SPARK_p, sd=sd_SPARK_p) %>%
+              mutate(type = 'SPARK_p')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, SPARK_b, sd_SPARK_b) %>% 
+              rename(estimate=SPARK_b, sd=sd_SPARK_b) %>%
+              mutate(type = 'SPARK_b')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, dec_b, sd_dec_b) %>% 
+              rename(estimate=dec_b, sd=sd_dec_b) %>%
+              mutate(type = 'dec_b')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, dec_p, sd_dec_p) %>% 
+              rename(estimate=dec_p, sd=sd_dec_p) %>%
+              mutate(type = 'dec_p')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, bulk, sd_bulk) %>% 
+              rename(estimate=bulk, sd=sd_bulk) %>%
+              mutate(type = 'bulk')) %>%
+  bind_rows(plot_df %>% 
+              select(log_fc_p, sing_p, sd_sing_p) %>% 
+              rename(estimate=sing_p, sd=sd_sing_p) %>%
+              mutate(type = 'sing_p')) %>%
+bind_rows(plot_df %>% 
+              select(log_fc_p, sing_b, sd_sing_b) %>% 
+              rename(estimate=sing_b, sd=sd_sing_b) %>%
+              mutate(type = 'sing_b'))
+graph_df[,1:3] <- graph_df[,1:3]*log(exp(1),2) #scale to log 2
+p1 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_p', 'dec_p', 'bulk', 'sing_p','SPARK_p'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=1,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type A DE')+ xlab('Differential expression in cell type A') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00', '#EFCB00','#CC79A7'), breaks = c('bulk', 'dec_p' ,'CSIDE_p', 'sing_p','SPARK_p'), labels = c('Bulk','Decompose','CSIDE','Single','SPARK')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_b', 'dec_b', 'bulk', 'sing_b', 'SPARK_b'),], aes(x=log_fc_p,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)+ ylab('Estimated cell type B DE')+ xlab('Differential expression in the other cell type')+ ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00', '#CC79A7'), breaks = c('bulk', 'dec_b' ,'CSIDE_b', 'sing_b','SPARK_b'), labels = c('Bulk','Decompose','CSIDE', 'Single','SPARK')) + scale_x_continuous(breaks = unique(graph_df$log_fc_p), labels = round(unique(graph_df$log_fc_p),2))
+ggarrange(p1,p2, nrow = 2)
+```
+
+### Run SPARK on cell type proportion simulation
+
+```{r sparc-contamin, eval = FALSE}
+de_ground_truth <- c(1,1)
+de_gene <- 'Astn2'
+de_gt_vals <- 2:8 #cell type proportions
+N_int <- 10
+region_base <- c(rep(0, floor(N_samples/2)), rep(1, ceiling(N_samples/2)))
+COND <- length(de_gt_vals) # number of conditions for DE
+REPLICATES <- 100
+alpha_res <- array(0, dim = c(REPLICATES, 2, COND))
+for(condi in 1:COND) {
+  print(condi)
+  thresh <- de_gt_vals[condi]
+  region <- region_base
+  region[((1:N_samples) %% N_int) < thresh] <- 1 - region[((1:N_samples) %% 10) < thresh]
+  de_res <- sim_SPARK(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
+                      UMI1, UMI_tot, sigma_init, puck, myRCTD@cell_type_info, beta, UMI_vect,
+                      other_methods = T,region_orig = region)
+  alpha_res[,, condi] <- de_res
+}
+saveRDS(alpha_res,'spark_proportion.rds')
+```
+
+### Plot cell type proportion simulation results
+
+```{r fig-3, fig.height = 8, fig.width = 5, fig.align = 'center'}
+REPLICATES <- 100
+de_ground_truth <- c(1,1)
+de_gt_vals <- 2:8
+alpha_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/alpha_res.rds'))
+dec_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/dec_res.rds'))
+bulk_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/bulk_res.rds'))
+sing_res <- readRDS(file.path(resultsdir, 'other_methods_proportion/sing_res.rds'))
+spark_res <- readRDS(file.path(resultsdir, 'spark/spark_proportion.rds'))
+N_int <- 10
+ct_prop <- de_gt_vals / N_int
+plot_df <- as.data.frame(cbind(ct_prop, log(de_ground_truth[1]), log(de_ground_truth[2]), apply(alpha_res,3:2,mean), apply(spark_res, 3:2, mean),apply(dec_res,3:2,mean), apply(bulk_res,2,mean), apply(sing_res,3:2,mean), apply(alpha_res,3:2,sd), apply(spark_res, 3:2, sd),apply(dec_res,3:2,sd), apply(bulk_res,2,sd), apply(sing_res,3:2,sd)))
+colnames(plot_df) <- c('ct_prop','log_fc_b', 'log_fc_p', 'CSIDE_b', 'CSIDE_p','SPARK_b', 'SPARK_p', 'dec_b', 'dec_p', 'bulk', 'sing_b', 'sing_p', 'sd_CSIDE_b','sd_CSIDE_p','sd_SPARK_b','sd_SPARK_p', 'sd_dec_b','sd_dec_p','sd_bulk', 'sd_sing_b', 'sd_sing_p')
+graph_df <- plot_df %>% 
+  select(ct_prop, CSIDE_b, sd_CSIDE_b) %>% 
+  rename(estimate=CSIDE_b, sd=sd_CSIDE_b) %>%
+  mutate(type = 'CSIDE_b') %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, CSIDE_p, sd_CSIDE_p) %>% 
+              rename(estimate=CSIDE_p, sd=sd_CSIDE_p) %>%
+              mutate(type = 'CSIDE_p')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, SPARK_p, sd_SPARK_p) %>% 
+              rename(estimate=SPARK_p, sd=sd_SPARK_p) %>%
+              mutate(type = 'SPARK_p')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, SPARK_b, sd_SPARK_b) %>% 
+              rename(estimate=SPARK_b, sd=sd_SPARK_b) %>%
+              mutate(type = 'SPARK_b')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, dec_b, sd_dec_b) %>% 
+              rename(estimate=dec_b, sd=sd_dec_b) %>%
+              mutate(type = 'dec_b')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, dec_p, sd_dec_p) %>% 
+              rename(estimate=dec_p, sd=sd_dec_p) %>%
+              mutate(type = 'dec_p')) %>%
+  bind_rows(plot_df %>% 
+              select(ct_prop, bulk, sd_bulk) %>% 
+              rename(estimate=bulk, sd=sd_bulk) %>%
+              mutate(type = 'bulk')) %>%
+bind_rows(plot_df %>% 
+              select(ct_prop, sing_p, sd_sing_p) %>% 
+              rename(estimate=sing_p, sd=sd_sing_p) %>%
+              mutate(type = 'sing_p')) %>%
+bind_rows(plot_df %>% 
+              select(ct_prop, sing_b, sd_sing_b) %>% 
+              rename(estimate=sing_b, sd=sd_sing_b) %>%
+              mutate(type = 'sing_b'))
+graph_df[,2:3] <- graph_df[,2:3]*log(exp(1),2) #scale to log 2
+graph_df$ct_prop <- 2*(graph_df$ct_prop - 0.5)
+p1 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_p', 'dec_p', 'bulk', 'sing_p','SPARK_p'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03)  + ylab('Estimated cell type A DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00', '#CC79A7'), breaks = c('bulk', 'dec_p' ,'CSIDE_p', 'sing_p', 'SPARK_p'), labels = c('Bulk','Decompose','CSIDE','Single', 'SPARK')) + scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+p2 <- ggplot(graph_df[graph_df$type %in% c('CSIDE_b', 'dec_b', 'bulk', 'sing_b', 'SPARK_b'),], aes(x=ct_prop,y=estimate,group=type, color = type)) + geom_line() + theme_classic() + geom_abline(slope=0,intercept=0) + geom_errorbar(aes(ymin = estimate - sd*1.96/sqrt(REPLICATES),ymax=estimate+sd*1.96/sqrt(REPLICATES)), width = 0.03) + ylab('Estimated cell type B DE')+ xlab('Difference of mean cell type proportion across regions') + ggplot2::scale_color_manual("Method",values = c('#0072B2','#009E73','#D55E00','#EFCB00', '#CC79A7'), breaks = c('bulk', 'dec_b' ,'CSIDE_b','sing_b', 'SPARK_b'), labels = c('Bulk','Decompose','CSIDE','Single','SPARK'))+ scale_x_continuous(breaks = unique(graph_df$ct_prop), labels = round(unique(graph_df$ct_prop),2))
+ggarrange(p1,p2, nrow = 2)
 ```
 
 ### Run CSIDE on null and non-null DE case
@@ -278,4 +439,40 @@ p2 <- ggplot(plot_df[plot_df$ncell != 'Expression',], aes(y = variable, x = de, 
   scale_fill_continuous("Power",high = "#132B43", low = "#56B1F7") + geom_text(aes(label = label), size = 2, color = 'white') + scale_x_continuous(breaks=round(as.numeric(my_labels),2)) + ylab("Gene") + xlab("Cell type A differential expression") + theme(axis.ticks.y = element_blank(), axis.text.y = element_blank())
 p3 <- ggplot(plot_df[plot_df$ncell == 'Expression',], aes(y = variable, x = de, fill = value)) + facet_wrap(ncell ~., nrow = 1) + geom_raster() + theme_classic() + scale_x_continuous(breaks=round(as.numeric(my_labels),2)) +scale_fill_continuous("Log cell type A expression",high = pals::brewer.reds(20)[20], low = pals::brewer.reds(20)[2], breaks = c(0,1), labels =round(c(min(purk_expr), max(purk_expr))*log(exp(1),2),2)) + xlab("") + ylab("Gene")+ theme(axis.ticks.y = element_blank(), axis.text.y = element_blank())
 ggarrange(p2,p3,nrow = 1, widths = c(3.3,1))
+```
+```{r fig-9, fig.height = 6, fig.width = 12, fig.align = 'center'}
+p_my <- p_all[,2,,,]
+ind <- 3 # DE
+alpha <- 0.05
+ncells <- 3
+alpha_vals <- c((1:1000)/1000)
+alpha_vals <- c(alpha_vals / 1000^3, alpha_vals / 1000^2, alpha_vals / 1000, alpha_vals)
+all_res <- array(dim = c(2,3,4,length(alpha_vals))) # fpr/tpr ncells ind alpha_vals
+for(k in 1:2) {
+  for(ncells in 1:3) {
+    for(ind in 1:4) {
+      fpr <- numeric(length(alpha_vals))
+      tpr <- numeric(length(alpha_vals))
+      for(i in 1:length(alpha_vals)) {
+        alpha <- alpha_vals[i]
+        all_res[2,ncells,ind,i] <- mean(p_my[,,ncells,c(ind, 8 - ind)] < alpha)
+        all_res[1,ncells,ind,i] <- mean(p_my[,,ncells,4] < alpha)
+      }
+    }
+  }
+}
+plot_df <- melt(all_res[,,1:3,])
+plot_df <- cbind(plot_df[(1:(dim(plot_df)[1]/2))*2,], plot_df[(1:(dim(plot_df)[1]/2))*2 - 1,])
+plot_df <- plot_df[c(1,2,3,4,5,10)]
+colnames(plot_df) <- c('type', 'cells', 'ind', 'aind', 'tpr', 'fpr')
+#plot_df$ind <- factor(plot_df$ind)
+plot_df$cells <- (2^plot_df$cells*125)
+plot_df <- bind_rows(data.frame(type=c(2,2,2),cells=c(250,500,1000),ind=c(3,3,3),aind=c(3,3,3),tpr=c(0,0,0),fpr=c(0,0,0)), plot_df)
+plot_df$ind <- factor(plot_df$ind)
+plot_df$cells <- factor(plot_df$cells)
+ggplot(plot_df, aes(x=fpr, y = tpr, color = ind)) + 
+  geom_line() + facet_wrap(cells ~., nrow = 1) + theme_classic() + xlab('False positive rate') + ylab('True positive rate') + 
+  scale_color_manual("True DE",values = c('#0072B2','#009E73','#D55E00'), labels = c(0.48,.96,1.44)) + coord_fixed() + geom_abline(lty = 'dashed') + xlim(c(0,1)) + ylim(c(0,1))
+#plot(fpr, tpr, ylim = c(0,1), main = ind)
+
 ```

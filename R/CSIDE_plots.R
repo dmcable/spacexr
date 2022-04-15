@@ -389,19 +389,28 @@ plot_sig_genes_quant_regions <- function(cell_type, barcodes, my_beta, puck, sig
   }
 }
 
-get_quant_df <- function(RCTDde, gene_fits, cell_types, cur_cell_types, gene, multi_region = F, prop_thresh = 0.999, param_position = 2) {
+predict_CSIDE_all <- function(RCTDde, gene) {
+  cell_types <- RCTDde@internal_vars_de$cell_types
+  gene_fits <- RCTDde@de_results$gene_fits
   my_beta <- RCTDde@internal_vars_de$my_beta
   pred_tot <- numeric(dim(my_beta)[1])
+  sigma <- as.numeric(gene_fits$sigma_g[gene])/100
+  for(cell_type_ind in 1:length(cell_types)) {
+    pred_ct <- predict_CSIDE(cell_type_ind, gene_fits, gene, RCTDde@internal_vars_de$X2[rownames(my_beta),])
+    pred_tot <- pred_tot + pred_ct*my_beta[,cell_type_ind]
+  }
+  return(pred_tot)
+}
+
+get_quant_df <- function(RCTDde, gene_fits, cell_types, cur_cell_types, gene, multi_region = F, prop_thresh = 0.999, param_position = 2) {
+  my_beta <- RCTDde@internal_vars_de$my_beta
   X2 <- RCTDde@internal_vars_de$X2[rownames(my_beta),param_position]
   if(multi_region)
     X2 <- apply(RCTDde@internal_vars_de$X2,1,function(x) which(as.logical(x)))
   nUMI <- RCTDde@spatialRNA@nUMI[rownames(my_beta)]
   Y <- RCTDde@originalSpatialRNA@counts[gene, rownames(my_beta)] / nUMI
-  for(cell_type_ind in 1:length(cell_types)) {
-    sigma <- as.numeric(gene_fits$sigma_g[gene])/100
-    pred_ct <- predict_CSIDE(cell_type_ind, gene_fits, gene, RCTDde@internal_vars_de$X2[rownames(my_beta),])
-    pred_tot <- pred_tot + pred_ct*my_beta[,cell_type_ind]
-  }
+  sigma <- as.numeric(gene_fits$sigma_g[gene])/100
+  pred_tot <- predict_CSIDE_all(RCTDde, gene)
   a_pred <- pred_tot / exp(sigma^2/2)
   var_pred <- a_pred^2 * exp(sigma^2/2) * (exp(sigma^2/2) - 1)
   var_tot <- var_pred + pred_tot / nUMI

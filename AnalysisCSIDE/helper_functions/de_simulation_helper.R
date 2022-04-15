@@ -1,4 +1,4 @@
-sim_CSIDE <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types, 
+sim_CSIDE <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI, common_cell_types,
                        UMI1, UMI_tot, sigma_init, puck, cell_type_info, beta, UMI_vect,
                        other_methods = F,region_orig = NULL, subset_cells = NULL, regularize_expr = F) {
   puck_mod <- puck
@@ -17,11 +17,11 @@ sim_CSIDE <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI
     Y <- numeric(N_samples)
     names(Y) <- 1:N_samples
     if(is.null(region_orig))
-      region <- sample(c(rep(0, floor(N_samples / 2)), rep(1, ceiling(N_samples/2)))) 
+      region <- sample(c(rep(0, floor(N_samples / 2)), rep(1, ceiling(N_samples/2))))
     else
       region <- region_orig
     sample_index_first <- sample(intersect(which(ref@cell_types == type1) , which(nUMI > 1000))) #which cells to include
-    sample_index_second <- sample(intersect(which(ref@cell_types == type2) , which(nUMI > 1000))) 
+    sample_index_second <- sample(intersect(which(ref@cell_types == type2) , which(nUMI > 1000)))
     sample_index_first <- c(sample_index_first, sample_index_first)
     sample_index_second <- c(sample_index_second, sample_index_second)
     for(ind in 1:N_samples) {#N_samples) {
@@ -42,23 +42,23 @@ sim_CSIDE <- function(de_ground_truth, REPLICATES, de_gene, ref, N_samples, nUMI
       Y[ind] <- rhyper(1,random_round(ref_counts[cell_ind_1]*MULT_1), -ref_counts[cell_ind_1] + ref@nUMI[cell_ind_1], UMI1[ind]) +
         rhyper(1,random_round(ref_counts[cell_ind_2]*MULT_2), -ref_counts[cell_ind_2] + ref@nUMI[cell_ind_2], UMI_tot - UMI1[ind])
     }
-    
+
     X2 <- cbind(1,region)
     X1 <- matrix(0,nrow = N_samples,ncol=0)
     if(is.null(subset_cells))
       sigma_results <- choose_sigma_gene(sigma_init, Y, X1, X2, beta, UMI_vect, 'direct')
-    else { 
+    else {
       my_ind <- (1:length(Y)) %in% sample(1:length(Y), subset_cells)
       sigma_results <- choose_sigma_gene(sigma_init, Y[my_ind], X1[my_ind,], X2[my_ind,], beta[my_ind,], UMI_vect[my_ind], 'direct')
     }
     res <- sigma_results$res
     #print(res$alpha2[2,1])
-    
+
     e_res[j,] <- res$alpha2[2,1:2] #also called alpha_res
     z_res[j, ] <- res$alpha2[2,1:2]/(sqrt(diag(res$I))[c(2,4)])
     s_res[j, ] <- (sqrt(diag(res$I))[c(2,4)])
     p_res[j, ] <- 2*(1 - pnorm(abs(res$alpha2[2,1:2]/(sqrt(diag(res$I))[c(2,4)]))))
-    
+
     if(other_methods) {
       bulk_res[j] <- log(mean(Y[region==1])) - log(mean(Y[region==0]))
       puck_mod@counts[de_gene,] <- Y

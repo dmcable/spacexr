@@ -344,3 +344,21 @@ plot_df <- melt(results_mat[,c(2:5,10)], id = 'ct_ind')
 ggplot(plot_df[plot_df$variable %in% c('cyclicmax','randomm'),],aes(x=factor(ct_ind), y =value, fill = factor(variable))) +
   geom_bar(stat = 'identity', position = 'dodge') + ylim(c(0,1)) + theme_classic()+ ylab('Cyclic genes as a proportion of significant genes') + scale_fill_manual("", breaks = c('cyclicmax','randomm'), labels = c('CSIDE Estimates','Shuffled'), values = unname(my_pal_curr[c(4,2)])) + scale_x_discrete('Cell Type', breaks = c(1,2,3), labels = c('ES','RS','SPC'))
 ```
+
+```{r}
+barcodes <- myRCTDde@internal_vars_de$all_barc
+O <- myRCTDde@internal_vars_de$my_beta > 0.25
+S <- myRCTDde@internal_vars_de$my_beta[,1] + myRCTDde@internal_vars_de$my_beta[,2] > 0.25
+vec <- c(sum(S & O[,3] & myRCTDde@internal_vars_de$X2[all_barc,1]),
+  sum(!S & O[,3]& myRCTDde@internal_vars_de$X2[all_barc,1]),
+  sum(S & O[,3] & myRCTDde@internal_vars_de$X2[all_barc,2]),
+  sum(!S & O[,3]& myRCTDde@internal_vars_de$X2[all_barc,2]),
+  sum(S & O[,3] & myRCTDde@internal_vars_de$X2[all_barc,3]),
+  sum(!S & O[,3]& myRCTDde@internal_vars_de$X2[all_barc,3]),
+  sum(S & O[,3] & myRCTDde@internal_vars_de$X2[all_barc,4]),
+  sum(!S & O[,3]& myRCTDde@internal_vars_de$X2[all_barc,4]))
+plot_df <- data.frame(cbind(vec, c(T,F,T,F,T,F,T,F), c(1,1,2,2,3,3,4,4)))
+colnames(plot_df) <- c('n','S','region')
+ggplot(plot_df,aes(x=factor(region), y =n, fill = factor(S))) +
+  geom_bar(stat = 'identity', position = 'dodge') + theme_classic() + ylab('Number of pixels') + xlab('Region') + scale_fill_manual('', breaks=c(0,1), labels=c('ES/RS Absent','ES/RS Present'), values = unname(my_pal_curr[c(4,2)]))
+```

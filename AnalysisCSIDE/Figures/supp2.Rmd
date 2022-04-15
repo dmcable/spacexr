@@ -25,8 +25,8 @@ library(ggrepel)
 devtools::load_all()
 id <- '08'
 puck_no <- paste0('190926_', id)
-datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
-resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
+datadir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', '190926_11')
+resultsdir <- paste0('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/data/SpatialRNA/CerebellumReplicates/Puck_', puck_no)
 myRCTD<- readRDS(file.path(datadir,'myRCTD_cer_reps.rds'))
 ```
 
@@ -119,4 +119,97 @@ for(rep_num in 1:3) {
 plot_df$rep <- factor(plot_df$rep)
 p <- ggplot(plot_df, aes(sig_g, fill = rep, color = rep)) + geom_density(alpha = 0.3) + theme_classic() + ylab('Density of genes') + scale_fill_discrete("Replicate") + scale_color_discrete("Replicate") + xlab('Gene specific overdispersion magnitude')
 p
+```
+
+```{r subtypes,fig.height = 6, fig.width = 6, fig.align='center'}
+myRCTD <- readRDS('../../data/SpatialRNA/CerebellumReplicates/Puck_190926_08/myRCTDde_subtype.rds')
+# compare to coarse cell type
+myRCTD_coarse <- readRDS('../../data/SpatialRNA/CerebellumReplicates/Puck_190926_08/myRCTDde.rds')
+cell_type <- 'Granule'
+granule_list <- spacexr:::get_gene_list_type_wrapper(myRCTD_coarse, 'Granule', myRCTD_coarse@internal_vars_de$cell_types)
+granule_list <- intersect(rownames(myRCTD@de_results$gene_fits$mean_val),granule_list)
+class_df <- myRCTD@internal_vars$class_df
+subtypes <- rownames(class_df)[class_df$class == cell_type]
+diff_genes <- numeric(length(subtypes))
+names(diff_genes) <- subtypes
+sig_genes <- diff_genes
+for(granule_subtype in subtypes) {
+  ct_diff <- myRCTD_coarse@de_results$gene_fits$mean_val[granule_list, cell_type]-
+    myRCTD@de_results$gene_fits$mean_val[granule_list, granule_subtype]
+  #hist(ct_diff)
+  se_diff <- sqrt(myRCTD_coarse@de_results$gene_fits$I_mat[granule_list,'2_2_Granule']^2 +
+                    myRCTD@de_results$gene_fits$s_mat[granule_list,paste0('2_2_',granule_subtype)]^2)
+  pdiff <- 2*pnorm(-abs(ct_diff/se_diff))
+  pdiff[is.nan(pdiff)] <- 1
+  qdiff <- p.adjust(pdiff, method = 'BH')
+  diff_genes[granule_subtype] <- sum(qdiff < 0.1)
+  myp <- 2*pnorm(-abs(myRCTD@de_results$gene_fits$mean_val[granule_list, granule_subtype]/
+    myRCTD@de_results$gene_fits$s_mat[granule_list,paste0('2_2_',granule_subtype)]))
+  myp[is.na(myp)] <- 1
+  sig_genes[granule_subtype] <- sum(myp < 0.01)
+}
+
+granule_subtype <- 'Granule_Galntl6'
+se_diff <- sqrt(myRCTD_coarse@de_results$gene_fits$I_mat[granule_list,'2_2_Granule']^2 +
+                  myRCTD@de_results$gene_fits$s_mat[granule_list,paste0('2_2_',granule_subtype)]^2)
+thresh <- 0.35*log(2)
+length(names(which(se_diff < thresh))) # filter out noisy points
+R2 <- cor(myRCTD_coarse@de_results$gene_fits$mean_val[names(which(se_diff < thresh)), cell_type],
+    myRCTD@de_results$gene_fits$mean_val[names(which(se_diff < thresh)), 'Granule_Galntl6'])^2
+plot_df <- data.frame(cbind(myRCTD_coarse@de_results$gene_fits$mean_val[names(which(se_diff < thresh)), cell_type],
+    myRCTD@de_results$gene_fits$mean_val[names(which(se_diff < thresh)), 'Granule_Galntl6']))/log(2)
+colnames(plot_df) <- c('x','y')
+ggplot(plot_df,aes(x=x,y=y)) + geom_point() + theme_classic() + geom_line(aes(x=x,y=x)) + xlab('Estimated Granule DE') + ylab('Estimated Granule Subtype Galntl6 DE') + ggtitle(paste0('R^2 = ', round(R2,2))) + coord_fixed()
+```
+
+```{r fig-5,fig.height = 6, fig.width = 6, fig.align='center'}
+
+myp <- 2*pnorm(-abs(myRCTD_coarse@de_results$gene_fits$mean_val[granule_list, cell_type]/
+                      myRCTD_coarse@de_results$gene_fits$I_mat[granule_list,'2_2_Granule']))
+myp[is.na(myp)] <- 1
+cell_type_power <- sum(myp < 0.01)
+names(cell_type_power) <- cell_type
+sig_genes
+cell_type_power
+plot_df <- data.frame(c(sig_genes, cell_type_power), names(c(sig_genes, cell_type_power)))
+colnames(plot_df) <- c('n', 'cell_type')
+p1 <- ggplot(plot_df, aes(x = cell_type, y = n)) +
+  geom_bar(position="dodge", stat="identity") + theme_classic() + ylab('Number of significant genes detected (p < 0.01)') +
+  geom_hline(linetype = 'dashed', yintercept = .01*length(granule_list)) +
+  geom_vline(linetype = 'dashed', xintercept = 1.5) + theme(axis.text.x = element_text(angle = 25, hjust = 1)) + xlab('Cell type')
+p1
+
+```
+```{r fig-6,fig.height = 6, fig.width = 6, fig.align='center'}
+explanatory.variable <- myRCTD@internal_vars_de$X2[,2]
+cell_counts <- spacexr:::count_cell_types(myRCTD, names(explanatory.variable), myRCTD@internal_vars_de$cell_types_present,
+                           cell_type_threshold = 75)[subtypes]
+myRCTD_coarse@config$RCTDmode <- 'doublet'
+cell_type_counts <- spacexr:::count_cell_types(myRCTD_coarse, myRCTD_coarse@internal_vars_de$all_barc, myRCTD_coarse@internal_vars_de$cell_types_present,
+                                               cell_type_threshold = 125)
+cell_type_counts <- cell_type_counts[cell_type]
+cell_counts
+cell_type_counts
+
+plot_df <- data.frame(c(cell_counts, cell_type_counts), names(c(cell_counts, cell_type_counts)))
+colnames(plot_df) <- c('n', 'cell_type')
+p1 <- ggplot(plot_df, aes(x = cell_type, y = n)) +
+  geom_bar(position="dodge", stat="identity") + theme_classic() + ylab('Number of pixels') +
+  geom_vline(linetype = 'dashed', xintercept = 1.5)+ theme(axis.text.x = element_text(angle = 25, hjust = 1)) + xlab('Cell type')
+p1
+```
+
+```{r fig-7,fig.height = 4, fig.width = 4, fig.align='center'}
+myp <- 2*pnorm(-abs(myRCTD_coarse@de_results$gene_fits$mean_val[granule_list, cell_type]/
+                      myRCTD_coarse@de_results$gene_fits$I_mat[granule_list,'2_2_Granule']))
+myp[is.na(myp)] <- 1
+cell_type_power <- sum(myp < 0.01)
+names(cell_type_power) <- cell_type
+sig_genes
+cell_type_power
+plot_df <- data.frame(c(diff_genes), names(c(diff_genes)))
+colnames(plot_df) <- c('n', 'cell_type')
+p1 <- ggplot(plot_df, aes(x = cell_type, y = n)) +
+  geom_bar(position="dodge", stat="identity") + theme_classic() + ylab('Number of significantly different DE genes') +theme(axis.text.x = element_text(angle = 25, hjust = 1)) + xlab('Cell type')
+p1
 ```

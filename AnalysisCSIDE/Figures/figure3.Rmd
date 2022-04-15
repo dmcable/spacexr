@@ -57,6 +57,10 @@ RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde.r
 
 ```{r de-population, eval = FALSE}
 myRCTD <- RCTDde_list[[1]]
+# AVERAGE DE: .38
+mean(abs(myRCTD@de_results$gene_fits$mean_val[myRCTD@de_results$gene_fits$I_mat[,c(2,4,6,8,10)] < 0.5]), na.rm = T)/log(2)
+# AVERAGE DE ACROSS CELL TYPES: 1.09
+mean(apply(log(myRCTD@cell_type_info$info[[1]][rownames(myRCTD@de_results$gene_fits$mean_val),myRCTD@internal_vars_de$cell_types]),1,sd),na.rm=T)/log(2)
 de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
 de_pop <- get_de_pop(cell_type, de_results_list)
 plot_results <- F

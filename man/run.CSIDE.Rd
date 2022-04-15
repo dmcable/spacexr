@@ -47,7 +47,7 @@ at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
 across multiple categorical parameters}
 
 \item{weight_threshold}{(default NULL) the threshold of total normalized weights across all cell types
-in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.}
+in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.}
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
