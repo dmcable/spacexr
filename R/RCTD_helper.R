@@ -64,12 +64,12 @@ check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_s
 }
 
 #Decomposing a single bead via doublet search
-process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL,
-                                 constrain = T, verbose = F, MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10) {
+process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F, 
+                                 MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
   cell_type_profiles = data.matrix(cell_type_profiles)
-  QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = 25
+  QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = DOUBLET_THRESHOLD
   results_all = decompose_full(cell_type_profiles, UMI_tot, bead, constrain = constrain, verbose = verbose, MIN_CHANGE = MIN.CHANGE)
   all_weights <- results_all$weights
   conv_all <- results_all$converged
@@ -135,12 +135,12 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
 }
 
 #Decomposing a single bead via doublet search
-process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL,
-                               constrain = T, verbose = F, MIN.CHANGE = 0.001, MAX.TYPES = 4, CONFIDENCE_THRESHOLD = 10) {
+process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F,
+                               MIN.CHANGE = 0.001, MAX.TYPES = 4, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
   cell_type_profiles = data.matrix(cell_type_profiles)
-  QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = 25
+  QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = DOUBLET_THRESHOLD
   results_all = decompose_full(cell_type_profiles, UMI_tot, bead, constrain = constrain, verbose = verbose, MIN_CHANGE = MIN.CHANGE)
   all_weights <- results_all$weights
   conv_all <- results_all$converged

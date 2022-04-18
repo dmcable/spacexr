@@ -56,11 +56,12 @@ process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, tr
 #' @param constrain logical whether to constrain the weights to sum to one on each pixel
 #' @param max_cores number of cores to use (will use parallel processing if more than one).
 #' @param CONFIDENCE_THRESHOLD (Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence
+#' @param DOUBLET_THRESHOLD (Default 25) the penalty weigth of predicting a doublet instead of a singlet for a pixel
 #' @return Returns \code{results}, a list of RCTD results for each pixel, which can be organized by
 #' feeding into \code{\link{gather_results}}
 #' @export
 process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T,
-                                MAX_CORES = 8, MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10) {
+                                MAX_CORES = 8, MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   beads = t(as.matrix(puck@counts[gene_list,]))
   #out_file = "logs/process_beads_log.txt"
   #if (file.exists(out_file))
@@ -78,8 +79,8 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
       result = process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
-                                    class_df = class_df, constrain = constrain,
-                                    MIN.CHANGE = MIN.CHANGE, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD)
+                                    class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
+                                    CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
       result
     }
     parallel::stopCluster(cl)
@@ -87,16 +88,16 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
     #not parallel
     results <- list()
     for(i in 1:(dim(beads)[1])) {
-      results[[i]] <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i],
-                                           beads[i,], class_df = class_df,
-                                           constrain = constrain, MIN.CHANGE = MIN.CHANGE, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD)
+      results[[i]] <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
+                                           class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE, 
+                                           CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
     }
   }
   return(results)
 }
 
 process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T,
-                                MAX_CORES = 8, MIN.CHANGE = 0.001, MAX.TYPES = 4, CONFIDENCE_THRESHOLD = 10) {
+                                MAX_CORES = 8, MIN.CHANGE = 0.001, MAX.TYPES = 4, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   beads = t(as.matrix(puck@counts[gene_list,]))
   if(MAX_CORES > 1) {
     numCores = parallel::detectCores();
@@ -111,8 +112,8 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
       assign("K_val",K_val, envir = globalenv());
       result = process_bead_multi(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
-                                  class_df = class_df, constrain = constrain,
-                                  MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD)
+                                  class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES, 
+                                  CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
       result
     }
     parallel::stopCluster(cl)
@@ -122,8 +123,8 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
     for(i in 1:(dim(beads)[1])) {
       results[[i]] <- process_bead_multi(cell_type_info, gene_list, puck@nUMI[i],
                                          beads[i,], class_df = class_df,
-                                         constrain = constrain, MIN.CHANGE = MIN.CHANGE,
-                                         MAX.TYPES = MAX.TYPES, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD)
+                                         constrain = constrain, MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES, 
+                                         CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
     }
   }
   return(results)
@@ -146,8 +147,8 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
   cell_type_info <- RCTD@cell_type_info$renorm
   if(doublet_mode == "doublet") {
     results = process_beads_batch(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
-                                  constrain = F, MAX_CORES = RCTD@config$max_cores,
-                                  MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD)
+                                  constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, 
+                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD$config$DOUBLET_THRESHOLD)
     return(gather_results(RCTD, results))
   } else if(doublet_mode == "full") {
     beads = t(as.matrix(RCTD@spatialRNA@counts[RCTD@internal_vars$gene_list_reg,]))
@@ -162,8 +163,8 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
   } else if(doublet_mode == "multi") {
     RCTD@results = process_beads_multi(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
                                   constrain = F, MAX_CORES = RCTD@config$max_cores,
-                                  MIN.CHANGE = RCTD@config$MIN_CHANGE_REG,
-                                  MAX.TYPES = RCTD@config$MAX_MULTI_TYPES, CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD)
+                                  MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, MAX.TYPES = RCTD@config$MAX_MULTI_TYPES, 
+                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD$config$DOUBLET_THRESHOLD)
     return(RCTD)
   } else {
     stop(paste0("fitPixels: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
