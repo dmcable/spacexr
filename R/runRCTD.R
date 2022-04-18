@@ -56,7 +56,7 @@ process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, tr
 #' @param constrain logical whether to constrain the weights to sum to one on each pixel
 #' @param max_cores number of cores to use (will use parallel processing if more than one).
 #' @param CONFIDENCE_THRESHOLD (Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence
-#' @param DOUBLET_THRESHOLD (Default 25) the penalty weigth of predicting a doublet instead of a singlet for a pixel
+#' @param DOUBLET_THRESHOLD (Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel
 #' @return Returns \code{results}, a list of RCTD results for each pixel, which can be organized by
 #' feeding into \code{\link{gather_results}}
 #' @export
