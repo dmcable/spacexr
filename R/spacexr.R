@@ -35,7 +35,7 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
 #' @param cell_type_info Default NULL, option to pass in \code{cell_type_info} directly
 #' @param keep_reference (Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object
 #' @param CONFIDENCE_THRESHOLD (Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence
-#' @param DOUBLET_THRESHOLD (Default 25) the penalty weigth of predicting a doublet instead of a singlet for a pixel
+#' @param DOUBLET_THRESHOLD (Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
 create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
