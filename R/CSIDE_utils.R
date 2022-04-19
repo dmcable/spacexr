@@ -215,7 +215,6 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   if(length(cell_types) == 1) {
     stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
   }
-  message(paste0("choose_cell_types: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
   return(cell_types)
 }
 
