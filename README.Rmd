@@ -64,6 +64,8 @@ If you would like to build vignettes (it will take some time), modify the above 
 
 A complete guide to spacexr vignettes can be found [here](https://github.com/dmcable/spacexr/tree/master/vignettes), which includes diverse applications of RCTD and C-SIDE on Slide-seq, MERFISH, and Visium datasets. These vignettes also include multiple applications of C-SIDE to differential expression problems including spatial position, cell-to-cell interactions, and joint analysis of multiple experimental samples/replicates.
 
+The *spacexr* manual can be found [here](https://github.com/dmcable/spacexr/tree/master/spacexr_manual_2.0.0.pdf).
+
 Additional detailed recommended reading (documentation, tutorials, and tips) can be found [here](https://github.com/dmcable/spacexr/tree/master/documentation).
 
 ## Quick Guide to Getting Started with RCTD
