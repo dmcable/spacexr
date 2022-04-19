@@ -1,0 +1,86 @@
+---
+title: "Applying CSIDE to Spatial Transcriptomics Data: Cell-Cell Interactions in Visium of Human Lymph Node"
+author: "Luli Zou"
+date: "April 15, 2022"
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+  rmarkdown::html_vignette:
+    keep_md: yes
+vignette: |
+  %\VignetteIndexEntry{visium-cellcell} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
+---
+
+```{r setup}
+library(spacexr)
+library(Matrix)
+library(doParallel)
+library(ggplot2)
+datadir <- system.file("extdata",'SpatialRNA/VisiumLymphVignette',package = 'spacexr') # directory for downsampled Visium dataset
+if(!dir.exists(datadir))
+  dir.create(datadir)
+```
+
+```{r, include = TRUE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache = TRUE,
+  out.width = "100%"
+)
+```
+
+## Introduction
+
+Cell type-specific inference of differential expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for genes that have cell type-specific differential expression in B cell-rich vs. B cell-poor regions in publicly available Visium data, located [here](https://www.10xgenomics.com/resources/datasets/human-lymph-node-1-standard-1-1-0). First, we will first use RCTD to assign cell types to a human lymph node data set. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) lymph node dataset. 
+
+**NOTE**: for the purposes of this vignette, the original data as well as the reference data have been greatly downsampled to provide a small test example.
+
+## Data Preprocessing and running RCTD
+
+First, we create the RCTD object and run RCTD on the data to annotate cell types in full mode.
+
+```{r}
+refdir <- system.file("extdata",'Reference/Visium_Lymph_Ref',package = 'spacexr') 
+ref <- readRDS(file.path(refdir, 'ref_downsampled.rds'))
+coords <- readRDS(file.path(datadir, 'coords.rds'))
+expr <- readRDS(file.path(datadir, 'expr.rds'))
+srna <- SpatialRNA(coords, expr)
+myRCTD <- create.RCTD(srna, ref, max_cores=1)
+myRCTD <- run.RCTD(myRCTD, doublet_mode='full')
+```
+
+## Running CSIDE
+
+The first step is to create our explanatory variable of interest. For example, we might be interested in finding genes that have differential expression in one cell type in the presence of another cell type, e.g. B cells. We can address this by creating our explanatory variable from the B cell weights from the RCTD object created above. In this case, we create a binary variable indicating B cell enrichment, using the median weight as the cutoff. We use the `plot_puck_continuous` function to visualize our variable on the spatial data.
+
+```{r explanatory-var-creation}
+B_weight <- myRCTD@results$weights[,'B']
+B_med <- median(B_weight)
+B_weight[B_weight>=B_med] <- 1
+B_weight[B_weight<B_med] <- 0
+plot_puck_continuous(myRCTD@spatialRNA, rownames(myRCTD@spatialRNA@coords), B_weight)
+```
+
+We are now ready to run CSIDE using the `run.CSIDE.single` function. We will use 1 core, and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+
+**Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the CSIDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), `fdr` (default 0.01), and `weight_threshold` (default NULL). 
+
+```{r DEgenes}
+#de
+myRCTD@config$max_cores <- 1
+cell_types <- c('Macrophages','T_CD4')
+myRCTD <- run.CSIDE.single(myRCTD, B_weight, cell_types = cell_types, gene_threshold = .01, cell_type_threshold = 10, fdr = 0.25, doublet_mode = F, weight_threshold = 0.1)
+```
+
+
+## CSIDE results
+
+The results of the run can be found in `myRCTD@de_results$sig_gene_list`. Again, note that these lists may be inaccurate since all steps of this analysis have been run with downsampled data.
+
+```{r}
+print(myRCTD@de_results$sig_gene_list)
+```
