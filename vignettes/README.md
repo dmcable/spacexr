@@ -61,6 +61,7 @@ following examples:
     hippocampus](https://raw.githack.com/dmcable/spacexr/master/vignettes/visium_full_regions.html)
 -   DE from cell-to-cell interactions: [C-SIDE for cell-to-cell
     interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/CSIDE_celltocell_interactions.html).
+-   DE from cell-to-cell interactions in Visium of a human lymph node: [C-SIDE for cell-to-cell interactions in Visium](https://raw.githack.com/dmcable/spacexr/master/vignettes/visium_CSIDE_celltocell_interactions.html).
 -   DE from interactions with pathology: [C-SIDE for pathology
     interactions](https://raw.githack.com/dmcable/spacexr/master/vignettes/CSIDE_pathology_interactions.html).
 -   Nonparametric smooth spatial patterns on MERFISH: [MERFISH
