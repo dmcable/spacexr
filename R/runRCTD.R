@@ -148,7 +148,7 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
   if(doublet_mode == "doublet") {
     results = process_beads_batch(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
                                   constrain = F, MAX_CORES = RCTD@config$max_cores, MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, 
-                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD$config$DOUBLET_THRESHOLD)
+                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD@config$DOUBLET_THRESHOLD)
     return(gather_results(RCTD, results))
   } else if(doublet_mode == "full") {
     beads = t(as.matrix(RCTD@spatialRNA@counts[RCTD@internal_vars$gene_list_reg,]))
@@ -164,7 +164,7 @@ fitPixels <- function(RCTD, doublet_mode = "doublet") {
     RCTD@results = process_beads_multi(cell_type_info, RCTD@internal_vars$gene_list_reg, RCTD@spatialRNA, class_df = RCTD@internal_vars$class_df,
                                   constrain = F, MAX_CORES = RCTD@config$max_cores,
                                   MIN.CHANGE = RCTD@config$MIN_CHANGE_REG, MAX.TYPES = RCTD@config$MAX_MULTI_TYPES, 
-                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD$config$DOUBLET_THRESHOLD)
+                                  CONFIDENCE_THRESHOLD = RCTD@config$CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = RCTD@config$DOUBLET_THRESHOLD)
     return(RCTD)
   } else {
     stop(paste0("fitPixels: doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
