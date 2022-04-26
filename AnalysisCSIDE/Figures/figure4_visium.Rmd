@@ -45,14 +45,14 @@ my_barc <- myRCTD@internal_vars_de$barcodes
 p1 <- plot_class(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , factor(myRCTD@internal_vars_de$X2[,2]), 
                      title ='') + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 1934.6, y = 1800, xend = 2184.6, yend = 1800), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ scale_color_manual("",values = c("#0072B2", "#D55E00"), labels = c('B Cell Poor','B Cell Rich'))
   #scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Distance from midline", labels = c(0,1),breaks = c(0,1), limits = c(0,1))
-p2 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , ylimit = c(0,10), myRCTD@spatialRNA@counts[gene,my_barc],title ='') + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 1934.6, y = 1800, xend = 2184.6, yend = 1800), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "CXCL13 Expression", labels = c(0,10),breaks = c(0,10), limits = c(0,10))
+p2 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , ylimit = c(0,10), myRCTD@spatialRNA@counts[gene,my_barc],title ='', size = 0.5) + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 1934.6, y = 1800, xend = 2184.6, yend = 1800), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "CXCL13 Expression", labels = c(0,10),breaks = c(0,10), limits = c(0,10))
 ggarrange(p1,p2,nrow = 2)
 ```
 ### Plot DC Cell Type
 
 ```{r fig-1, fig.height = 6, fig.width = 6, fig.align='center'}
 dc_prop <- myRCTD@internal_vars_de$my_beta[,'DC']
-p2 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , ylimit = c(0,.15), dc_prop[my_barc],title ='') + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 1934.6, y = 1800, xend = 2184.6, yend = 1800), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Dentritic Cell Proportion", labels = c(0,.15),breaks = c(0,.15), limits = c(0,.15))
+p2 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , ylimit = c(0,.15), dc_prop[my_barc],title ='', size = .5) + ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 1934.6, y = 1800, xend = 2184.6, yend = 1800), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Dentritic Cell Proportion", labels = c(0,.15),breaks = c(0,.15), limits = c(0,.15))
 p2
 ```
 
@@ -159,5 +159,46 @@ plot_df$mean <- pmin(pmax(plot_df$mean,-3/log(exp(1),2)),3/log(exp(1),2))
 p <- ggplot(plot_df, aes(x=mean*log(exp(1),2), y = y, color = ct, alpha = sig)) + geom_point() + theme_classic() + 
   geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
   geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = F, max.overlaps = 20, label.padding = 0.1) + labs(color = 'Cell Type') + xlab('Estimated cell type-specific DE by CSIDE') + ylab('CSIDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") ) +  ggplot2::scale_color_manual("Cell type",values = my_pal_curr[c('B','DC','T_CD4','Macrophages')], breaks = c('B','DC','T_CD4','Macrophages'), labels = c('B','DC','T_CD4','Macrophages')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
+p
+```
+### Volcano plot only for Dendritic Cells:
+
+```{r fig-4, fig.height = 6, fig.width = 8, fig.align='center'}
+n_levels = myRCTD@cell_type_info$info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = myRCTD@cell_type_info$info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr["T_CD4"] <- "#56B4E9"
+my_pal_curr["B"] <- "#0072B2"
+my_pal_curr["DC"] <- "#000000"
+my_pal_curr["Macrophages"] <- "#CC79A7"
+plot_df_list <- list()
+for(cell_type in cell_types[c(3)]) {
+  de_df <- myRCTD@de_results$all_gene_list[[cell_type]]
+  gene_big <- rownames(de_df)
+  cell_type_means <- myRCTD@cell_type_info$info[[1]][gene_big,cell_types_present]
+  cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
+  p_vals <- de_df$p_val
+  names(p_vals) <- gene_big
+  plot_df <- data.frame(gene_big, cell_type, de_df$log_fc, -log(pmax(p_vals,1e-16),10),  gene_big %in% rownames(myRCTD@de_results$sig_gene_list[[cell_type]]))
+  colnames(plot_df) <- c('gene', 'ct', 'mean', 'y', 'sig')
+  plot_df_list[[cell_type]] <- plot_df
+}
+plot_df <- bind_rows(plot_df_list)
+plot_df$label <- NA
+plot_df[plot_df$ct == 'DC' & plot_df$gene %in% c('CLU','FSCN1','CCL19','CXCL13','FDCSP','CR2'), 'label'] <-
+  plot_df[plot_df$ct == 'DC' & plot_df$gene %in% c('CLU','FSCN1','CCL19','CXCL13','FDCSP','CR2'), 'gene']
+#plot_df$label <- plot_df$gene
+#plot_df$label[!plot_df$sig] <- NA
+#clutter_factor <- 1.2
+#plot_df$label[plot_df$ct %in% c('CA1', 'CA3')][round((1:floor(length(plot_df$ct %in% c('CA1', 'CA3'))/clutter_factor))*clutter_factor)] <- NA # reduce clutter
+if(length(grep("mt-",plot_df$gene)))
+  plot_df <- plot_df[plot_df$gene[-grep("mt-",plot_df$gene)],]
+plot_df$mean <- as.numeric(plot_df$mean)
+plot_df$y <- as.numeric(plot_df$y)
+plot_df$mean <- pmin(pmax(plot_df$mean,-3/log(exp(1),2)),3/log(exp(1),2))
+p <- ggplot(plot_df, aes(x=mean*log(exp(1),2), y = y, color = ct, alpha = sig)) + geom_point() + theme_classic() + 
+  geom_vline(xintercept = 0.4*log(exp(1),2), linetype = 'dotted') + geom_vline(xintercept = -0.4*log(exp(1),2), linetype = 'dotted') +
+  geom_label_repel(aes(label = label),nudge_x = 0.1,na.rm = TRUE, show.legend = F, max.overlaps = 20, label.padding = 0.1) + labs(color = 'Cell Type') + xlab('Estimated dendritic cell DE by CSIDE') + ylab('CSIDE p-value') + scale_y_continuous(lim = c(0,16.01), breaks = c(0,5,10,15),labels = c("10^0", "10^(-5)", "10^(-10)","10^(-15)") ) +  ggplot2::scale_color_manual("Cell type",values = my_pal_curr[c('B','DC','T_CD4','Macrophages')], breaks = c('B','DC','T_CD4','Macrophages'), labels = c('B','DC','T_CD4','Macrophages')) + scale_alpha_manual("", labels = c('Not significant', 'Significant'), values = c(0.2,1))
 p
 ```
