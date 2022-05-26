@@ -348,7 +348,7 @@ get_sig_genes <- function(puck, myRCTD, gene_list_tot, cell_types, my_beta, barc
                                          params_to_test = params_to_test, fdr = fdr, p_thresh = p_thresh,
                                          log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
     else if(test_mode == 'categorical') {
-      sig_genes <- find_sig_genes_categorical(cell_type, cell_types, gene_fits, gene_list_type, X2,
+      both_genes <- find_sig_genes_categorical(cell_type, cell_types, gene_fits, gene_list_type, X2,
                                         p_thresh = p_thresh, log_fc_thresh = log_fc_thresh,
                                         params_to_test = params_to_test)
     }
