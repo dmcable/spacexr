@@ -142,8 +142,8 @@ aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
 #' @param RCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when counting cell typel\.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.

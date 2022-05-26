@@ -97,8 +97,8 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param explanatory.variable.replicates a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
 #' Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
 #' @param cell_types the cell types used for CSIDE. Each cell type must occur
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.

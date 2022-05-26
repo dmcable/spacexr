@@ -12,7 +12,8 @@ process_beads_batch(
   constrain = T,
   MAX_CORES = 8,
   MIN.CHANGE = 0.001,
-  CONFIDENCE_THRESHOLD = 10
+  CONFIDENCE_THRESHOLD = 10,
+  DOUBLET_THRESHOLD = 25
 )
 }
 \arguments{
@@ -29,6 +30,8 @@ classes}
 \item{constrain}{logical whether to constrain the weights to sum to one on each pixel}
 
 \item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
+
+\item{DOUBLET_THRESHOLD}{(Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel}
 
 \item{max_cores}{number of cores to use (will use parallel processing if more than one).}
 }

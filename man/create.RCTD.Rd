@@ -22,7 +22,8 @@ create.RCTD(
   MAX_MULTI_TYPES = 4,
   keep_reference = F,
   cell_type_info = NULL,
-  CONFIDENCE_THRESHOLD = 10
+  CONFIDENCE_THRESHOLD = 10,
+  DOUBLET_THRESHOLD = 25
 )
 }
 \arguments{
@@ -60,6 +61,8 @@ number of available cores.}
 \item{cell_type_info}{Default NULL, option to pass in \code{cell_type_info} directly}
 
 \item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
+
+\item{DOUBLET_THRESHOLD}{(Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function

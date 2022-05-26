@@ -28,9 +28,9 @@ run.CSIDE.single(
 are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.}
 
 \item{cell_types}{the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurrences of
-at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}}
+at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}}
 
-\item{cell_type_threshold}{(default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}}
+\item{cell_type_threshold}{(default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}}
 
 \item{gene_threshold}{(default 5e-5) minimum average normalized expression required for selecting genes}
 

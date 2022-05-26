@@ -9,8 +9,8 @@
 #' @param explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
 #' are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurrences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
@@ -59,8 +59,8 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 #' @param df (default 15) the degrees of freedom, or number of basis functions to be used in the model.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
@@ -115,8 +115,8 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 #' @param region_list a list of \code{character} vectors, where each vector contains pixel names, or barcodes, for a single region. These pixel names
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
@@ -161,12 +161,12 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param cell_type_specific: (default TRUE for all covariates). A logical vector of length the number of covariates
 #' indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
@@ -226,10 +226,10 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
 #' explaining differential expression and need to be linearly independent.
 #' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
-#' at least `cell_type_threshold`, as aggregated by \code{\link{choose_cell_types}}
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.
-#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{choose_cell_types}}
+#' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
