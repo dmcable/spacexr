@@ -35,7 +35,7 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
   explanatory.variable <- explanatory.variable[barcodes]
-  medv <- median(explanatory.variable)
+  medv <- 0.5
   region_thresh <- cell_type_threshold / 2
   r1 <- barcodes[explanatory.variable < medv]
   cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
