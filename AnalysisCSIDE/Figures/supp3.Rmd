@@ -28,9 +28,9 @@ library(stringr)
 devtools::load_all()
 # Load in spatialRNA data and Reference data
 pwd = getwd()
-datadir <- '../../../RCTD/data/SpatialRNA/Puck_210605/23'
-IM_DIR <- '../../../RCTD/data/Images/Plaque/210715/Processed/'
-ALIGN_DIR <- '../../../RCTD/data/Images/Plaque/210715/AlignmentResults/'
+datadir <- '../../../spacexr/data/SpatialRNA/Puck_210605/23'
+IM_DIR <- '../../../spacexr/data/Images/Plaque/210715/Processed/'
+ALIGN_DIR <- '../../../spacexr/data/Images/Plaque/210715/AlignmentResults/'
 myRCTD <- readRDS(file.path(datadir, 'myRCTDde_thresh.rds'))   
 cell_types <- myRCTD@internal_vars_de$cell_types
 source('~/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/CSIDE/analysis/helper_functions/merge_de_helper.R')
@@ -53,9 +53,9 @@ save.image(final_im, file.path(datadir,'rotated_plaque_img.png'))
 ### Load CSIDE results
 
 ```{r de-load}
-datadir_list <- c('../../../RCTD/data/SpatialRNA/Puck_210605/21', '../../../RCTD/data/SpatialRNA/Puck_210605/22',
-                  '../../../RCTD/data/SpatialRNA/Puck_210605/23', '../../../RCTD/data/SpatialRNA/Puck_210605/24')
-resultsdir <- '../../../RCTD/data/SpatialRNA/Puck_210605/JointResults2/'
+datadir_list <- c('../../../spacexr/data/SpatialRNA/Puck_210605/21', '../../../spacexr/data/SpatialRNA/Puck_210605/22',
+                  '../../../spacexr/data/SpatialRNA/Puck_210605/23', '../../../spacexr/data/SpatialRNA/Puck_210605/24')
+resultsdir <- '../../../spacexr/data/SpatialRNA/Puck_210605/JointResults2/'
 RCTDde_list <- lapply(datadir_list, function(x) readRDS(file.path(x, 'myRCTDde_thresh.rds')))
 cell_types <- RCTDde_list[[1]]@internal_vars_de$cell_types
 cell_types_present <- cell_types

@@ -262,7 +262,7 @@ check_converged_vec <- function(X1,X2,my_beta, itera, n.iter, error_vec, precisi
 #'
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param cell_type the cell type (character) for which to compute density.
-#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
 #' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable
@@ -340,7 +340,7 @@ exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 
 #' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
 #' @param points a N by 2 matrix containing the locations of the points to be used for computing density. The first column should be the x
 #' coordinates while the second column should be the y coordinate.
-#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.
+#' @param barcodes the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.
 #' @param radius (default 50) the radius of the exponential filter. Approximately, the distance considered to be a
 #' relevant interaction.
 #' @return explanatory.variable a named numeric vector representing the explanatory variable used for explaining differential expression in CSIDE. Names of the variable

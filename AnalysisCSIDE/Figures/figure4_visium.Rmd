@@ -89,6 +89,8 @@ for(i in 1:n_box) {
   stex[i,1] <- (sd(Yn[!reg & dc_prop > tl & dc_prop < th])/sqrt(length(Yn[!reg & dc_prop > tl & dc_prop < th])))
   stex[i,3] <- (mean(dc_prop[dc_prop > tl & dc_prop < th]))
   stex[i,4] <- i
+  #print(length(Yn[reg & dc_prop > tl & dc_prop < th]))
+  #print(length(Yn[!reg & dc_prop > tl & dc_prop < th]))
 }
 colnames(gex) <- c('out', 'inn', 'dc', 'ind')
 plot_df <- melt(data.frame(gex), id.vars = c('dc','ind'))

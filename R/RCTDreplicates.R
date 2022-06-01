@@ -113,6 +113,9 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE
 #' @param de_mode (default 'single') if 'single', calls \code{\link{run.CSIDE.single}}. If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}
 #' @param df (default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.
+#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param test_error (default TRUE) if TRUE, first tests for error messages before running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param barcodes for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
@@ -121,7 +124,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                                  fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F,
-                                 de_mode = 'single', df = 15, barcodes = NULL) {
+                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = T) {
   if(!(de_mode %in% c('single','nonparam')))
     stop('run.CISDE.replicates: de_mode must be set to "single" or "nonparam".')
   if(is.null(cell_types))
@@ -134,13 +137,31 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     replicate_index <- 1:length(RCTD.replicates@RCTD.reps)
   if(any(!(replicate_index %in% 1:length(RCTD.replicates@RCTD.reps))))
     stop('run.CSIDE.replicates: replicate_index must be a subest of 1:N_replicates')
+  if(test_error)
+    for(i in replicate_index) {
+      message(paste('run.CSIDE.replicates: testing CSIDE for errors for replicate',i))
+      if(de_mode == 'single') {
+        run.CSIDE.single(
+          RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
+          gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
+          sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+          cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = T)
+      } else {
+        run.CSIDE.nonparam(
+          RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
+          gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
+          sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr, test_error = T)
+      }
+
+    }
   for(i in replicate_index) {
     message(paste('run.CSIDE.replicates: running CSIDE for replicate',i))
     if(de_mode == 'single') {
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.single(
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
                                                     gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
-                                                    sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr)
+                                                    sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+        cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh)
     } else {
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.nonparam(
         RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
@@ -150,7 +171,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
 
   }
   if(population_de)
-    RCTD.replicates <- CSIDE.population.inference(RCTD.replicates)
+    RCTD.replicates <- CSIDE.population.inference(RCTD.replicates, log_fc_thresh = log_fc_thresh)
   return(RCTD.replicates)
 }
 

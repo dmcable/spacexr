@@ -162,6 +162,7 @@ myRCTDde <- add_res_genes(myRCTDde, datadir = datadir, plot_genes = F)
 saveRDS(myRCTDde, file.path(datadir,'myRCTDde_updated2.rds'))
 make_all_de_plots(myRCTDde, datadir)
 ```
+
 ```{r de-results}
 myRCTDde <- readRDS(file.path(datadir,'myRCTDde_updated2.rds'))
 cell_type_mapping <- c('1'="ES", '2'="RS", '3'='Myoid', '4'="SPC", '5'="SPG",

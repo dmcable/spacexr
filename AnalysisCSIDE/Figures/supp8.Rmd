@@ -36,6 +36,7 @@ plot_df_all <- data.frame(p = numeric(), x = numeric(), cat = factor(),
                           se = numeric(), lam = numeric(), sig = numeric())
 for(lam_val in c(0.1, 0.5, 1, 1.5)) {
   for(sig_val in c(0.5, 1, 1.5)) {
+    #print(length(ind))
     ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
                    qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
     #hist(pmin(qdf_all$y[ind],10))
@@ -84,6 +85,7 @@ for(lam_val in c(0.1, 0.5, 1, 1.5)) {
   for(sig_val in c(0.1, 0.5, 1)) {
     ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
                    qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
+    #print(length(ind))
     #hist(pmin(qdf_all$y[ind],10))
     my_ind <- max(which(X_vals < lam_val))
     #res <- (qdf$Y - qdf$pred)/sqrt(qdf$var)
@@ -128,6 +130,7 @@ for(lam_val in c(0.1, 0.5, 1, 1.5)) {
   for(sig_val in c(0.1, 0.5, 1)) {
     ind <- which(qdf_all$lambda > lam_val/1.2 & qdf_all$lambda < lam_val*1.2 &
                    qdf_all$sigma > sig_val/1.2 & qdf_all$sigma < sig_val*1.2)
+    #print(length(ind))
     #hist(pmin(qdf_all$y[ind],10))
     my_ind <- max(which(X_vals < lam_val))
     #res <- (qdf$Y - qdf$pred)/sqrt(qdf$var)
