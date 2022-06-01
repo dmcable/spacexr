@@ -147,12 +147,15 @@ We provide R Markdown files that were used to create the main figures:
 -   [C-SIDE on MERFISH
     hypothalamus](https://raw.githack.com/dmcable/spacexr/master/AnalysisCSIDE/Figures/figure4_merfish.html)
     (Figure 4)
+-   [C-SIDE on Visium lymph
+    node](https://raw.githack.com/dmcable/spacexr/master/AnalysisCSIDE/Figures/figure4_visium.html)
+    (Figure 5)
 -   [Parametric C-SIDE on Slide-seq KP
     tumor](https://raw.githack.com/dmcable/spacexr/master/AnalysisCSIDE/Figures/figure5_parametric.html)
-    (Figure 5)
+    (Figure 6)
 -   [Nonparametric C-SIDE on Slide-seq KP
     tumor](https://raw.githack.com/dmcable/spacexr/master/AnalysisCSIDE/Figures/figure5_nonparametric.html)
-    (Figure 5)
+    (Figure 6)
 
 ### Supplementary Figures
 
@@ -172,6 +175,8 @@ R Markdown code for generating supplemental figures can be found at:
     6](https://github.com/dmcable/spacexr/tree/master/AnalysisCSIDE/Figures/supp6.Rmd)
 -   [Supplementary figures part
     7](https://github.com/dmcable/spacexr/tree/master/AnalysisCSIDE/Figures/supp7.Rmd)
+-   [Supplementary figures part
+    8](https://github.com/dmcable/spacexr/tree/master/AnalysisCSIDE/Figures/supp8.Rmd)
 
 ### C-SIDE Results
 
