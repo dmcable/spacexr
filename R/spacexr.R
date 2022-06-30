@@ -43,7 +43,7 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
 
    config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_min_sigma = UMI_min_sigma, max_cores = max_cores,
                  N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30,
-                 MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, UMI_max = UMI_max,
+                 MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, MIN_CHANGE_DE = 0.001, UMI_max = UMI_max,
                  MIN_OBS = 3, MAX_MULTI_TYPES = MAX_MULTI_TYPES, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
    if(test_mode)
      config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_cutoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,

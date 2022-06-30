@@ -1,11 +1,11 @@
 
-choose_sigma_gene <- function(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = F, n.iter = 100, MIN_CHANGE = 0.001, MAX_ITER_SIGMA = 10) {
+choose_sigma_gene <- function(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = F, n.iter = 100, MIN_CHANGE = 0.001, MAX_ITER_SIGMA = 10, alpha2 = NULL) {
   sigma_s_best <- sigma_init
   sigma_vals <- names(Q_mat_all)
   for(iter in 1:MAX_ITER_SIGMA) {
     last_sigma <- sigma_s_best
     set_likelihood_vars(Q_mat_all[[as.character(sigma_s_best)]], X_vals)
-    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
+    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, alpha2 = alpha2)
     prediction <- res$prediction
     pred_c <- as.vector(prediction)
     res_val <- numeric(length(sigma_vals))
@@ -52,15 +52,17 @@ construct_hess_fast <- function(X1,X2,lambda,lambda_k, K, d1_d2, d1_lam) {
   H <- (H1 - H2)
 }
 
-solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FALSE, n.iter = 200, MIN_CHANGE = .001, PRECISION.THRESHOLD = .01){
+solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FALSE, n.iter = 200, MIN_CHANGE = .001, PRECISION.THRESHOLD = .01, alpha2 = NULL){
   lam_threshold = 1e-8; init_val <- -5; MIN_ITERATIONS <- 6
   beta_succ <- 1.1; beta_fail <- 0.5; gamma <- 0.1
   epsilon_2 <- 1e-5; delta <- 0.1 #trust region radius
   L1 <- dim(X1)[2]; L2 <- dim(X2)[2]
   n_cell_types = dim(my_beta)[2]
   alpha1 <- numeric(dim(X1)[2])
-  alpha2 <- matrix(0,nrow = dim(X2)[2], ncol = n_cell_types) # initialize it to be the previous cell type means
-  alpha2[1,] <- init_val
+  if (is.null(alpha2)) {
+    alpha2 <- matrix(0,nrow = dim(X2)[2], ncol = n_cell_types) # initialize it to be the previous cell type means
+    alpha2[1,] <- init_val
+  }
   if(test_mode == 'categorical') {
     alpha2[,] <- init_val # multi mode
   }
@@ -135,16 +137,16 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
               converged_vec = converged_vec, error_vec = error_vec))
 }
 
-estimate_gene_wrapper <- function(Y,X1,X2,my_beta, nUMI, sigma_init, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, sigma_gene = T, PRECISION.THRESHOLD = 0.01) {
+estimate_gene_wrapper <- function(Y,X1,X2,my_beta, nUMI, sigma_init, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, sigma_gene = T, PRECISION.THRESHOLD = 0.01, alpha2 = NULL) {
   if(sigma_gene)
-    return(choose_sigma_gene(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE))
+    return(choose_sigma_gene(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, alpha2 = alpha2))
   else {
-    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
+    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD, alpha2 = alpha2)
     return(list(sigma_s_best = -1, res = res))
   }
 }
 
-estimate_effects_trust <- function(Y, X1, X2, my_beta, nUMI, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, PRECISION.THRESHOLD = 0.01) {
+estimate_effects_trust <- function(Y, X1, X2, my_beta, nUMI, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, PRECISION.THRESHOLD = 0.01, alpha2 = NULL) {
   my_beta<- sweep(my_beta,1, nUMI, '*')
-  solveIRWLS.effects_trust(Y,X1,X2, my_beta, test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
+  solveIRWLS.effects_trust(Y,X1,X2, my_beta, test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD, alpha2 = alpha2)
 }
