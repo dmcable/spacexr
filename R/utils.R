@@ -24,7 +24,7 @@ remap_celltypes <- function(cell_dict_file, cell_ident) {
 #' @param expr_thresh minimum expression threshold, as normalized expression (proportion out of 1, or counts per 1).
 #' @return a list of differntially expressed gene names
 #' @export
-get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
+get_de_genes <- function(cell_type_info, puck, cell_types = NULL, fc_thresh = 1.25, expr_thresh = .00015, MIN_OBS = 3) {
   total_gene_list = c()
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
@@ -35,7 +35,9 @@ get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .
   if(length(gene_list) == 0)
     stop("get_de_genes: Error: 0 common genes between SpatialRNA and Reference objects. Please check for gene list nonempty intersection.")
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
-  for(cell_type in cell_type_info[[2]]) {
+  if(is.null(cell_types))
+    cell_types = cell_type_info[[2]]
+  for(cell_type in cell_types) {
     if(cell_type_info[[3]] > 2)
       other_mean = rowMeans(cell_type_info[[1]][gene_list,cell_type_info[[2]] != cell_type])
     else {
