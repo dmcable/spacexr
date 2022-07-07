@@ -610,6 +610,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
   results_list <- list()
   if(numCores == 1) {
     for(i in 1:length(gene_list)) {
+      i <- 346
       message(i)
       gene <- gene_list[i]
       Y <- puck@counts[gene, barcodes]

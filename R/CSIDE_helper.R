@@ -1,11 +1,12 @@
 
-choose_sigma_gene <- function(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = F, n.iter = 100, MIN_CHANGE = 0.001, MAX_ITER_SIGMA = 10) {
+choose_sigma_gene <- function(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = F, n.iter = 100, MIN_CHANGE = 0.001, MAX_ITER_SIGMA = 10, PRECISION.THRESHOLD = .01) {
   sigma_s_best <- sigma_init
   sigma_vals <- names(Q_mat_all)
   for(iter in 1:MAX_ITER_SIGMA) {
     last_sigma <- sigma_s_best
     set_likelihood_vars(Q_mat_all[[as.character(sigma_s_best)]], X_vals)
-    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE)
+    res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter,
+                                  MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
     prediction <- res$prediction
     pred_c <- as.vector(prediction)
     res_val <- numeric(length(sigma_vals))
@@ -53,9 +54,10 @@ construct_hess_fast <- function(X1,X2,lambda,lambda_k, K, d1_d2, d1_lam) {
 }
 
 solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FALSE, n.iter = 200, MIN_CHANGE = .001, PRECISION.THRESHOLD = .01){
-  lam_threshold = 1e-8; init_val <- -5; MIN_ITERATIONS <- 6
+  lam_threshold = 1e-8; MIN_ITERATIONS <- 6
   beta_succ <- 1.1; beta_fail <- 0.5; gamma <- 0.1
   epsilon_2 <- 1e-5; delta <- 0.1 #trust region radius
+  init_val <- min(-5, log(10/median(rowSums(my_beta))))
   L1 <- dim(X1)[2]; L2 <- dim(X2)[2]
   n_cell_types = dim(my_beta)[2]
   alpha1 <- numeric(dim(X1)[2])
@@ -86,6 +88,7 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
     epsilon <- 1e-7; D_mat <- D_mat + epsilon * diag(length(d_vec))
     A <- cbind(diag(dim(D_mat)[2]), -diag(dim(D_mat)[2]))
     bzero <- rep(-delta,2*dim(D_mat)[2])
+    D_mat <- D_mat + diag(dim(D_mat)[1])*1e-10 # avoid numerical errors
     solution <-  quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
     predicted_decrease = -(0.5*t(solution) %*% D_mat_o %*% solution - sum(d_vec_o*solution))
 
@@ -137,7 +140,7 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
 
 estimate_gene_wrapper <- function(Y,X1,X2,my_beta, nUMI, sigma_init, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, sigma_gene = T, PRECISION.THRESHOLD = 0.01) {
   if(sigma_gene)
-    return(choose_sigma_gene(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE))
+    return(choose_sigma_gene(sigma_init, Y, X1, X2, my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD))
   else {
     res <- estimate_effects_trust(Y,X1,X2,my_beta, nUMI,test_mode, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN_CHANGE, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
     return(list(sigma_s_best = -1, res = res))
