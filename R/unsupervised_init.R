@@ -25,7 +25,15 @@ initialize.clusters <- function(puck, resolution = 0.7, SCT = T) {
   cell_type_info_from_clusters(puck, clusters)
 }
 
-
+#' Creates an \code{\linkS4class{RCTD}} object ready to be run on subtype mode from a fitted \code{\linkS4class{RCTD}} object
+#'
+#' @param RCTD a \code{\linkS4class{RCTD}} object with cell types fitted
+#' @param cell_types cell supertypes to find subtypes for
+#' @param resolution (Default 0.7) the resolution to be used during Seurat clustering for subtype initialization
+#' @param SCT whether or not to use \code{SCTransform} for count normalization
+#' @param gene_list_tot gene list to be used for subtype mode. If null, uses highly expressed supertype genes and differentially expressed subtype cluster genes
+#' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.unsupervised}} function on subtype mode
+#' @export
 initialize.subtypes <- function(RCTD, cell_types, resolution = 0.7, SCT = T, gene_list_tot = NULL) {
   message('initialize.subtypes: gathering results')
   if (RCTD@config$RCTDmode == 'doublet') {
