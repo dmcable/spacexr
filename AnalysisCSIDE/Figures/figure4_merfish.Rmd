@@ -1,9 +1,9 @@
 ---
 output:
+  pdf_document: default
+  word_document: default
   html_document:
     keep_md: yes
-  word_document: default
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -229,9 +229,37 @@ ggplot(plot_df,aes(x=factor(cell_type), y =y, fill = factor(seg))) +
   scale_y_continuous(limits = c(0, .15))
 ```
 
-### Plot all cell types
+### Plot all cell types (unbinned)
 
 ```{r fig-010, fig.height = 12, fig.width = 8, fig.align='center'}
+cell_types <- myRCTD@internal_vars_de$cell_types
+my_barc <- rownames(myRCTD@results$results_df)[which((myRCTD@results$results_df$first_type == 'monocyte/DC' & myRCTD@results$results_df$spot_class != 'reject') | (myRCTD@results$results_df$second_type == 'monocyte/DC' & myRCTD@results$results_df$spot_class == 'doublet_certain' ))]
+p1 <- plot_puck_continuous(myRCTD@spatialRNA, colnames(myRCTD@spatialRNA@counts) , myRCTD@internal_vars_de$X2[,2], 
+                     title ='') + geom_point(data = myRCTD@spatialRNA@coords[my_barc,], size = 0.6)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+  geom_segment(aes(x = 30, y = 0, xend = 30 + 250/14, yend = 0), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ scale_color_gradientn(colors = pals::brewer.blues(20)[2:20],name = "Distance from midline", labels = c(0,1),breaks = c(0,1), limits = c(0,1))
+results_df <- myRCTD@results$results_df
+puck <- myRCTD@spatialRNA
+barcodes = rownames(results_df[results_df$spot_class != "reject" & puck@nUMI >= 100,])
+my_table = puck@coords[barcodes,]
+my_table$class = results_df[barcodes,]$first_type
+n_levels = myRCTD@cell_type_info$info[[3]]
+my_pal = pals::kelly(n_levels+1)[2:(n_levels+1)]
+names(my_pal) = myRCTD@cell_type_info$info[[2]]
+my_pal_curr <- my_pal
+my_pal_curr[cell_types[1]] <- "#CC79A7"
+my_pal_curr[cell_types[2]] <- "#E69F00"
+my_pal_curr[cell_types[3]] <- "#D55E00"
+my_pal_curr[cell_types[5]] <- "#009E73"
+my_pal_curr[cell_types[4]] <- "#0072B2"
+my_pal_curr[cell_types[6]] <- "#56B4E9"
+pres = unique(as.integer(my_table$class))
+pres = pres[order(pres)]
+p2 <- ggplot2::ggplot(my_table, ggplot2::aes(x=x, y=y)) + ggplot2::geom_point(ggplot2::aes(size = .4, shape=19,color=class)) + ggplot2::scale_color_manual("",values = my_pal_curr[pres], breaks = cell_types, labels = cell_types)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + theme(legend.position="top")+ guides(colour = guide_legend(override.aes = list(size=2)))+ geom_segment(aes(x = -3200, y = -4000, xend = -3200 + 250, yend = -4000), color = "black") + theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
+ggarrange(p1,p2,nrow = 2)
+```
+
+### Plot all cell types (binned)
+
+```{r fig-011, fig.height = 12, fig.width = 8, fig.align='center'}
 myRCTD <- myRCTD_pix
 cell_types <- myRCTD@internal_vars_de$cell_types
 my_barc <- rownames(myRCTD@results$results_df)[which((myRCTD@results$results_df$first_type == 'monocyte/DC' & myRCTD@results$results_df$spot_class != 'reject') | (myRCTD@results$results_df$second_type == 'monocyte/DC' & myRCTD@results$results_df$spot_class == 'doublet_certain' ))]
