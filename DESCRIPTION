@@ -25,6 +25,7 @@ Imports:
 	rmarkdown,
 	fields,
 	mgcv,
-	CompQuadForm
-RoxygenNote: 7.1.1
+	CompQuadForm,
+	Seurat
+RoxygenNote: 7.1.2
 VignetteBuilder: knitr

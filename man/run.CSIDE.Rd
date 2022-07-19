@@ -9,6 +9,7 @@ run.CSIDE(
   X,
   barcodes,
   cell_types,
+  gene_list_tot = NULL,
   gene_threshold = 5e-05,
   cell_type_threshold = 125,
   doublet_mode = T,
@@ -23,7 +24,10 @@ run.CSIDE(
   params_to_test = NULL,
   normalize_expr = F,
   logs = F,
-  cell_type_filter = NULL
+  log_fc_thresh = 0.4,
+  cell_type_filter = NULL,
+  test_error = F,
+  initialSol = NULL
 )
 }
 \arguments{
@@ -37,6 +41,8 @@ explaining differential expression and need to be linearly independent.}
 
 \item{cell_types}{the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurences of
 at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}}
+
+\item{gene_list_tot}{(default NULL) list of genes for DE. If NULL, selects genes using `gene_threshold`.}
 
 \item{gene_threshold}{(default 5e-5) minimum average normalized expression required for selecting genes}
 
@@ -65,6 +71,11 @@ to consider for gene expression contamination during the step filtering out mark
 Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

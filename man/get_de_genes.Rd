@@ -7,6 +7,7 @@
 get_de_genes(
   cell_type_info,
   puck,
+  cell_types = NULL,
   fc_thresh = 1.25,
   expr_thresh = 0.00015,
   MIN_OBS = 3

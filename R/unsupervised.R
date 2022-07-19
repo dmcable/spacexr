@@ -18,7 +18,7 @@
 create.RCTD.unsupervised <- function(spatialRNA, cell_type_info, max_cores = 4, gene_list = NULL, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, 
                                      UMI_min_sigma = 300, class_df = NULL, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
 
-  config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_min_sigma = UMI_min_sigma, max_cores = max_cores,
+  config <- list(gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_min_sigma = UMI_min_sigma, max_cores = max_cores,
                  N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30,
                  MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, MIN_CHANGE_DE = 0.001, UMI_max = UMI_max,
                  MIN_OBS = 3, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)

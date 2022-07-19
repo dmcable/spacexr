@@ -18,7 +18,9 @@ run.CSIDE.single(
   fdr = 0.01,
   test_genes_sig = T,
   normalize_expr = F,
-  logs = F
+  logs = F,
+  log_fc_thresh = 0.4,
+  test_error = F
 )
 }
 \arguments{
@@ -53,6 +55,11 @@ to consider for gene expression contamination during the step filtering out mark
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},

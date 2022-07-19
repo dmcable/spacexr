@@ -7,19 +7,19 @@
 #' @export
 initialize.clusters <- function(puck, resolution = 0.7, SCT = T) {
   message('Begin: initialize.clusters')
-  spatial <- CreateSeuratObject(counts = puck@counts, assay = "Spatial")
+  data <- Seurat::CreateSeuratObject(counts = puck@counts, assay = "Spatial")
   if (SCT) {
-    spatial <- SCTransform(spatial, assay = "Spatial", verbose = F)
-    spatial <- RunPCA(spatial, assay = "SCT", verbose = F)
+    data <- Seurat::SCTransform(data, assay = "Spatial", verbose = F)
+    data <- Seurat::RunPCA(data, assay = "SCT", verbose = F)
   } else {
-    spatial <- NormalizeData(spatial)
-    spatial <- FindVariableFeatures(spatial)
-    spatial <- ScaleData(spatial)
-    spatial <- RunPCA(spatial)
+    data <- Seurat::NormalizeData(data)
+    data <- Seurat::FindVariableFeatures(data)
+    data <- Seurat::ScaleData(data)
+    data <- Seurat::RunPCA(data)
   }
-  spatial <- FindNeighbors(spatial, dims = 1:30, verbose = F)
-  spatial <- FindClusters(spatial, resolution = resolution, verbose = F)
-  clusters <- spatial@meta.data['seurat_clusters']
+  data <- Seurat::FindNeighbors(data, dims = 1:30, verbose = F)
+  data <- Seurat::FindClusters(data, resolution = resolution, verbose = F)
+  clusters <- data@meta.data['seurat_clusters']
   colnames(clusters) <- 'cell_types'
   message(paste0("End: initialize.clusters, ", length(levels(clusters$cell_types)), " clusters generated"))
   cell_type_info_from_clusters(puck, clusters)

@@ -4,7 +4,7 @@
 \alias{fitPixels}
 \title{Runs the RCTD algorithm}
 \usage{
-fitPixels(RCTD, doublet_mode = "doublet")
+fitPixels(RCTD, doublet_mode = "doublet", initialSol = NULL)
 }
 \arguments{
 \item{RCTD}{an \code{\linkS4class{RCTD}} object after running the \code{\link{choose_sigma_c}} function.}

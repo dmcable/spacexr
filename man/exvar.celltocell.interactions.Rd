@@ -9,7 +9,7 @@ exvar.celltocell.interactions(myRCTD, barcodes, cell_type, radius = 50)
 \arguments{
 \item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 
-\item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.}
+\item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.}
 
 \item{cell_type}{the cell type (character) for which to compute density.}
 

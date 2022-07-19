@@ -10,6 +10,8 @@ process_beads_batch(
   puck,
   class_df = NULL,
   constrain = T,
+  solution = NULL,
+  doublet_mat = NULL,
   MAX_CORES = 8,
   MIN.CHANGE = 0.001,
   CONFIDENCE_THRESHOLD = 10,
