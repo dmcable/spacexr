@@ -21,7 +21,7 @@ solveOLS<-function(S,B, solution, constrain = T){
 
 #solve using WLS with weights dampened by a certain dampening constant
 #if constrain, constrain the weights to sum up to 1
-solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE,
+solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = FALSE, fix = 0,
                               n.iter = 50, MIN_CHANGE = .001, bulk_mode = F, solution = NULL){
   if(!bulk_mode)
     B[B > K_val] <- K_val
@@ -48,7 +48,7 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
   changes<-c()
   change<-1;
   while(change > MIN_CHANGE && iterations<n.iter){
-    new_solution<-solveWLS(S,B,solution, nUMI,constrain=constrain, bulk_mode = bulk_mode)
+    new_solution<-solveWLS(S,B,solution, nUMI, fix=fix, constrain=constrain, bulk_mode = bulk_mode)
     change<-norm(as.matrix(new_solution-solution))
     if(verbose) {
       print(paste("Change:",change))
@@ -64,7 +64,7 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
 #for ..., think of alpha, lambda, constrain = TRUE
 #either bead_mode is true and nUMI is scalar
 #or bead_mode is false and nUMI is vector
-solveWLS<-function(S,B,initialSol, nUMI, bulk_mode = F, constrain = F){
+solveWLS<-function(S,B,initialSol, nUMI, bulk_mode = F, constrain = F, fix = 0){
   solution<-pmax(initialSol,0)
   prediction = abs(S%*%solution)
   threshold = max(1e-4, nUMI * 1e-7)
@@ -80,12 +80,15 @@ solveWLS<-function(S,B,initialSol, nUMI, bulk_mode = F, constrain = F){
   A<-cbind(diag(dim(S)[2]))
   bzero<- (-solution)
   alpha = 0.3
+  if (fix > 0)
+    bzero[1:fix] <- 0
   if(constrain) {
     A_const = t(rbind(1,A))
     b_const <-c(1 - sum(solution),bzero)
-    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1)$solution
+    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A_const,b_const,meq=1+fix)$solution
   } else {
-    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0)$solution
+    A = t(A)
+    solution <- solution + alpha*quadprog::solve.QP(D_mat,d_vec,A,bzero,meq=0+fix)$solution
   }
   names(solution)<-colnames(S)
   return(solution)

@@ -1,7 +1,7 @@
 #decompose with just two cell types
 #if score_mode, then returns the objective function score
 #if denoise, then it fits a "noise" dimension as the mean of all the data
-decompose_sparse <- function(cell_type_profiles, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, custom_list = NULL, solution = NULL, verbose=F, constrain = T, MIN.CHANGE = 0.001, return_results = F) {
+decompose_sparse <- function(cell_type_profiles, nUMI, bead, type1=NULL, type2=NULL, score_mode = FALSE, plot = F, custom_list = NULL, solution = NULL, verbose=F, constrain = T, MIN.CHANGE = 0.001, return_results = F, fix = 0, normalize = T) {
   if(is.null(custom_list))
     cell_types = c(type1,type2)
   else
@@ -11,9 +11,10 @@ decompose_sparse <- function(cell_type_profiles, nUMI, bead, type1=NULL, type2=N
     n.iter = 25
   else
     n.iter = 50
-  results = solveIRWLS.weights(reg_data,bead,nUMI,OLS = FALSE, solution = solution[cell_types], constrain = constrain, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN.CHANGE)
+  results = solveIRWLS.weights(reg_data,bead,nUMI, fix = fix, OLS = FALSE, solution = solution[cell_types], constrain = constrain, verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN.CHANGE)
   if(! score_mode) {
-    results$weights = results$weights / sum(results$weights)
+    if (normalize)
+      results$weights = results$weights / sum(results$weights)
     return(results)
   } else {
     prediction = reg_data %*% results$weights
@@ -67,25 +68,20 @@ check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_s
 }
 
 #Decomposing a single bead via doublet search
-process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, solution = NULL, class_df = NULL, constrain = T, verbose = F, 
+process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, solution = NULL, doublet_mat = NULL, class_df = NULL, constrain = T, verbose = F, 
                                  MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
   cell_type_profiles = data.matrix(cell_type_profiles)
   QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = DOUBLET_THRESHOLD
   initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
-  if(is.null(solution)) {
-    pair_weights <- Matrix(0.5, nrow = length(cell_type_names), ncol = length(cell_type_names))
-    rownames(pair_weights) <- cell_type_names; colnames(pair_weights) <- cell_type_names
-    full_weights <- NULL
-  } else {
-    pair_weights <- solution
-    full_weights <- diag(solution)
+  if(is.null(doublet_mat)) {
+    doublet_mat <- Matrix(0.5, nrow = length(cell_type_names), ncol = length(cell_type_names))
+    rownames(doublet_mat) <- cell_type_names; colnames(doublet_mat) <- cell_type_names
   }
-  results_all = decompose_full(cell_type_profiles, UMI_tot, bead, solution = full_weights, constrain = constrain, verbose = verbose, MIN_CHANGE = MIN.CHANGE)
+  results_all = decompose_full(cell_type_profiles, UMI_tot, bead, solution = solution, constrain = constrain, verbose = verbose, MIN_CHANGE = MIN.CHANGE)
   all_weights <- results_all$weights
   conv_all <- results_all$converged
-  diag(pair_weights) <- all_weights
   candidates <- names(which(all_weights > initial_weight_thresh))
   if(length(candidates) == 0)
     candidates = cell_type_info[[2]][1:min(3,cell_type_info[[3]])]
@@ -103,13 +99,13 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, solut
     type1 = candidates[i]
     for(j in (i+1):length(candidates)) {
       type2 = candidates[j]
-      initial_weights <- c(pair_weights[type1,type2], pair_weights[type2,type1])
+      initial_weights <- c(doublet_mat[type1,type2], doublet_mat[type2,type1])
       names(initial_weights) <- c(type1,type2)
       sparse_results = decompose_sparse(cell_type_profiles, UMI_tot, bead, type1, type2, solution = initial_weights, score_mode = T, constrain = constrain, verbose = verbose, MIN.CHANGE = MIN.CHANGE, return_results = T)
       score = sparse_results$total_score
       score_mat[i,j] = score; score_mat[j,i] = score
       results = sparse_results$results
-      pair_weights[type1,type2] <- results$weights[type1]; pair_weights[type2,type1] <- results$weights[type2]
+      doublet_mat[type1,type2] <- results$weights[type1]; doublet_mat[type2,type1] <- results$weights[type2]
       if(is.null(second_type) || score < min_score) {
         first_type <- type1; second_type <- type2
         min_score = score
@@ -152,7 +148,7 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, solut
   return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
               doublet_weights = doublet_weights, min_score = min_score, singlet_score = singlet_score,
               conv_all = conv_all, conv_doublet = conv_doublet, score_mat = score_mat,
-              first_class = first_class, second_class = second_class, pair_weights = pair_weights))
+              first_class = first_class, second_class = second_class, doublet_mat = doublet_mat))
 }
 
 #Decomposing a single bead via doublet search

@@ -39,7 +39,7 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
 create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
-                         class_df = NULL, CELL_MIN_INSTANCE = 25, cell_type_names = NULL, MAX_MULTI_TYPES = 4, keep_reference = F, cell_type_info = NULL, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
+                         class_df = NULL, CELL_MIN_INSTANCE = 25, cell_type_names = NULL, MAX_MULTI_TYPES = 4, keep_reference = F, cell_type_info = NULL, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25, gene_list_bulk = NULL, gene_list_reg = NULL) {
 
    config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_min_sigma = UMI_min_sigma, max_cores = max_cores,
                  N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30,
@@ -59,11 +59,13 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
    puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
    message('create.RCTD: getting regression differentially expressed genes: ')
    #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
-   gene_list_reg = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
+   if(is.null(gene_list_reg))
+      gene_list_reg = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_reg) == 0)
       stop("create.RCTD: Error: 0 regression differentially expressed genes found")
    message('create.RCTD: getting platform effect normalization differentially expressed genes: ')
-   gene_list_bulk = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
+   if(is.null(gene_list_bulk))
+      gene_list_bulk = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_bulk) == 0)
       stop("create.RCTD: Error: 0 bulk differentially expressed genes found")
    puck = restrict_counts(puck.original, gene_list_bulk, UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
