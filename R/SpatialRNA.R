@@ -123,8 +123,8 @@ check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T) {
 }
 
 check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
-  if(class(counts) != 'dgCMatrix') {
-    if(class(counts) != 'matrix')
+  if(!is(counts, 'dgCMatrix')) {
+    if(!is(counts, 'matrix'))
       tryCatch({
         counts <- as(counts,'matrix')
       }, error = function(e) {
@@ -157,7 +157,7 @@ check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
 }
 
 check_coords <- function(coords) {
-  if(class(coords) != 'data.frame') {
+  if(!is(coords, 'data.frame')) {
     tryCatch({
       coords <- as(coords,'data.frame')
     }, error = function(e) {
