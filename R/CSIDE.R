@@ -198,7 +198,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
 #' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
+run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, cell_type_specific = NULL,
@@ -267,7 +267,7 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types, gene_threshold = 5e-5, ce
 #' `all_gene_list` is the analogous list for all genes (including nonsignificant).
 #' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
 #' @export
-run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types, gene_threshold = 5e-5, cell_type_threshold = 125,
+run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
