@@ -1,8 +1,8 @@
 ---
 output:  
-  pdf_document: default
   html_document:
     keep_md: true
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -19,6 +19,7 @@ library(ggpubr)
 library(gridExtra)
 library(reshape2)
 library(Seurat)
+devtools::load_all()
 source('../../R/RCTD_helper.R')
 source('../../R/IRWLS.R')
 source('../../R/prob_model.R')
@@ -115,17 +116,19 @@ for(barcode in doublet_barcodes) {
   inter_df[barcode,"score_diff"] <- (score_second - score_best)
   inter_df[barcode,"best_type"] <- best_type
 }
-```
 
-### Plot the confident classification results in space
-
-```{r fig.height = 6, fig.width = 8, fig.align = 'center', eval = F}
-my_pal <- c("#D55E00","#9E0073", "#0072B2")
 conf_inter <- inter_df$confident
 barcodes_cur <- inter_barcodes[conf_inter]
 new_class <- inter_df$best_type
 names(new_class) <- inter_barcodes
 counter_barcodes <- barcodes[results_df$spot_class == "singlet" & results_df$first_type %in% c("CA1","CA3","Denate")]
+```
+
+### Plot the confident classification results in space
+
+```{r fig.height = 6, fig.width = 8, fig.align = 'center', eval = T}
+my_pal <- c("#D55E00","#9E0073", "#0072B2")
+load("/Users/dcable/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisPaper/Results/inter3.RData")
 p3 <- plot_class(puck, barcodes_cur, new_class, counter_barcodes = counter_barcodes) + ggplot2::scale_color_manual("",values = my_pal)+ ggplot2::scale_shape_identity() + ggplot2::theme_classic() + ggplot2::scale_size_identity() + coord_fixed() + guides(colour = guide_legend(override.aes = list(size=2)))+ 
   scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + theme(legend.position="top") +theme(legend.text=element_text(size=8),legend.spacing.x = unit(0, 'cm'))+geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())
 ggarrange(p3)
@@ -170,7 +173,7 @@ paste("Std dev: ", std_cor) # 0.009
 
 ### Compare to Sst gene for reference
 
-```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = T}
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+ theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
 }
@@ -184,7 +187,7 @@ ggarrange(p4)
 
 ### Plot all hippocampal cell types
 
-```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = F}
+```{r fig.height = 4, fig.width = 4, fig.align = 'center', eval = T}
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
 }
