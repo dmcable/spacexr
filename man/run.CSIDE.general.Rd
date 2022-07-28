@@ -9,7 +9,7 @@ run.CSIDE.general(
   X1,
   X2,
   barcodes,
-  cell_types,
+  cell_types = NULL,
   gene_threshold = 5e-05,
   cell_type_threshold = 125,
   doublet_mode = T,
@@ -23,7 +23,9 @@ run.CSIDE.general(
   params_to_test = NULL,
   normalize_expr = F,
   logs = F,
-  cell_type_filter = NULL
+  cell_type_filter = NULL,
+  log_fc_thresh = 0.4,
+  test_error = FALSE
 )
 }
 \arguments{
@@ -69,6 +71,11 @@ to consider for gene expression contamination during the step filtering out mark
 Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.}

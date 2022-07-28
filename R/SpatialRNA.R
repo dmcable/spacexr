@@ -102,7 +102,7 @@ SpatialRNA <- function(coords, counts, nUMI = NULL, use_fake_coords = FALSE, req
   new("SpatialRNA", coords = coords[barcodes,], counts = counts[,barcodes], nUMI = nUMI[barcodes])
 }
 
-check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T) {
+check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T, min_UMI = 0) {
   if(!is.atomic(nUMI))
     stop(paste0(f_name,': nUMI is not an atomic vector. Please format nUMI as an atomic vector.'))
   if(!is.numeric(nUMI))
@@ -120,6 +120,12 @@ check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T) {
       stop(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. Please format nUMI so that the length is greater than 1.'))
     else
       warning(paste0(f_name,': the length of nUMI is 1, indicating only one cell present. If this is unintended, please format nUMI so that the length is greater than 1.'))
+  if(max(nUMI) < min_UMI)
+    stop(paste0(f_name,': nUMI values are all less than min_UMI = ',min_UMI,
+                '. Please reduce the min_UMI parameter or ensure that cells have sufficient UMI counts.'))
+  if(min(nUMI) < min_UMI)
+    warning(paste0(f_name,': some nUMI values are less than min_UMI = ', min_UMI,
+                   ', and these cells will be removed. Optionally, you may lower the min_UMI parameter.'))
 }
 
 check_counts <- function(counts, f_name, require_2d = F, require_int = T) {

@@ -21,7 +21,9 @@ run.CSIDE.replicates(
   normalize_expr = F,
   de_mode = "single",
   df = 15,
-  barcodes = NULL
+  barcodes = NULL,
+  log_fc_thresh = 0.4,
+  test_error = T
 )
 }
 \arguments{
@@ -62,6 +64,11 @@ to consider for gene expression contamination during the step filtering out mark
 \item{df}{(default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.}
 
 \item{barcodes}{for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default TRUE) if TRUE, first tests for error messages before running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}

@@ -9,7 +9,7 @@ exvar.point.density(myRCTD, barcodes, points, radius = 50)
 \arguments{
 \item{myRCTD}{an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.}
 
-\item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the explanatory variable.}
+\item{barcodes}{the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} for which to evaluate the explanatory variable. These would be the pixels used in the C-SIDE model.}
 
 \item{points}{a N by 2 matrix containing the locations of the points to be used for computing density. The first column should be the x
 coordinates while the second column should be the y coordinate.}

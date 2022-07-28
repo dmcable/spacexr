@@ -6,19 +6,20 @@
 #' cell type identities.
 #' @param nUMI Optional, a named (by cell barcode) list of total counts or UMI's appearing at each pixel. If not provided,
 #' nUMI will be assumed to be the total counts appearing on each pixel.
+#' @param min_UMI (default 100) minimum UMI count for cells to be included in the reference.
 #'
 #' Counts should be untransformed count-level data
 #'
 #' @return Returns a \code{\linkS4class{Reference}} object containing the counts matrix, cell type labels, and UMI vector
 #' from the input files
 #' @export
-Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE, n_max_cells = 10000) {
+Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE, n_max_cells = 10000, min_UMI = 100) {
   counts <- check_counts(counts, 'Reference', require_2d = T, require_int = require_int)
   if(is.null(nUMI)) {
     nUMI = colSums(counts)
     names(nUMI) <- colnames(counts)
   } else {
-    check_UMI(nUMI, 'Reference', require_2d = T, require_int = require_int)
+    check_UMI(nUMI, 'Reference', require_2d = T, require_int = require_int, min_UMI = min_UMI)
   }
   check_cell_types(cell_types)
   barcodes <- intersect(intersect(names(nUMI), names(cell_types)), colnames(counts))
@@ -26,6 +27,9 @@ Reference <- function(counts, cell_types, nUMI = NULL, require_int = TRUE, n_max
     stop('Reference: cell_types, counts, and nUMI do not share any barcode names. Please ensure that names(cell_types) matches colnames(counts) and names(nUMI)')
   if(length(barcodes) < max(length(nUMI),length(cell_types),dim(counts)[2]))
     warning('Reference: some barcodes in nUMI, cell_types, or counts were not mutually shared. Such barcodes were removed.')
+  barcodes <- names(which(nUMI[barcodes] >= min_UMI))
+  if(length(barcodes) < 1)
+    stop('Reference: no barcodes were included with nUMI at least min_UMI. Please lower the parameter min_UMI or ensure that cells have sufficient UMI counts.')
   if(sum(nUMI[barcodes] != colSums(counts[,barcodes])) > 0)
     warning('Reference: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this is intended, there is no problem.')
   missing_cell_types <- names(which(table(cell_types[barcodes]) == 0))

@@ -17,7 +17,9 @@ run.CSIDE.regions(
   cell_types_present = NULL,
   fdr = 0.01,
   test_genes_sig = T,
-  logs = F
+  logs = F,
+  log_fc_thresh = log_fc_thresh,
+  test_error = F
 )
 }
 \arguments{
@@ -50,6 +52,11 @@ to consider for gene expression contamination during the step filtering out mark
 \item{test_genes_sig}{(default TRUE) logical controlling whether genes will be tested for significance}
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
+
+\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+
+\item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
