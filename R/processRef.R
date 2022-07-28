@@ -21,6 +21,7 @@ get_cell_type_info <- function(raw.data, cell_types, nUMI, cell_type_names = NUL
     cell_type_data = raw.data[,cell_types == cell_type]
     cell_type_umi = nUMI[cell_types == cell_type]
     normData = sweep(cell_type_data,2,cell_type_umi,`/`)
+    normData[is.na(normData)] = 0
     return(rowSums(normData) / dim(normData)[2])
   }
 
@@ -55,5 +56,3 @@ get_norm_ref <- function(puck, cell_type_means, gene_list, proportions) {
   target_means = bulk_vec[gene_list]/sum(puck@nUMI)
   cell_type_means_renorm = sweep(cell_type_means[gene_list,],1,weight_avg / target_means,'/')
 }
-
-
