@@ -15,6 +15,7 @@ create.RCTD(
   fc_cutoff_reg = 0.75,
   UMI_min = 100,
   UMI_max = 2e+07,
+  counts_MIN = 10,
   UMI_min_sigma = 300,
   class_df = NULL,
   CELL_MIN_INSTANCE = 25,
@@ -45,6 +46,8 @@ number of available cores.}
 \item{UMI_min}{minimum UMI per pixel included in the analysis}
 
 \item{UMI_max}{maximum UMI per pixel included in the analysis}
+
+\item{counts_MIN}{(default 10) minimum total counts per pixel of genes used in the analysis.}
 
 \item{UMI_min_sigma}{minimum UMI per pixel for the \link{choose_sigma_c} function}
 

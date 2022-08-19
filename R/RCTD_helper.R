@@ -64,7 +64,7 @@ check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_s
 }
 
 #Decomposing a single bead via doublet search
-process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F, 
+process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F,
                                  MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
@@ -146,8 +146,10 @@ process_bead_multi <- function(cell_type_info, gene_list, UMI_tot, bead, class_d
   conv_all <- results_all$converged
   initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
   candidates <- names(which(all_weights > initial_weight_thresh))
+  if(length(candidates) == 0)
+    stop('process_bead_multi: no cell types passed weight threshold on full mode. Please check that enough counts are present for each pixel')
   cell_type_list <- c()
-  curr_score <- 1000000
+  curr_score <- 10000000000
   for(n in 1:MAX.TYPES) {
     min_score = curr_score
     best_type = NULL

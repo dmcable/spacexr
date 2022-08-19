@@ -25,6 +25,7 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
 #' @param fc_cutoff_reg minimum log-fold-change (across cell types) for genes to be included in the RCTD step.
 #' @param UMI_min minimum UMI per pixel included in the analysis
 #' @param UMI_max maximum UMI per pixel included in the analysis
+#' @param counts_MIN (default 10) minimum total counts per pixel of genes used in the analysis.
 #' @param UMI_min_sigma minimum UMI per pixel for the \link{choose_sigma_c} function
 #' @param max_cores for parallel processing, the number of cores used. If set to 1, parallel processing is not used. The system will additionally be checked for
 #' number of available cores.
@@ -38,17 +39,17 @@ process_cell_type_info <- function(reference, cell_type_names, CELL_MIN = 25) {
 #' @param DOUBLET_THRESHOLD (Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel
 #' @return an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function
 #' @export
-create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
+create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE, gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002, fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, counts_MIN = 10, UMI_min_sigma = 300,
                          class_df = NULL, CELL_MIN_INSTANCE = 25, cell_type_names = NULL, MAX_MULTI_TYPES = 4, keep_reference = F, cell_type_info = NULL, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
 
    config <- list(gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg, fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_min_sigma = UMI_min_sigma, max_cores = max_cores,
                  N_epoch = 8, N_X = 50000, K_val = 100, N_fit = 1000, N_epoch_bulk = 30,
-                 MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, UMI_max = UMI_max,
+                 MIN_CHANGE_BULK = 0.0001, MIN_CHANGE_REG = 0.001, UMI_max = UMI_max, counts_MIN = counts_MIN,
                  MIN_OBS = 3, MAX_MULTI_TYPES = MAX_MULTI_TYPES, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
    if(test_mode)
      config <- list(gene_cutoff = .00125, fc_cutoff = 0.5, gene_cutoff_reg = 0.002, fc_cutoff_reg = 0.75, UMI_min = 1000,
           N_epoch = 1, N_X = 50000, K_val = 100, N_fit = 50, N_epoch_bulk = 4, MIN_CHANGE_BULK = 1,
-          MIN_CHANGE_REG = 0.001, UMI_max = 200000, MIN_OBS = 3, max_cores = 1,
+          MIN_CHANGE_REG = 0.001, UMI_max = 200000, MIN_OBS = 3, max_cores = 1, counts_MIN = 5,
           UMI_min_sigma = 300, MAX_MULTI_TYPES = MAX_MULTI_TYPES, CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
    if(is.null(cell_type_names))
       cell_type_names <- levels(reference@cell_types)
@@ -56,7 +57,9 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
       cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names = cell_type_names, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
    if(!keep_reference)
       reference <- create_downsampled_data(reference, n_samples = 5)
-   puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts), UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
+   puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts),
+                                   UMI_thresh = config$UMI_min, UMI_max = config$UMI_max,
+                                   counts_thresh = config$counts_MIN)
    message('create.RCTD: getting regression differentially expressed genes: ')
    #puckMeans <- rowMeans(sweep(puck@counts, 2 , puck@nUMI, '/'))
    gene_list_reg = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff_reg, expr_thresh = config$gene_cutoff_reg, MIN_OBS = config$MIN_OBS)
@@ -66,7 +69,8 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
    gene_list_bulk = get_de_genes(cell_type_info$info, puck.original, fc_thresh = config$fc_cutoff, expr_thresh = config$gene_cutoff, MIN_OBS = config$MIN_OBS)
    if(length(gene_list_bulk) == 0)
       stop("create.RCTD: Error: 0 bulk differentially expressed genes found")
-   puck = restrict_counts(puck.original, gene_list_bulk, UMI_thresh = config$UMI_min, UMI_max = config$UMI_max)
+   puck = restrict_counts(puck.original, gene_list_bulk, UMI_thresh = config$UMI_min,
+                          UMI_max = config$UMI_max, counts_thresh = config$counts_MIN)
    puck = restrict_puck(puck, colnames(puck@counts))
    if(is.null(class_df))
       class_df <- data.frame(cell_type_info$info[[2]], row.names = cell_type_info$info[[2]]); colnames(class_df)[1] = "class"

@@ -4,7 +4,13 @@
 \alias{restrict_counts}
 \title{Restricts a SpatialRNA object to a subset of genes (and applies a UMI threshold)}
 \usage{
-restrict_counts(puck, gene_list, UMI_thresh = 1, UMI_max = 20000)
+restrict_counts(
+  puck,
+  gene_list,
+  UMI_thresh = 1,
+  UMI_max = 20000,
+  counts_thresh = 1
+)
 }
 \arguments{
 \item{puck}{a \code{\linkS4class{SpatialRNA}} object}
@@ -14,6 +20,8 @@ restrict_counts(puck, gene_list, UMI_thresh = 1, UMI_max = 20000)
 \item{UMI_thresh}{minimum UMI per pixel}
 
 \item{UMI_max}{maximum UMI per pixel}
+
+\item{counts_thresh}{minimum counts per pixel (for genes in gene_list)}
 }
 \value{
 Returns a \code{\linkS4class{SpatialRNA}} with counts filtered based on UMI threshold and gene list
