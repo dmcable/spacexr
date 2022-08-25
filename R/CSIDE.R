@@ -272,6 +272,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
                           sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
                           logs=F, cell_type_filter = NULL, log_fc_thresh = 0.4, test_error = FALSE) {
+  if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold == 10 || weight_threshold == 0.1)
+    warning('run.CSIDE.general: some parameters are set to the CSIDE vignette values, which are intended for testing but not proper execution. For more accurate results, consider using the default parameters to this function.')
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
     stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!any("cell_types_assigned" %in% names(myRCTD@internal_vars)) || !myRCTD@internal_vars$cell_types_assigned)
@@ -309,6 +311,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
     stop('run.CSIDE.general: some barcodes do not appear in the rownames of X1 or X2.')
   puck = myRCTD@originalSpatialRNA
   gene_list_tot <- filter_genes(puck, threshold = gene_threshold)
+  if(length(gene_list_tot) == 0)
+    stop('run.CSIDE.general: no genes past threshold. Please consider lowering gene_threshold.')
   nUMI <- puck@nUMI[barcodes]
   cell_type_info <- myRCTD@cell_type_info$info
   if(doublet_mode) {
