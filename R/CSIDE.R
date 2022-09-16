@@ -293,7 +293,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
     stop(c('run.CSIDE.general: not valid test_mode = ',test_mode,'. Please set test_mode = "categorical" or "individual".'))
   if(is.null(params_to_test))
     if(test_mode == 'individual')
-      params_to_test <- 2
+      params_to_test <- min(2, dim(X2)[2])
     else
       params_to_test <- 1:dim(X2)[2]
   if(normalize_expr && (test_mode != 'individual' || length(params_to_test) > 1))
