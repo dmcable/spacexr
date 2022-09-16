@@ -38,7 +38,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Generalized Linear Admixture Models for Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
+Cell type-Specific Inference of Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for nonparametric differential expression in a toy hypothalamus MERFISH dataset. First, we will first use RCTD to assign cell types to a hypothalamus MERFISH dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hypothalamus dataset. We will detect differential expression as nonparametric smooth spatial patterns.
 
 ## Data Preprocessing and running RCTD
 

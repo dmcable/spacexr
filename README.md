@@ -50,11 +50,17 @@ Our *Nature Biotechnology* paper can be found
 Code for generating the figures of our C-SIDE paper, Cell type-specific
 differential expression inference in spatial transcriptomics, is located
 [here](https://github.com/dmcable/spacexr/tree/master/AnalysisCSIDE).
-Our C-SIDE paper will be available soon. <!--[here](BIORXIV LINK). -->
+Our C-SIDE paper is available in *Nature Methods*
+[here](https://www.nature.com/articles/s41592-022-01575-3).
 
 ## News and Updates
 
-December, 22nd, 2021: We are renaming this package (formerly RCTD) as
+September 1st, 2022: Our C-SIDE paper has been published in *Nature
+Methods* [here](https://www.nature.com/articles/s41592-022-01575-3). We
+have also written a research briefing about this article in *Nature
+Methods* [here](https://www.nature.com/articles/s41592-022-01576-2).
+
+December 22nd, 2021: We are renaming this package (formerly RCTD) as
 *spacexr* (Spatial eXpression R package). We are also releasing
 *spacexr* 2.0, now featuring cell type-specific differential expression.
 The new algorithm, called C-SIDE, is introduced in our new paper which
@@ -62,7 +68,7 @@ will be available soon. <!--[here](BIORXIV LINK). --> We are also
 introducing a feature where RCTD and C-SIDE can be run in batch across
 multiple experimental replicates.
 
-March, 18th, 2021: Our RCTD paper has been published in *Nature
+March 18th, 2021: Our RCTD paper has been published in *Nature
 Biotechnology*
 [here](https://www.nature.com/articles/s41587-021-00830-w). Also, we
 have just released a new version of RCTD (version 1.2.0) with a
@@ -207,7 +213,7 @@ type-specific differential expression:
 
 ### Dependencies
 
--   R version >= 3.5.0.
+-   R version \>= 3.5.0.
 -   R packages: readr, pals, ggplot2, Matrix, parallel, doParallel,
     foreach, quadprog, tibble, dplyr, reshape2, knitr, rmarkdown,
     fields, and mgcv.

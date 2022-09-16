@@ -39,7 +39,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Generalized Linear Admixture Models for Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for differential expression across multiple regions in a toy hippocampus Visium dataset. First, we will first use RCTD to assign cell types to a hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset. We will test for differential expression across three spatial regions.
+Cell type-Specific Inference of Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will use CSIDE to test for differential expression across multiple regions in a toy hippocampus Visium dataset. First, we will first use RCTD to assign cell types to a hippocampus Visium dataset. We will define cell type profiles using an annotated single cell RNA-sequencing (scRNA-seq) hippocampus dataset. We will test for differential expression across three spatial regions.
 
 ## Data Preprocessing and running RCTD
 

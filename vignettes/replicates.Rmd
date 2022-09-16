@@ -41,7 +41,7 @@ knitr::opts_chunk$set(
 
 ## Introduction
 
-Generalized Linear Admixture Models for Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and CSIDE on multiple replicates (slices) of cerebellum Slide-seq toy data. 
+Cell type-Specific Inference of Differential Expression, or CSIDE, is part of the *spacexr* R package for learning cell type-specific differential expression from spatial transcriptomics data. In this Vignette, we will demonstrate running RCTD and CSIDE on multiple replicates (slices) of cerebellum Slide-seq toy data. 
 
 The ultimate goal will be to test for differential expression across two regions in the cerbellum. First, we will first use RCTD to assign cell types to a cerebellum Slide-seq dataset. We will define cell type profiles using an annotated single nucleus RNA-sequencing (snRNA-seq) cerebellum dataset. We will test for differential expression between the nodulus and anterior lobe regions.
 
