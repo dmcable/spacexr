@@ -136,10 +136,6 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     stop('run.CISDE.replicates: de_mode must be set to "single", "general", or "nonparam".')
   if(is.null(cell_types))
     stop('run.CSIDE.replicates: cell_types must not be null.')
-  if(class(explanatory.variable.replicates) != 'list')
-    stop('run.CSIDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
-  if(length(RCTD.replicates@RCTD.reps) != length(explanatory.variable.replicates))
-    stop('create.RCTD.replicates: length(explanatory.variable.replicates) is not equal to the number of RCTD replicates, as required.')
   if(is.null(replicate_index))
     replicate_index <- 1:length(RCTD.replicates@RCTD.reps)
   if(any(!(replicate_index %in% 1:length(RCTD.replicates@RCTD.reps))))
@@ -153,6 +149,10 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     if(de_mode == 'single') {
       if(is.null(explanatory.variable.replicates))
         stop('run.CSIDE.replicates: if de_mode = single, explanatory.variable.replicates cannot be null.')
+      if(class(explanatory.variable.replicates) != 'list')
+        stop('run.CSIDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
+      if(length(RCTD.replicates@RCTD.reps) != length(explanatory.variable.replicates))
+        stop('create.RCTD.replicates: length(explanatory.variable.replicates) is not equal to the number of RCTD replicates, as required.')
       run.CSIDE.single(
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
@@ -166,6 +166,10 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     } else {
       if(is.null(X.replicates))
         stop('run.CSIDE.replicates: if de_mode = single, X.replicates cannot be null.')
+      if(class(X.replicates) != 'list')
+          stop('run.CSIDE.replicates: X.replicates must be a list of design matrices for each replicate.')
+      if(length(RCTD.replicates@RCTD.reps) != length(X.replicates))
+        stop('create.RCTD.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
       run.CSIDE(
         RCTD.replicates@RCTD.reps[[i]], X.replicates[[i]], barcodes = barcodes, cell_types = cell_types,
         cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode,
