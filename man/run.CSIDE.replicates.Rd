@@ -24,7 +24,7 @@ run.CSIDE.replicates(
   df = 15,
   barcodes = NULL,
   log_fc_thresh = 0.4,
-  test_error = T,
+  test_error = F,
   params_to_test = NULL,
   test_mode = "individual"
 )
@@ -75,7 +75,7 @@ If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code
 
 \item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
 
-\item{test_error}{(default TRUE) if TRUE, first tests for error messages before running CSIDE.
+\item{test_error}{(default FALSE) if TRUE, first tests for error messages before running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter

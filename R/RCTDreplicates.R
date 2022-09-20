@@ -118,7 +118,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code{\link{run.CSIDE}}.
 #' @param df (default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.
 #' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
-#' @param test_error (default TRUE) if TRUE, first tests for error messages before running CSIDE.
+#' @param test_error (default FALSE) if TRUE, first tests for error messages before running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
@@ -130,7 +130,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                                  fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F,
-                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = T,
+                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F,
                                  params_to_test = NULL, test_mode = 'individual') {
   if(!(de_mode %in% c('single','nonparam', 'general')))
     stop('run.CISDE.replicates: de_mode must be set to "single", "general", or "nonparam".')
@@ -140,6 +140,8 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
     replicate_index <- 1:length(RCTD.replicates@RCTD.reps)
   if(any(!(replicate_index %in% 1:length(RCTD.replicates@RCTD.reps))))
     stop('run.CSIDE.replicates: replicate_index must be a subest of 1:N_replicates')
+  if(test_error)
+    warning('run.CSIDE.replicates: test_error is TRUE, so this run will just test C-SIDE for errors without running C-SIDE.')
 
   for(i in replicate_index) {
     if(test_error)
@@ -170,8 +172,9 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
           stop('run.CSIDE.replicates: X.replicates must be a list of design matrices for each replicate.')
       if(length(RCTD.replicates@RCTD.reps) != length(X.replicates))
         stop('create.RCTD.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
+      X <- X.replicates[[i]]
       run.CSIDE(
-        RCTD.replicates@RCTD.reps[[i]], X.replicates[[i]], barcodes = barcodes, cell_types = cell_types,
+        RCTD.replicates@RCTD.reps[[i]], X, rownames(X), cell_types = cell_types,
         cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode,
         weight_threshold = weight_threshold, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
         cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error,
