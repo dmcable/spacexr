@@ -6,6 +6,7 @@
 \usage{
 CSIDE.population.inference(
   RCTD.replicates,
+  params_to_test = NULL,
   use.groups = FALSE,
   MIN.CONV.REPLICATES = 2,
   MIN.CONV.GROUPS = 2,
@@ -31,6 +32,9 @@ CSIDE.population.inference(
 \item{log_fc_thresh}{(default 0.4) minimum natural log estimated DE threshold}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition}
+
+\item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
+indices to test. Note, for population mode, only the first parameter is tested.}
 }
 \value{
 an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}

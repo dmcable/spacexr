@@ -155,13 +155,13 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
         stop('run.CSIDE.replicates: explanatory.variable.replicates must be a list of explanatory variable vectors for each replicate.')
       if(length(RCTD.replicates@RCTD.reps) != length(explanatory.variable.replicates))
         stop('create.RCTD.replicates: length(explanatory.variable.replicates) is not equal to the number of RCTD replicates, as required.')
-      run.CSIDE.single(
+      RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.single(
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
         sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
         cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error)
     } else if(de_mode == 'nonparam') {
-      run.CSIDE.nonparam(
+      RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.nonparam(
         RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
         sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr, test_error = test_error)
@@ -173,7 +173,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
       if(length(RCTD.replicates@RCTD.reps) != length(X.replicates))
         stop('create.RCTD.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
       X <- X.replicates[[i]]
-      run.CSIDE(
+      RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE(
         RCTD.replicates@RCTD.reps[[i]], X, rownames(X), cell_types = cell_types,
         cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode,
         weight_threshold = weight_threshold, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
@@ -224,17 +224,21 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
 #' @param q_thresh (default 0.01) false discovery rate
 #' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
+#' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
+#' indices to test. Note, for population mode, only the first parameter is tested.
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-CSIDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
+CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
                                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5,
                                        q_thresh = 0.01, log_fc_thresh = 0.4,
                                        normalize_expr = F) {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
   RCTDde_list <- RCTD.replicates@RCTD.reps
   myRCTD <- RCTDde_list[[1]]
+  if(is.null(params_to_test))
+    params_to_test <- myRCTD@internal_vars_de$params_to_test[1]
   cell_types <- myRCTD@internal_vars_de$cell_types
   cell_types_present <- myRCTD@internal_vars_de$cell_types_present
   de_pop_all <- list()
@@ -245,7 +249,7 @@ CSIDE.population.inference <- function(RCTD.replicates, use.groups = FALSE, MIN.
   }
   de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   for(cell_type in cell_types) {
-    res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present,
+    res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present, params_to_test,
                         plot_results = F, use.groups = use.groups,
                         group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
                         MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
