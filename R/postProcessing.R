@@ -102,10 +102,16 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
 #' Assigns a cell type `weights` matrix to an \code{\linkS4class{RCTD}} object
 #'
 #' @param myRCTD a \code{\linkS4class{RCTD}} object to be assigned weights.
-#' @param weights a matrix of weights to be normalized
+#' @param weights a matrix of weights (pixels by cell types). weights must be normalized
+#' to have rows sum to 1. Furthermore, rownames and colnames must be assigned as
+#' pixel names and cell types respectively.
 #' @return the \code{\linkS4class{RCTD}} object with weights assigned.
 #' @export
 import_weights <- function(myRCTD, weights) {
+  if(is.null(rownames(weights)) || is.null(colnames(weights)))
+    stop('import_weights: weights must contain rownames and colnames. rownames and colnames must be assigned as pixel names and cell types respectively.')
+  if(any(rowSums(weights) != 1))
+    stop('import_weights: weights must be normalized to have rows sum to 1.')
   myRCTD@results$weights <- weights
   myRCTD@internal_vars$proportions <- colMeans(weights)/sum(colMeans(weights))
   myRCTD@internal_vars$cell_types_assigned <- TRUE

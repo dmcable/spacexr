@@ -9,7 +9,9 @@ import_weights(myRCTD, weights)
 \arguments{
 \item{myRCTD}{a \code{\linkS4class{RCTD}} object to be assigned weights.}
 
-\item{weights}{a matrix of weights to be normalized}
+\item{weights}{a matrix of weights (pixels by cell types). weights must be normalized
+to have rows sum to 1. Furthermore, rownames and colnames must be assigned as
+pixel names and cell types respectively.}
 }
 \value{
 the \code{\linkS4class{RCTD}} object with weights assigned.
