@@ -17,7 +17,8 @@ CSIDE.population.inference(
 )
 }
 \arguments{
-\item{RCTD.replicates}{a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.}
+\item{RCTD.replicates}{a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference. Note, at least three
+replicates must be provided.}
 
 \item{use.groups}{(default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot}
 

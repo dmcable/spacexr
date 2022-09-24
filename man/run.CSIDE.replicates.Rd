@@ -89,5 +89,5 @@ for documentation on the \code{population_de_results}, \code{population_sig_gene
 Identifies cell type specific differential expression (DE) as a function of the explanatory variable
 for each replicate. The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
 likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
-genes with significant nonzero DE.
+genes with significant nonzero DE. Note: a minimum of three replicates are required for population mode.
 }

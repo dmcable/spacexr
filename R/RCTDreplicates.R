@@ -91,7 +91,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' Identifies cell type specific differential expression (DE) as a function of the explanatory variable
 #' for each replicate. The design matrix contains an intercept column and a column of the explanatory variable. Uses maximum
 #' likelihood estimation to estimate DE and standard errors for each gene and each cell type. Selects
-#' genes with significant nonzero DE.
+#' genes with significant nonzero DE. Note: a minimum of three replicates are required for population mode.
 #'
 #' @param RCTD.replicates an \code{\linkS4class{RCTD.replicates}} object with annotated cell types e.g. from the \code{\link{run.RCTD.replicates}} function.
 #' @param explanatory.variable.replicates (only used for de_mode = single) a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
@@ -171,8 +171,10 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
       if(class(X.replicates) != 'list')
           stop('run.CSIDE.replicates: X.replicates must be a list of design matrices for each replicate.')
       if(length(RCTD.replicates@RCTD.reps) != length(X.replicates))
-        stop('create.RCTD.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
+        stop('run.CSIDE.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
       X <- X.replicates[[i]]
+      if(length(setdiff(rownames(X),rownames(RCTD_controls@RCTD.reps[[i]]@results$weights))) > 0)
+        warning('run.CSIDE.replicates: some elements of rownames(X.replicates) do not appear in myRCTD object (myRCTD@results$weights) for this replicate, but they are required to be a subset.')
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE(
         RCTD.replicates@RCTD.reps[[i]], X, rownames(X), cell_types = cell_types,
         cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode,
@@ -217,7 +219,8 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #'
 #' First, CSIDE must have been run on all replicates using e.g. the \code{\link{run.CSIDE.replicates}} function.
 #'
-#' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference.
+#' @param RCTD.replicates a \code{\linkS4class{RCTD.replicates}} object for which to perform population-level DE inference. Note, at least three
+#' replicates must be provided.
 #' @param use.groups (default FALSE) if TRUE, treats the replicates as having multiple groups (e.g. samples) according to the \code{group_ids} slot
 #' @param MIN.CONV.REPLICATES (default 2) the minimum number of replicates (if not use.groups) for which a gene must converge
 #' @param MIN.CONV.GROUPS (default 2) the minimum number of groups (if use.groups) for which a gene must converge
@@ -235,6 +238,8 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
                                        q_thresh = 0.01, log_fc_thresh = 0.4,
                                        normalize_expr = F) {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
+  if(length(RCTD.replicates) < 3)
+    stop('CSIDE.population.inference: minimum of three replicates required for population mode.')
   RCTDde_list <- RCTD.replicates@RCTD.reps
   myRCTD <- RCTDde_list[[1]]
   if(is.null(params_to_test))
