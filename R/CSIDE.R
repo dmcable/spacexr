@@ -318,6 +318,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   gene_list_tot <- filter_genes(puck, threshold = gene_threshold)
   if(length(gene_list_tot) == 0)
     stop('run.CSIDE.general: no genes past threshold. Please consider lowering gene_threshold.')
+  if(length(intersect(gene_list_tot,rownames(myRCTD@cell_type_info$info[[1]]))) == 0)
+    stop('run.CSIDE.general: no genes that past threshold were contained in the single cell reference. Please lower gene threshold or ensure that there is agreement between the single cell reference genes and the SpatialRNA genes.')
   nUMI <- puck@nUMI[barcodes]
   cell_type_info <- myRCTD@cell_type_info$info
   if(doublet_mode) {

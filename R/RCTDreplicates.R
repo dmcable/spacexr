@@ -238,7 +238,7 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
                                        q_thresh = 0.01, log_fc_thresh = 0.4,
                                        normalize_expr = F) {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
-  if(length(RCTD.replicates) < 3)
+  if(length(RCTD.replicates@RCTD.reps) < 3)
     stop('CSIDE.population.inference: minimum of three replicates required for population mode.')
   RCTDde_list <- RCTD.replicates@RCTD.reps
   myRCTD <- RCTDde_list[[1]]
