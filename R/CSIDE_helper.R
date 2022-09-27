@@ -122,9 +122,9 @@ solveIRWLS.effects_trust <-function(Y, X1, X2, my_beta, test_mode, verbose = FAL
   d1_d2 <- get_d1_d2(Y, lambda)
   d1_lam <- sweep(lambda_k, 1, d1_d2$d1_vec, '*')
   H <- construct_hess_fast(X1,X2,lambda,lambda_k, K, d1_d2, d1_lam)
-  eps = 1e-8
+  eps = 1e-6
   if(min(eigen(H)$values) < eps) {
-    I <- solve(H + diag(rep(eps,dim(H)[1])))
+    I <- solve(psd(H, epsilon = eps))
   } else {
     I <- solve(H)
   }

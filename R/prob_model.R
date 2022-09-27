@@ -165,8 +165,8 @@ get_der_fast <- function(S, B, gene_list, prediction, bulk_mode = F) {
 }
 
 #return positive semidefinite part
-psd <- function(H) {
-  eig <- eigen(H); epsilon = 1e-3
+psd <- function(H, epsilon = 1e-3) {
+  eig <- eigen(H);
   if(length(H) == 1)
     P <- eig$vectors %*% pmax(eig$values,epsilon) %*% t(eig$vectors)
   else

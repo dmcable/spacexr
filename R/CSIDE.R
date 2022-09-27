@@ -643,8 +643,8 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
     }
     results_list <- foreach::foreach(i = 1:length(gene_list), .packages = c("quadprog", "spacexr"), .export = environ) %dopar% {
       if (logs) {
-        if(i %% 10 == 0) {
-          cat(paste0("Finished sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
+        if(i %% 1 == 0) { ##10
+          cat(paste0("Testing sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
         }
       }
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())

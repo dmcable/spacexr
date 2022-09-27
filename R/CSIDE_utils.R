@@ -1,6 +1,16 @@
-filter_genes <- function(puck, threshold = 5e-5) {
-  norm_counts <- sweep(puck@counts,2,puck@nUMI,'/')
-  gene_list_tot <- names(which(rowMeans(norm_counts) > threshold))
+filter_genes <- function(puck, threshold = 5e-5, batch_size = 1000) {
+  message(c('filter_genes: filtering genes based on threshold = ', threshold))
+  gene_means <- numeric(length(rownames(puck@counts))); names(gene_means) <- rownames(puck@counts)
+  n_batches <- ceiling(length(gene_means) / batch_size)
+  for(j in 1:n_batches) {
+    if(j < n_batches)
+      index_range <- (1:batch_size) + (j-1)*batch_size
+    else
+      index_range <- (1 + (n_batches-1)*batch_size):length(gene_means)
+    norm_counts <- sweep(as.matrix(puck@counts[index_range,]),2,puck@nUMI,'/')
+    gene_means[index_range] <- rowMeans(norm_counts)
+  }
+  gene_list_tot <- names(which(gene_means > threshold))
   if(length(grep("mt-",gene_list_tot)) > 0)
     gene_list_tot <- gene_list_tot[-grep("mt-",gene_list_tot)]
   return(gene_list_tot)
