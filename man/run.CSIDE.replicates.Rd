@@ -20,6 +20,7 @@ run.CSIDE.replicates(
   population_de = T,
   replicate_index = NULL,
   normalize_expr = F,
+  test_genes_sig_individual = F,
   de_mode = "single",
   df = 15,
   barcodes = NULL,
@@ -65,6 +66,8 @@ to consider for gene expression contamination during the step filtering out mark
 \item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.}
+
+\item{test_genes_sig_individual}{(default FALSE) logical controlling whether on individual samples genes will be tested for significance.}
 
 \item{de_mode}{(default 'single', otherwise 'nonparam' or 'general') if 'single', calls \code{\link{run.CSIDE.single}}.
 If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code{\link{run.CSIDE}}.}

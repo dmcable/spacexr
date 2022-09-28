@@ -120,6 +120,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @param test_error (default FALSE) if TRUE, first tests for error messages before running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#' @param test_genes_sig_individual (default FALSE) logical controlling whether on individual samples genes will be tested for significance.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
 #' @param barcodes for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
@@ -129,7 +130,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates = NULL, X.replicates = NULL, cell_types, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
-                                 fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F,
+                                 fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
                                  de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F,
                                  params_to_test = NULL, test_mode = 'individual') {
   if(!(de_mode %in% c('single','nonparam', 'general')))
@@ -158,12 +159,12 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.single(
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
-        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, test_genes_sig = test_genes_sig_individual,
         cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error)
     } else if(de_mode == 'nonparam') {
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.nonparam(
         RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
-        gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
+        gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold, test_genes_sig = test_genes_sig_individual,
         sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr, test_error = test_error)
     } else {
       if(is.null(X.replicates))
@@ -177,7 +178,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicate
         warning('run.CSIDE.replicates: some elements of rownames(X.replicates) do not appear in myRCTD object (myRCTD@results$weights) for this replicate, but they are required to be a subset.')
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE(
         RCTD.replicates@RCTD.reps[[i]], X, rownames(X), cell_types = cell_types,
-        cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode,
+        cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode, test_genes_sig = test_genes_sig_individual,
         weight_threshold = weight_threshold, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
         cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error,
         params_to_test = params_to_test)
