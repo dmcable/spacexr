@@ -313,3 +313,65 @@ multiple `SpatialRNA` experimental replicates. Then, one can use
 respectively. This procedure is documented in detail in the
 [Population-level RCTD and C-SIDE
 vignette](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html).
+
+## Frequently asked questions (FAQ) and Errors
+
+-   If I get an error with `spacexr`, should I post a Github issue?
+
+First of all, before posting an issue to Github, make sure to read the
+`spacexr` documentation (including this page and function
+documentation), Vignettes, and other Github issues. Next, there is an
+important distinction between caught and uncaught errors. If `spacexr`
+catches an error, then it will display a message such as:
+
+``` r
+"Error in find_sig_genes_individual (cell_type, cell_types, gene_fits, gene_list_type, : "
+"find_sig_genes_individual: cell type Endo has not converged on any genes. Consider removing this cell type from the model using the cell_types option."
+```
+
+In this case, `spacexr` has successfully detected the error and provides
+the user with feedback on how to fix the error. This is not a bug in
+`spacexr`. Rather, this is intended behavior for how to handle the
+error. In contrast, uncaught errors will trigger error messages outside
+the `spacexr` package. These are unintended error and should be
+reported, provided one is using the current package version and using
+the functions as intended.
+
+We outline several common errors and warnings below.
+
+-   C-SIDE error: cell type has not converged on any genes
+
+``` r
+"Error in find_sig_genes_individual (cell_type, cell_types, gene_fits, gene_list_type, : "
+"find_sig_genes_individual: cell type Endo has not converged on any genes. Consider removing this cell type from the model using the cell_types option."
+```
+
+This issue occurs when there are too few instances of a cell type. To
+debug this issue, one should first see how many of each cell type are
+included in the dataset by e.g. using the `aggregate_cell_types`
+function. Relatedly, the `cell_type_threshold` option to C-SIDE controls
+the minimum required number of each cell type. It is generally
+recommended that a cell type appear at least 100 times. This is
+especially the case for more complicated models with more parameters
+such as nonparametric mode. Nonparametric mode cannot be run without a
+few hundred instances per cell type. After counting cell types, cell
+types that are too rare should be removed from the list of cell types
+(controlled by the `cell_types` option to C-SIDE). Another potential
+cause of this issue is that there are too few genes in the `myRCTD`
+object. You can test the number of genes by looking at
+`rownames(myRCTD@originalSpatialRNA@counts)`. Having at least 1,000
+genes will make it more likely that each cell type has at least a few
+genes for which counts are high.
+
+-   C-SIDE warning: C-SIDE vignette parameters
+
+``` r
+"Warning message: In run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, " 
+"run.CSIDE.general: some parameters are set to the CSIDE vignette values, which are intended for testing but not proper execution. For more accurate results, consider using the default parameters to this function."
+```
+
+The C-SIDE vignettes have very small toy datasets and as such require
+abnormal parameter choices such as `cell_type_threshold` in order to run
+properly. These parameter values will not lead to good results on real
+data. The default C-SIDE parameter values would be a much better choice.
+This warning is to make users aware of this discrepancy.
