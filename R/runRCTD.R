@@ -121,11 +121,6 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
     #not parallel
     results <- list()
     for(i in 1:(dim(beads)[1])) {
-      #i <- 414
-      #print(i)
-      #if(i == 414) {
-      #  ca = 1
-      #}
       results[[i]] <- process_bead_multi(cell_type_info, gene_list, puck@nUMI[i],
                                          beads[i,], class_df = class_df,
                                          constrain = constrain, MIN.CHANGE = MIN.CHANGE, MAX.TYPES = MAX.TYPES,

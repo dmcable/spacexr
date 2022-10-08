@@ -32,6 +32,18 @@ get_beta_doublet <- function(barcodes, cell_type_names, results_df, weights_doub
   return(my_beta)
 }
 
+get_beta_multi <- function(barcodes, cell_type_names, results, coords) {
+  if(length(results) != dim(coords)[1])
+    stop('CSIDE get_beta_multi: results and spatialRNA@coords must be the same length to run CSIDE in multi-mode.')
+  my_beta <- matrix(0, nrow = length(results), ncol = length(cell_type_names))
+  rownames(my_beta) <- rownames(coords)
+  colnames(my_beta) <- cell_type_names
+  for(i in 1:length(results)) {
+    my_beta[i, results[[i]]$cell_type_list] <- results[[i]]$sub_weights
+  }
+  return(my_beta[barcodes,])
+}
+
 #' Converts RCTD doublet mode results to a weight matrix (across all cell types)
 #'
 #' RCTD must have been run in doublet mode
@@ -139,6 +151,9 @@ aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
   if(doublet_mode) {
     return(table(myRCTD@results$results_df[barcodes,]$first_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('singlet','doublet_certain')]) +
              +     table(myRCTD@results$results_df[barcodes,]$second_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('doublet_certain')]))
+  } else if(myRCTD@config$doublet_mode == 'multi') {
+    weights <- get_beta_multi(barcodes, myRCTD@cell_type_info$info[[2]], myRCTD@results, myRCTD@spatialRNA@coords)
+    return(colSums(weights))
   } else {
     return(colSums(myRCTD@results$weights[barcodes,]))
   }
