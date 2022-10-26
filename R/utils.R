@@ -29,12 +29,15 @@ get_de_genes <- function(cell_type_info, puck, fc_thresh = 1.25, expr_thresh = .
   epsilon = 1e-9
   bulk_vec = rowSums(puck@counts)
   gene_list = rownames(cell_type_info[[1]])
+  prev_num_genes <- min(length(gene_list), length(names(bulk_vec)))
   if(length(grep("mt-",gene_list)) > 0)
     gene_list = gene_list[-grep("mt-",gene_list)]
   gene_list = intersect(gene_list,names(bulk_vec))
   if(length(gene_list) == 0)
     stop("get_de_genes: Error: 0 common genes between SpatialRNA and Reference objects. Please check for gene list nonempty intersection.")
   gene_list = gene_list[bulk_vec[gene_list] >= MIN_OBS]
+  if(length(gene_list) < 0.1 * prev_num_genes)
+    stop("get_de_genes: At least 90% of genes do not match between the SpatialRNA and Reference objects. Please examine this. If this is intended, please remove the missing genes from the Reference object.")
   for(cell_type in cell_type_info[[2]]) {
     if(cell_type_info[[3]] > 2)
       other_mean = rowMeans(cell_type_info[[1]][gene_list,cell_type_info[[2]] != cell_type])
