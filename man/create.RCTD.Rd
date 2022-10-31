@@ -22,7 +22,7 @@ create.RCTD(
   cell_type_names = NULL,
   MAX_MULTI_TYPES = 4,
   keep_reference = F,
-  cell_type_info = NULL,
+  cell_type_profiles = NULL,
   CONFIDENCE_THRESHOLD = 10,
   DOUBLET_THRESHOLD = 25
 )
@@ -61,7 +61,8 @@ number of available cores.}
 
 \item{keep_reference}{(Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object}
 
-\item{cell_type_info}{Default NULL, option to pass in \code{cell_type_info} directly}
+\item{cell_type_profiles}{Default NULL, option to pass in cell type profiles in directly as a genes by cell type matrix, including gene names and cell type names.
+If this option is used, reference will be ignored.}
 
 \item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
 
