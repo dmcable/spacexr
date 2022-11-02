@@ -17,7 +17,10 @@ The data generated and/or used in this study may be accessed at the
 [Broad Institute’s Single Cell
 Portal](https://singlecell.broadinstitute.org/single_cell/study/SCP948).
 This repository contains both the Slide-seq datasets used in this study,
-and the single-cell RNA-sequencing references.
+and the single-cell RNA-sequencing references. Additional files
+necessary to run the following R-markdown scripts are located at the
+following [Dropbox
+Repository](https://www.dropbox.com/sh/6klgiz1f9rimzqb/AAA2PrAgPfgPFz4yNDBPEWqYa?dl=0).
 
 ### Pre-processing
 
@@ -57,7 +60,8 @@ was used to evaluate RCTD’s ability to predict cell type proportion.
 
 ### Generating Main Figures
 
-We provide R Markdown files that were used to create the main figures:
+We provide R Markdown files that were used to create the main figures
+(warning: code in `eval = FALSE` blocks should not be run):
 
 -   [Unsupervised clustering on the Slide-seq
     cerebellum](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure1.html)
@@ -94,7 +98,7 @@ with the current version of spacexr:
 
 ### Supplemental Figures
 
-Prepocessing of the Visium dataset occured using
+Preprocessing of the Visium dataset occurred using
 [processVisium.R](https://github.com/dmcable/spacexr/tree/master/AnalysisPaper/Rscripts/processVisium.R).
 NMFreg on the Slide-seq cerebellum occurred using the NMFreg IPython
 notebook, and we did

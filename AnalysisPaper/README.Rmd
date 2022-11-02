@@ -24,7 +24,7 @@ which introduces and validates the RCTD algorithm. You may access RCTD in our op
 ### Obtaining Data
 
 The data generated and/or used in this study may be accessed at the [Broad Institute's Single Cell Portal](https://singlecell.broadinstitute.org/single_cell/study/SCP948). This repository contains 
-both the Slide-seq datasets used in this study, and the single-cell RNA-sequencing references.
+both the Slide-seq datasets used in this study, and the single-cell RNA-sequencing references. Additional files necessary to run the following R-markdown scripts are located at the following [Dropbox Repository](https://www.dropbox.com/sh/6klgiz1f9rimzqb/AAA2PrAgPfgPFz4yNDBPEWqYa?dl=0).
 
 ### Pre-processing
 
@@ -51,7 +51,7 @@ cell type proportion.
 
 ### Generating Main Figures
 
-We provide R Markdown files that were used to create the main figures:
+We provide R Markdown files that were used to create the main figures (warning: code in `eval = FALSE` blocks should not be run):
 
 * [Unsupervised clustering on the Slide-seq cerebellum](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure1.html) (Figure 1)
 * [Platform Effect Prediction](https://raw.githack.com/dmcable/spacexr/master/AnalysisPaper/MainFigures/figure2-platform-effect.html) (Figure 1,2)
