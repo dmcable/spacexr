@@ -110,7 +110,8 @@ get_decomposed_data <- function(results_df, gene_list, puck, weights_doublet, ce
 import_weights <- function(myRCTD, weights) {
   if(is.null(rownames(weights)) || is.null(colnames(weights)))
     stop('import_weights: weights must contain rownames and colnames. rownames and colnames must be assigned as pixel names and cell types respectively.')
-  if(any(rowSums(weights) != 1))
+  eps <- 1e-6
+  if(any(abs(rowSums(weights) - 1) > eps))
     stop('import_weights: weights must be normalized to have rows sum to 1.')
   myRCTD@results$weights <- weights
   myRCTD@internal_vars$proportions <- colMeans(weights)/sum(colMeans(weights))
