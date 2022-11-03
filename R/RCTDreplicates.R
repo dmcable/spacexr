@@ -57,7 +57,7 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
                                         gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg,
                                         fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_max = UMI_max, UMI_min_sigma = UMI_min_sigma,
                                         class_df = class_df, CELL_MIN_INSTANCE = CELL_MIN_INSTANCE, cell_type_names = cell_type_names, MAX_MULTI_TYPES = MAX_MULTI_TYPES,
-                                        cell_type_info = cell_type_info, keep_reference = F)
+                                        cell_type_profiles = cell_type_info[[1]], keep_reference = F)
   }
   new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = group_ids)
 }
