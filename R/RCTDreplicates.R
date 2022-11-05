@@ -33,8 +33,8 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
                         keep_reference = F) {
   if(is.null(cell_type_names))
     cell_type_names <- levels(reference@cell_types)
-  cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names = cell_type_names,
-                                                         CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
+  cell_type_info <- process_cell_type_info(reference, cell_type_names = cell_type_names,
+                                                         CELL_MIN = CELL_MIN_INSTANCE)
   if(class(spatialRNA.replicates) != 'list' ||
      any(!unlist(lapply(spatialRNA.replicates, function(x) class(x) == 'SpatialRNA'))))
     stop('create.RCTD.replicates: spatialRNA.replicates must be a list of SpatialRNA objects.')
