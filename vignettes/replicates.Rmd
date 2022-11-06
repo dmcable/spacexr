@@ -116,15 +116,15 @@ myRCTD.reps <- run.RCTD.replicates(myRCTD.reps)
 ```
 ## Running CSIDE
 
-After creating the explanatory variables and running RCTD, we are now ready to run CSIDE using the `run.CSIDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 10.
+After creating the explanatory variables and running RCTD, we are now ready to run CSIDE using the `run.CSIDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 5.
 
 **Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the CSIDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.CSIDE.replicates` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
 cell_types <- c('10','18')
-myRCTD.reps <- run.CSIDE.replicates(myRCTD.reps, exvar_list, cell_types, gene_threshold = .01, 
-                         cell_type_threshold = 10, fdr = 0.25) 
+myRCTD.reps <- run.CSIDE.replicates(myRCTD.reps, cell_types, exvar_list, gene_threshold = .01, 
+                         cell_type_threshold = 5, fdr = 0.25) 
 
 saveRDS(myRCTD.reps,file.path(savedir,'myRCTDde_reps.rds'))
 ```

@@ -94,13 +94,13 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' genes with significant nonzero DE. Note: a minimum of three replicates are required for population mode.
 #'
 #' @param RCTD.replicates an \code{\linkS4class{RCTD.replicates}} object with annotated cell types e.g. from the \code{\link{run.RCTD.replicates}} function.
+#' @param cell_types the cell types used for CSIDE. Each cell type must occur
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param explanatory.variable.replicates (only used for de_mode = single) a list of the named numeric vectors representing for each replicate the explanatory variable used for explaining differential expression in CSIDE.
 #' Names of the vectors are the \code{\linkS4class{SpatialRNA}} pixel names, and values should be standardized between 0 and 1.
 #' @param X.replicates (only used for de_mode = general) a list for each replicate of matrices containing the covariates for running CSIDE. The rownames represent pixel names and
 #' should be a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The columns each represent a covariate for
 #' explaining differential expression and need to be linearly independent.
-#' @param cell_types the cell types used for CSIDE. Each cell type must occur
-#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param cell_type_threshold (default 125) min occurence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
 #' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
 #' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
@@ -127,7 +127,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
-run.CSIDE.replicates <- function(RCTD.replicates, explanatory.variable.replicates = NULL, X.replicates = NULL, cell_types, cell_type_threshold = 125,
+run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variable.replicates = NULL, X.replicates = NULL, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
                                  fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,

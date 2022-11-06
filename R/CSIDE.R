@@ -292,6 +292,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
     cell_types <- intersect(cell_types, names(which(cell_type_filter)))
   }
   message(paste0("run.CSIDE.general: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
+  if(length(cell_types) < 2)
+    stop('run.CSIDE.general: cannot run CSIDE with less than two cell types.')
   X1 <- check_designmatrix(X1, 'run.CSIDE.general')
   X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE)
   if(!(test_mode %in% c('individual', 'categorical')))
