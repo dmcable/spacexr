@@ -56,13 +56,13 @@ create.RCTD <- function(spatialRNA, reference, max_cores = 4, test_mode = FALSE,
       if(is.null(cell_type_names))
          cell_type_names <- levels(reference@cell_types)
       cell_type_info <- list(info = process_cell_type_info(reference, cell_type_names = cell_type_names, CELL_MIN = CELL_MIN_INSTANCE), renorm = NULL)
-      if(!keep_reference)
-         reference <- create_downsampled_data(reference, n_samples = 5)
    } else {
       cell_type_names <- colnames(cell_type_profiles)
       cell_type_info <- list(info = list(cell_type_profiles, cell_type_names, length(cell_type_names)),
                              renorm = NULL)
    }
+   if(!keep_reference)
+      reference <- create_downsampled_data(reference, n_samples = 5)
    puck.original = restrict_counts(spatialRNA, rownames(spatialRNA@counts),
                                    UMI_thresh = config$UMI_min, UMI_max = config$UMI_max,
                                    counts_thresh = config$counts_MIN)
