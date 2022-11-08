@@ -164,6 +164,10 @@ check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
     stop(paste0(f_name,': rownames(counts) contain duplicated elements. Please ensure gene names are unique'))
   if(any(duplicated(colnames(counts))))
     stop(paste0(f_name,': colnames(counts) contain duplicated elements. Please ensure barcode names are unique'))
+  if(any(is.na(rownames(counts))))
+    stop(paste0(f_name,': rownames(counts) contain NA elements. Please ensure gene names are valid'))
+  if(any(is.na(colnames(counts))))
+    stop(paste0(f_name,': colnames(counts) contain NA elements. Please ensure barcode names are valid'))
   return(counts)
 }
 
