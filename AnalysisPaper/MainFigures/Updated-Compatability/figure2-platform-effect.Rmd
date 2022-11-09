@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 # Platform Effect Prediction (between single-nucleus and single-cell RNA-seq)
 
 ```{r libraries}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(ggplot2)
 library(ggpubr)
@@ -25,18 +25,14 @@ library(Seurat)
 ### Load in RCTD results on cross-platform normalization
 
 ```{r setupdata}
-DropViz <- T
-myRCTD <- readRDS('../../myRCTD_cross.rds')
-if(DropViz) {
-  proportions = myRCTD@internal_vars$proportions
-  cell_type_info_unnorm <- myRCTD@cell_type_info$info
-}
-puck = myRCTD@spatialRNA
-if(DropViz) {
-  common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
-} else {
-  common_cell_types <- myRCTD@cell_type_info$info[[2]]
-}
+
+proportions <- readRDS("../../../weights.RDS")
+cell_type_info_unnorm <- readRDS("../../../cell_type_info_renorm.RDS")
+
+puck <- readRDS('../../../puck_fig2_spacexr.rds')
+
+common_cell_types = c("Astrocytes", "Bergmann", "Endothelial", "Fibroblast", "Golgi", "Granule", "MLI1", "MLI2", "Oligodendrocytes", "Polydendrocytes", "Purkinje", "UBCs")
+gene_list_bulk <- readRDS('../../../gene_list.rds')
 ```
 
 ### Compute true and predicted (by RCTD) platform effects
@@ -46,13 +42,13 @@ if(DropViz) {
 true_proportions <- proportions * 0
 true_proportions[common_cell_types] = 1
 true_proportions = true_proportions / sum(true_proportions)
-gene_means <- as.matrix(cell_type_info_unnorm[[1]][myRCTD@internal_vars$gene_list_bulk,]) %*% true_proportions
+gene_means <- as.matrix(cell_type_info_unnorm[[1]][gene_list_bulk,]) %*% true_proportions
 bulk_vec = rowSums(puck@counts);
 total_UMI <- sum(puck@nUMI)
-true_platform_effect = log(bulk_vec[myRCTDgene_list] / total_UMI,2) -log(gene_means,2)
+true_platform_effect = log(bulk_vec[gene_list_bulk] / total_UMI,2) -log(gene_means,2)
 
-gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][myRCTD@internal_vars$gene_list_bulk,]) %*% proportions / sum(proportions)
-pred_platform_effect = log(bulk_vec[myRCTD@internal_vars$gene_list_bulk] / total_UMI,2) -log(gene_means_unnorm_pred,2)
+gene_means_unnorm_pred <- as.matrix(cell_type_info_unnorm[[1]][gene_list_bulk,]) %*% proportions / sum(proportions)
+pred_platform_effect = log(bulk_vec[gene_list_bulk] / total_UMI,2) -log(gene_means_unnorm_pred,2)
 R2 = cor(true_platform_effect, pred_platform_effect)^2
 print(R2) # 0.899
 platform_df <- data.frame(estimated_platform_effect = pred_platform_effect,true_platform_effect=true_platform_effect)

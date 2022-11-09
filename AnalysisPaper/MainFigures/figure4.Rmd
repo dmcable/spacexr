@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = T, warning = F, message = F, cache = T, results = '
 # RCTD on the Slide-seq cerebellum
 
 ```{r libraries}
-library(RCTD)
+library(spacexr)
 library(Matrix)
 library(ggplot2)
 library(ggpubr)
