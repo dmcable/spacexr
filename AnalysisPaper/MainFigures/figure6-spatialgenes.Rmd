@@ -52,7 +52,7 @@ CA3_genes <- CA3_genes[cell_type_info[[1]][CA3_genes,"CA3"] >= 2e-5]
 #Command used to save the data from the gather_results.R script:
 #save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
 #loading in that data:
-load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results_6.RData')
 puck_d <- get_decomposed_data(results$results_df, CA3_genes, puck, results$weights_doublet, cell_type_info)
 ```
 

@@ -29,7 +29,7 @@ library(tidyr)
 #Command used to save the data from the gather_results.R script:
 #save(puck_d, iv, results, file = 'Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
 #loading in that data:
-load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results.RData')
+load('../../Data/SpatialRNA/Puck_200115_08/results/final_analysis/gathered_results_6.RData')
 my_mod <- function(p) {
   p + scale_x_continuous(breaks = c(1500,3500,5500), limits = c(1450,5700)) + scale_y_continuous(breaks = c(2000,3250,4500), limits = c(1800,4700)) + geom_segment(aes(x = 1700, y = 2100, xend = 2084.6, yend = 2100), color = "black")+  theme(axis.title.x=element_blank(),axis.text.x=element_blank(),axis.ticks.x=element_blank(), axis.title.y=element_blank(),axis.text.y=element_blank(),axis.ticks.y=element_blank())+ theme(legend.position="top")
 }
