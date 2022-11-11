@@ -124,6 +124,16 @@ Operating systems (version 2.0 spacexr) tested on:
 * macOS Big Sur 11.6
 * GNU/Linux (GNU coreutils) 8.22 (version 1.0 spacexr tested)
 
+### Citations
+
+If you use this work for cell type estimation, please cite:
+
+Cable, Dylan M., et al. "Robust decomposition of cell type mixtures in spatial transcriptomics." *Nature Biotechnology* 40.4 (2022): 517-526.
+
+If you use this work for differential expression, please cite:
+
+Cable, Dylan M., et al. "Cell type-specific inference of differential expression in spatial transcriptomics." *Nature methods* 19.9 (2022): 1076-1087.
+
 ### License
 
 spacexr is [licensed](https://github.com/dmcable/spacexr/blob/master/LICENSE) under the GNU General Public License v3.0.
