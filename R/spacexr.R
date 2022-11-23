@@ -155,7 +155,7 @@ convert.old.RCTD <- function(myRCTD) {
       myRCTD@spatialRNA <- coerce_old(myRCTD@spatialRNA)
    if(attr(class(myRCTD@originalSpatialRNA),'package') != 'spacexr')
       myRCTD@originalSpatialRNA <- coerce_old(myRCTD@originalSpatialRNA)
-   if(attr(class(myRCTD@reference),'package') != 'spacexr')
+   if(attr(class(ref),'package') != 'spacexr')
       ref <- coerce_deglam_reference(ref)
    new("RCTD", spatialRNA = myRCTD@spatialRNA, originalSpatialRNA = myRCTD@spatialRNA, reference = ref,
        config = myRCTD@config, cell_type_info = myRCTD@cell_type_info, internal_vars = myRCTD@internal_vars, results = myRCTD@results)

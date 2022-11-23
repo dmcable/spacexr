@@ -72,7 +72,8 @@ convert_old_reference <- function(old_reference, n_max_cells = 10000) {
 
 coerce_deglam_reference <- function(old_reference) {
   return(Reference(old_reference@counts, old_reference@cell_types,
-                   old_reference@nUMI, n_max_cells = max(table(old_reference@cell_types)) + 1))
+                   old_reference@nUMI, n_max_cells = max(table(old_reference@cell_types)) + 1,
+                   min_UMI = 1))
 }
 
 restrict_reference <- function(reference, barcodes) {

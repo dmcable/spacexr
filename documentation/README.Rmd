@@ -153,10 +153,11 @@ C-SIDE results are stored in `myRCTD@de_results`. All gene expression results ar
 * `s_mat`: A genes by coefficients matrix representing the standard errors for each coefficient for each gene. We represent reshaping the matrix into a three dimensional tensor with `s_mat_3d <- get_standard_errors(s_mat)`. Dimensions: genes X explanatory variables X cell types. Then, e.g. `s_mat_3d['geneA', 3, 'Neuron']` would represent the coefficient standard error (log gene expression) for geneA in cell type Neuron and the third explanatory variable. 
 * `sigma_g`: A vector, across genes, of the estimated standard deviation (magnitude) of pixel-specific overdispersion. A higher value of `sigma_g` indicates a higher level of noise compared to the Poisson distribution.
 
-C-SIDE significant gene results are stored in `myRCTD@de_results$gene_fits`, which is a list of dataframes for each cell type. For example the following extracts the significant gene dataframe for the 'Neuron' cell type:
+C-SIDE significant gene results are stored in `myRCTD@de_results$gene_fits`, which is a list of dataframes for each cell type. For example the following extracts the significant (as well as all genes including nonsignicant genes) gene dataframe for the 'Neuron' cell type:
 
 ```{r}
-sig_df_neuron <- myRCTD@de_results$sig_gene_list[['Neuron']]
+sig_df_neuron <- myRCTD@de_results$sig_gene_list[['Neuron']] # only significant genes
+all_df_neuron <- myRCTD@de_results$all_gene_list[['Neuron']] # includes nonsignificant genes
 ```
 
 This dataframe has rows for each significant gene. Columns will vary depending on C-SIDE mode, and one should consult the vignette of each mode for specific information. In most cases the following columns will be present:
@@ -167,6 +168,23 @@ This dataframe has rows for each significant gene. Columns will vary depending o
 * `Z_score`: the Z-score for a statistical Z-test, if applicable.
 * `p_val`: the p-value for the statistical test of DE for this gene.
 * `conv`: whether C-SIDE converged for this gene (required to achieve significance).
+
+In the case of categorical-mode C-SIDE, C-SIDE performs pairwise Z-tests between pairs of regions, with the following columns will be present in these dataframes:
+
+* `mean_i`: the estimated log gene expression in region i.
+* `sd_i`: the standard error of this log gene expression estimate in region i.
+* `sd_lfc`: the standard deviation of `mean_i`, across i.
+* `log_fc_best`: the log-fold-change of the most differentially-expressed significant pair of regions.
+* `sd_best`: the standard error of the log-fold-change estimate of this pair
+* `p_val_best`: the p value of the differential expression for this pair.
+* `paramindex1_best`: the parameter index for the first region in the most DE pair.
+* `paramindex2_best`: the parameter index for the second region in the most DE pair.
+
+If one would like to perform Z-tests on other pairs of regions, one can use the following formula to generate a Z-score (which can also be converted to a p-value using the standard Z-score method):
+
+```
+Z_i1_i2 <- (mean_i1 - mean_i2)/sqrt(sd_i1^2 + sd_i2^2)
+```
 
 ### Multiple replicates
 

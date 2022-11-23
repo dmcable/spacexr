@@ -281,11 +281,13 @@ interest, including:
 
 C-SIDE significant gene results are stored in
 `myRCTD@de_results$gene_fits`, which is a list of dataframes for each
-cell type. For example the following extracts the significant gene
-dataframe for the ‘Neuron’ cell type:
+cell type. For example the following extracts the significant (as well
+as all genes including nonsignicant genes) gene dataframe for the
+‘Neuron’ cell type:
 
 ``` r
-sig_df_neuron <- myRCTD@de_results$sig_gene_list[['Neuron']]
+sig_df_neuron <- myRCTD@de_results$sig_gene_list[['Neuron']] # only significant genes
+all_df_neuron <- myRCTD@de_results$all_gene_list[['Neuron']] # includes nonsignificant genes
 ```
 
 This dataframe has rows for each significant gene. Columns will vary
@@ -303,6 +305,31 @@ be present:
 -   `p_val`: the p-value for the statistical test of DE for this gene.
 -   `conv`: whether C-SIDE converged for this gene (required to achieve
     significance).
+
+In the case of categorical-mode C-SIDE, C-SIDE performs pairwise Z-tests
+between pairs of regions, with the following columns will be present in
+these dataframes:
+
+-   `mean_i`: the estimated log gene expression in region i.
+-   `sd_i`: the standard error of this log gene expression estimate in
+    region i.
+-   `sd_lfc`: the standard deviation of `mean_i`, across i.
+-   `log_fc_best`: the log-fold-change of the most
+    differentially-expressed significant pair of regions.
+-   `sd_best`: the standard error of the log-fold-change estimate of
+    this pair
+-   `p_val_best`: the p value of the differential expression for this
+    pair.
+-   `paramindex1_best`: the parameter index for the first region in the
+    most DE pair.
+-   `paramindex2_best`: the parameter index for the second region in the
+    most DE pair.
+
+If one would like to perform Z-tests on other pairs of regions, one can
+use the following formula to generate a Z-score (which can also be
+converted to a p-value using the standard Z-score method):
+
+    Z_i1_i2 <- (mean_i1 - mean_i2)/sqrt(sd_i1^2 + sd_i2^2)
 
 ### Multiple replicates
 
