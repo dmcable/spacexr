@@ -81,7 +81,7 @@ myRCTD <- readRDS(file.path(savedir,'myRCTD_visium_full.rds'))
 barcodes <- colnames(myRCTD@spatialRNA@counts)
 weights <- myRCTD@results$weights
 norm_weights <- normalize_weights(weights)
-cell_types <- c('Denate', 'Neurogenesis','Cajal_Retzius')
+cell_types <- c('Neurogenesis','Astrocyte')
 print(head(norm_weights[,cell_types])) # observe weight values
 plot_puck_continuous(myRCTD@spatialRNA, barcodes, norm_weights[,'Denate'], ylimit = c(0,0.5), 
                      title ='plot of Dentate weights') # plot Dentate weights
@@ -119,28 +119,27 @@ myRCTD <- run.CSIDE.regions(myRCTD, region_list,cell_types = cell_types, gene_th
 saveRDS(myRCTD,file.path(savedir,'myRCTDde_visium_regions.rds'))
 ```
 
-Equivalently to using the `run.CSIDE.regions` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.regions` function, which constructs the design matrix given a list of regions. After constructing the design matrix, one can use the `run.CSIDE` function to run CSIDE with this general design matrix.
+Equivalently to using the `run.CSIDE.regions` function, those who want to have more precise control can build the design matrix directly. In this case, we use the `build.designmatrix.regions` function, which constructs the design matrix given a list of regions. After constructing the design matrix, one can use the `run.CSIDE` function (with test_mode = 'categorical') to run CSIDE with this general design matrix.
 
 ```{r design matrix}
 X <- build.designmatrix.regions(myRCTD,region_list)
 print(head(X))
 barcodes <- rownames(X)
-myRCTD_identical <- run.CSIDE(myRCTD, X, barcodes, cell_types, gene_threshold = .01, doublet_mode = F,
-                        cell_type_threshold = 10, fdr = 0.25, weight_threshold = 0.1)
+myRCTD_identical <- run.CSIDE(myRCTD, X, barcodes, cell_types, test_mode = 'categorical', gene_threshold = .01, doublet_mode = F, cell_type_threshold = 10, fdr = 0.25, weight_threshold = 0.1)
 ```
 
 ## CSIDE results
 
-After running CSIDE, it is time to examine CSIDE results. We will focus on cell type Dentate. Furthermore, we will examine the original Fth1 gene.
+After running CSIDE, it is time to examine CSIDE results. We will focus on cell type Neurogenesis. Furthermore, we will examine the original Fth1 gene.
 
 ```{r CSIDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type 'Dentate'
-cell_type <- 'Denate'
+cell_type <- 'Neurogenesis'
 gene <- 'Fth1'
 print(paste("following results hold for", gene))
 print("check for covergence of each cell type")
 print(myRCTD@de_results$gene_fits$con_mat[gene, ]) # did not converge (dataset was too small)
-print('estimated expression for Dentate in each region')
+print('estimated expression for Neurogenesis in each region')
 cell_type_ind <- which(cell_type == cell_types)
 print(myRCTD@de_results$gene_fits$all_vals[gene, , cell_type_ind]) 
 ```

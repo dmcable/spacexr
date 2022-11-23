@@ -145,7 +145,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                           weight_threshold = NULL, sigma_gene = T,
                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T,
-                          logs=F, log_fc_thresh = log_fc_thresh, test_error = F) {
+                          logs=F, log_fc_thresh = 0.4, test_error = F) {
   X2 <- build.designmatrix.regions(myRCTD, region_list)
   barcodes <- rownames(X2)
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold,
