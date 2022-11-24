@@ -464,26 +464,31 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
     i2_vec[gene] <- best_i2
   }
   gene_list_sig <- fdr_sig_genes(gene_list_type, p_val_sig_pair, fdr)
-  sig_genes <- data.frame(sd_lfc_vec[gene_list_type], i1_vec[gene_list_type], i2_vec[gene_list_type],
+  all_genes <- data.frame(sd_lfc_vec[gene_list_type], i1_vec[gene_list_type], i2_vec[gene_list_type],
                           sd_vec[gene_list_type], p_val_sig_pair[gene_list_type],
                           log_fc_best_pair[gene_list_type])
-  rownames(sig_genes) <- gene_list_type
-  custom_names <- c('sd_lfc','sd_best','p_val_best','log_fc_best', 'paramindex1_best', 'paramindex2_best')
-  colnames(sig_genes) <- custom_names
-  all_genes <- sig_genes
-  sig_genes <- sig_genes[abs(sig_genes$p_val < p_thresh) & abs(sig_genes$log_fc) >= log_fc_thresh, ]
-  if(length(gene_list_sig) > 1)
-    sig_genes <- data.frame(sig_genes, gene_fits$all_vals[rownames(sig_genes),params_to_test,cell_ind]) # add on the means
-  else {
-    if(length(gene_list_sig) == 1) {
-      sig_genes <- data.frame(t(unlist((c(sig_genes, gene_fits$all_vals[rownames(sig_genes),params_to_test,cell_ind],
-                                          gene_fits$s_mat[rownames(sig_genes),s_mat_ind[params_to_test]])))))
-      rownames(sig_genes) <- gene_list_sig
-      if(length(sig_genes) > 0)
-        colnames(sig_genes)[(length(custom_names)+1):length(sig_genes)] <-
-        c(lapply(params_to_test,function(x) paste('mean_',x)), lapply(params_to_test,function(x) paste('sd_',x)))
+  rownames(all_genes) <- gene_list_type
+  custom_names <- c('sd_lfc','paramindex1_best', 'paramindex2_best', 'sd_best','p_val_best','log_fc_best')
+  colnames(all_genes) <- custom_names
+  if(length(gene_list_type) > 1) {
+    all_genes <- data.frame(all_genes, gene_fits$all_vals[rownames(all_genes),params_to_test,cell_ind]) # add on the means
+    colnames(all_genes)[(length(custom_names)+1):length(all_genes)] <-
+      c(lapply(params_to_test,function(x) paste0('mean_',x)), lapply(params_to_test,function(x) paste0('sd_',x)))
+  } else {
+    if(length(gene_list_type) == 1) {
+      all_genes <- data.frame(t(unlist((c(all_genes, gene_fits$all_vals[rownames(all_genes),params_to_test,cell_ind],
+                                          gene_fits$s_mat[rownames(all_genes),s_mat_ind[params_to_test]])))))
+      rownames(all_genes) <- gene_list_type
+      colnames(all_genes)[(length(custom_names)+1):length(all_genes)] <-
+        c(lapply(params_to_test,function(x) paste0('mean_',x)), lapply(params_to_test,function(x) paste0('sd_',x)))
     } else
-      sig_genes <- list()
+      all_genes <- list()
+  }
+  if(length(gene_list_sig) > 0) {
+    sig_genes <- all_genes[gene_list_sig, ]
+    sig_genes <- sig_genes[abs(sig_genes$p_val < p_thresh) & abs(sig_genes$log_fc) >= log_fc_thresh, ]
+  } else {
+    sig_genes <- list()
   }
   return(list(sig_genes = sig_genes, all_genes = all_genes))
 }

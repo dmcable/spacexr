@@ -550,30 +550,42 @@ print(myRCTD@de_results$gene_fits$all_vals[gene, , cell_type_ind])
 #&gt; [1] -3.322362 -3.116246 -3.369826</code></pre>
 <div id="load-in-significant-genes-from-another-dataset" class="section level3">
 <h3>Load in significant genes from another dataset</h3>
-<p>Unfortunately, this toy dataset did not yield any significant genes.
-To illustrate the results of a normal dataset, we will examine the
-<code>myRCTD@de_results$sig_gene_list</code> object from another
-dataset. <code>sig_gene_list</code> is a list, for each cell type, of
+<p>Unfortunately, this toy dataset did not yield any significant genes,
+so we will examine <code>myRCTD@de_results$all_gene_list</code> (all
+genes) and <code>myRCTD@de_results$sig_gene_list</code> (significant
+genes). <code>sig_gene_list</code> is a list, for each cell type, of
 dataframes that contain the hypothesis testing results for significant
-genes. In particular, notice the following columns: p_val (p value),
-log_fc (log-fold-change between two regions) and X1…X4 (the estimated
-expression within each region):</p>
-<pre class="r"><code>sig_gene_list &lt;- readRDS(file.path(datadir,&quot;testes_sig_gene_list.rds&quot;)) # load in counts matrix
-print(head(sig_gene_list$`2`))
-#&gt;                  sd    sd_lfc p_val    log_fc        X1        X2        X3
-#&gt; Acrv1    0.07274442 0.3037137     0 0.6795464 -7.369364 -7.264492 -6.998050
-#&gt; Actl7b   0.05362279 0.2483192     0 0.5575609 -6.468663 -6.384588 -6.330300
-#&gt; Antxrl   0.16001753 0.7084539     0 1.5944706 -9.165735 -8.567636 -7.908107
-#&gt; Aqp7     0.11520419 0.4276247     0 1.0264325 -8.302994 -7.767773 -7.276561
-#&gt; Arf4     0.08276788 0.4481691     0 0.9293800 -8.338457 -8.303514 -8.080831
-#&gt; BC049635 0.07362217 0.3386442     0 0.6470246 -7.542562 -6.895538 -6.775634
-#&gt;                 X4
-#&gt; Acrv1    -6.689818
-#&gt; Actl7b   -5.911103
-#&gt; Antxrl   -7.571264
-#&gt; Aqp7     -7.613193
-#&gt; Arf4     -7.374133
-#&gt; BC049635 -7.140916</code></pre>
+genes. In particular, notice the following columns:</p>
+<ul>
+<li><code>mean_i</code>: the estimated log gene expression in region
+i.</li>
+<li><code>sd_i</code>: the standard error of this log gene expression
+estimate in region i.</li>
+<li><code>sd_lfc</code>: the standard deviation of <code>mean_i</code>,
+across i.</li>
+<li><code>log_fc_best</code>: the log-fold-change of the most
+differentially-expressed significant pair of regions.</li>
+<li><code>sd_best</code>: the standard error of the log-fold-change
+estimate of this pair</li>
+<li><code>p_val_best</code>: the p value of the differential expression
+for this pair.</li>
+<li><code>paramindex1_best</code>: the parameter index for the first
+region in the most DE pair.</li>
+<li><code>paramindex2_best</code>: the parameter index for the second
+region in the most DE pair.</li>
+</ul>
+<pre class="r"><code>sig_gene_list &lt;- myRCTD@de_results$sig_gene_list
+print(sig_gene_list$Neurogenesis)
+#&gt;  [1] sd_lfc           paramindex1_best paramindex2_best sd_best         
+#&gt;  [5] p_val_best       log_fc_best      mean_1           mean_2          
+#&gt;  [9] mean_3           sd_1             sd_2             sd_3            
+#&gt; &lt;0 rows&gt; (or 0-length row.names)
+all_gene_list &lt;- myRCTD@de_results$all_gene_list
+print(all_gene_list$Neurogenesis)
+#&gt;         sd_lfc paramindex1_best paramindex2_best    sd_best   p_val_best
+#&gt; Fth1 0.1348083                2                3 0.03645868 1.055599e-11
+#&gt;      log_fc_best    mean_1    mean_2    mean_3       sd_1       sd_2       sd_3
+#&gt; Fth1   0.2535803 -3.322362 -3.116246 -3.369826 0.04623312 0.02245107 0.02872603</code></pre>
 <p>Finally, we will plot CSIDE results in the <code>savedir</code>
 directory!</p>
 <p>The following plot shows a spatial visualization of the Fth1

@@ -146,12 +146,22 @@ print(myRCTD@de_results$gene_fits$all_vals[gene, , cell_type_ind])
 
 ### Load in significant genes from another dataset
 
-Unfortunately, this toy dataset did not yield any significant genes. To illustrate the results of a normal dataset, we will
-examine the `myRCTD@de_results$sig_gene_list` object from another dataset. `sig_gene_list` is a list, for each cell type, of dataframes that contain the hypothesis testing results for significant genes. In particular, notice the following columns: p_val (p value), log_fc (log-fold-change between two regions) and X1...X4 (the estimated expression within each region):
+Unfortunately, this toy dataset did not yield any significant genes, so we will examine `myRCTD@de_results$all_gene_list` (all genes) and `myRCTD@de_results$sig_gene_list` (significant genes). `sig_gene_list` is a list, for each cell type, of dataframes that contain the hypothesis testing results for significant genes. In particular, notice the following columns: 
 
-```{r load_testes}
-sig_gene_list <- readRDS(file.path(datadir,"testes_sig_gene_list.rds")) # load in counts matrix
-print(head(sig_gene_list$`2`))
+* `mean_i`: the estimated log gene expression in region i.
+* `sd_i`: the standard error of this log gene expression estimate in region i.
+* `sd_lfc`: the standard deviation of `mean_i`, across i.
+* `log_fc_best`: the log-fold-change of the most differentially-expressed significant pair of regions.
+* `sd_best`: the standard error of the log-fold-change estimate of this pair
+* `p_val_best`: the p value of the differential expression for this pair.
+* `paramindex1_best`: the parameter index for the first region in the most DE pair.
+* `paramindex2_best`: the parameter index for the second region in the most DE pair.
+
+```{r print_gene_list}
+sig_gene_list <- myRCTD@de_results$sig_gene_list
+print(sig_gene_list$Neurogenesis)
+all_gene_list <- myRCTD@de_results$all_gene_list
+print(all_gene_list$Neurogenesis)
 ```
 
 Finally, we will plot CSIDE results in the `savedir` directory!
