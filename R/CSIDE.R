@@ -471,7 +471,8 @@ find_sig_genes_categorical <- function(cell_type, cell_types, gene_fits, gene_li
   custom_names <- c('sd_lfc','paramindex1_best', 'paramindex2_best', 'sd_best','p_val_best','log_fc_best')
   colnames(all_genes) <- custom_names
   if(length(gene_list_type) > 1) {
-    all_genes <- data.frame(all_genes, gene_fits$all_vals[rownames(all_genes),params_to_test,cell_ind]) # add on the means
+    all_genes <- data.frame(all_genes, gene_fits$all_vals[rownames(all_genes),params_to_test,cell_ind],
+                            gene_fits$s_mat[rownames(all_genes),s_mat_ind[params_to_test]]) # add on the means
     colnames(all_genes)[(length(custom_names)+1):length(all_genes)] <-
       c(lapply(params_to_test,function(x) paste0('mean_',x)), lapply(params_to_test,function(x) paste0('sd_',x)))
   } else {
