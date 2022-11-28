@@ -501,6 +501,7 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
                 ' has not converged on any genes. Consider removing this cell type from the model using the cell_types option.'))
   ct_ind <- which(cell_types == cell_type)
   I_ind = dim(X2)[2]*(ct_ind - 1) + params_to_test
+  I_ind_intercept = dim(X2)[2]*(ct_ind - 1) + 1
   if(normalize_expr) {
     log_fc <- gene_fits$mean_val_cor[[cell_type]][gene_list_type]
   } else {
@@ -556,15 +557,23 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
     best_ind <- rep(params_to_test, length(gene_list_type))
     names(best_ind) <- gene_list_type
   }
-  sig_genes <- data.frame(z_score[gene_list_sig], log_fc[gene_list_sig], s_vec[gene_list_sig], best_ind[gene_list_sig])
-  names(sig_genes) <- c('Z_score','log_fc', 'se', 'paramindex_best')
-  sig_genes$conv <- gene_fits$con_mat[gene_list_sig, cell_type]
-  sig_genes$p_val <- p_val[gene_list_sig]
-  sig_genes <- sig_genes[abs(sig_genes$p_val < p_thresh) & abs(sig_genes$log_fc) >= log_fc_thresh, ]
   all_genes <- data.frame(z_score[gene_list_type], log_fc[gene_list_type], s_vec[gene_list_type], best_ind[gene_list_type])
   names(all_genes) <- c('Z_score','log_fc', 'se', 'paramindex_best')
   all_genes$conv <- gene_fits$con_mat[gene_list_type, cell_type]
   all_genes$p_val <- p_val[gene_list_type]
+  if(length(params_to_test) == 1 & !any(X2[,1] != 1)) {
+    mean_0 <- gene_fits$all_vals[gene_list_type, 1, ct_ind]
+    mean_1 <- mean_0 + log_fc
+    sd_0 <- gene_fits$s_mat[gene_list_type,I_ind_intercept]
+    sd_1 <- s_vec^2 - sd_0^2
+    sd_1[sd_1 < 0] <- 100
+    sd_1 <- sqrt(sd_1)
+    all_genes$mean_0 <- mean_0
+    all_genes$mean_1 <- mean_1
+    all_genes$sd_0 <- sd_0
+    all_genes$sd_1 <- sd_1
+  }
+  sig_genes <- all_genes[gene_list_sig, ]
   return(list(sig_genes = sig_genes, all_genes = all_genes))
 }
 

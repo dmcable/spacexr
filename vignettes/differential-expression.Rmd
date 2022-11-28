@@ -112,7 +112,7 @@ saveRDS(myRCTD,file.path(savedir,'myRCTDde.rds'))
 
 ## CSIDE results
 
-After running CSIDE, it is time to examine CSIDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. CSIDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
+After running CSIDE, it is time to examine CSIDE results. For each cell type, a results dataframe for significant genes is stored in `myRCTD@de_results$sig_gene_list`. In particular, notice the columns `Z_score` (Z-score), `log_fc` (estimated DE loge-fold-change), and `p_val` (p-value). We also have the mean and standard errors of loge expression in each of the two regions (`mean_0`, `mean_1`, `sd_0`, and `sd_1`). We will focus on cell type 10. Furthermore, we will examine the original Lsamp gene, which was detected to be significantly differentially expressed in cell type 10. CSIDE model fits for all genes are stored in `myRCTD@de_results$gene_fits`, and we demonstrate below how to access the point estimates, standard errors, and convergence.
 
 ```{r CSIDE_results,  fig.width = 8, fig.height=8}
 #print results for cell type '18'

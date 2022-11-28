@@ -306,6 +306,17 @@ be present:
 -   `conv`: whether C-SIDE converged for this gene (required to achieve
     significance).
 
+In the case of running C-SIDE with a single explanatory variable
+(`explanatory.variable`), the following columns will be present:
+
+-   `mean_0`: the estimated log gene expression of locations where
+    `explanatory.variable = 0` (i.e. the intercept).
+-   `sd_0`: the standard error of `mean_0`.
+-   `mean_1`: the estimated log gene expression of locations where
+    `explanatory.variable = 1` (i.e. the region with maximal explanatory
+    variable).
+-   `sd_1`: the standard error of `mean_1`.
+
 In the case of categorical-mode C-SIDE, C-SIDE performs pairwise Z-tests
 between pairs of regions, with the following columns will be present in
 these dataframes:
