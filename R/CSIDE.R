@@ -16,7 +16,7 @@
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occurring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -33,7 +33,7 @@
 #' @export
 run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
-                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01,
+                          sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = .01,
                           test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = 0.4, test_error = F) {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
@@ -69,7 +69,7 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -85,7 +85,7 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
 run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NULL,
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
-                            PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = .01, test_genes_sig = T,
+                            PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = .01, test_genes_sig = T,
                             logs=F, test_error = F) {
   X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
   region_thresh <- cell_type_threshold / 4
@@ -127,7 +127,7 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -144,7 +144,7 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
 run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
                            cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                           weight_threshold = NULL, sigma_gene = T,
-                           PRECISION.THRESHOLD = 0.01, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T,
+                           PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = 0.01, test_genes_sig = T,
                           logs=F, log_fc_thresh = 0.4, test_error = F) {
   X2 <- build.designmatrix.regions(myRCTD, region_list)
   barcodes <- rownames(X2)
@@ -182,7 +182,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param test_mode (default 'individual') if 'individual', tests for DE individually for each parameter. If 'categorical', then tests for differences
 #' across multiple categorical parameters
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -200,7 +200,7 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' @export
 run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
-                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
+                          sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, cell_type_specific = NULL,
                       params_to_test = NULL, normalize_expr = F, logs=F, log_fc_thresh = 0.4,
                       cell_type_filter = NULL, test_error = F) {
@@ -250,7 +250,7 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
 #' @param test_mode (default 'individual') if 'individual', tests for DE individually for each parameter. If 'categorical', then tests for differences
 #' across multiple categorical parameters
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -269,7 +269,7 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5
 #' @export
 run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_threshold = 5e-5, cell_type_threshold = 125,
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
-                          sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
+                          sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
                           logs=F, cell_type_filter = NULL, log_fc_thresh = 0.4, test_error = FALSE) {
   if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold == 10 ||
@@ -578,7 +578,7 @@ find_sig_genes_individual <- function(cell_type, cell_types, gene_fits, gene_lis
 }
 
 get_de_gene_fits <- function(X1,X2,my_beta, nUMI, gene_list, cell_types, puck, barcodes, sigma_init, test_mode,
-                             numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.01, params_to_test = 2, logs=F) {
+                             numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.05, params_to_test = 2, logs=F) {
   results_list <- fit_de_genes(X1,X2,my_beta, nUMI, gene_list, puck, barcodes,
                                sigma_init, test_mode, numCores = numCores,
                                sigma_gene = sigma_gene,
@@ -636,7 +636,7 @@ get_de_gene_fits <- function(X1,X2,my_beta, nUMI, gene_list, cell_types, puck, b
               precision_mat = precision_mat, sigma_g = sigma_g, con_mat = con_mat, con_all = con_all, error_mat = error_mat))
 }
 
-fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_init, test_mode, numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.01,
+fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_init, test_mode, numCores = 4, sigma_gene = T, PRECISION.THRESHOLD = 0.05,
                          logs=F) {
   results_list <- list()
   if(numCores == 1) {

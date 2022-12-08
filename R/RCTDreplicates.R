@@ -107,7 +107,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
 #' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
 #' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.95 for full_mode.
-#' @param PRECISION.THRESHOLD (default 0.01) for checking for convergence, the maximum parameter change per algorithm step
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
 #' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occuring often enough
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
@@ -129,7 +129,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @export
 run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variable.replicates = NULL, X.replicates = NULL, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
-                                 sigma_gene = T, PRECISION.THRESHOLD = 0.01, cell_types_present = NULL,
+                                 sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                                  fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
                                  de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F,
                                  params_to_test = NULL, test_mode = 'individual') {
