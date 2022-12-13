@@ -62,6 +62,21 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
 #for ..., think of alpha, lambda, constrain = TRUE
 #either bead_mode is true and nUMI is scalar
 #or bead_mode is false and nUMI is vector
+
+# scratch
+#calc_log_l_vec(prediction, B)
+#d_all <- calc_Q_all(B, prediction)
+#eps <- 1e-12
+#calc_log_l_vec(abs(S%*%(solution)), B)
+#changer <- c(1,0,0,0,0,0,0,0,0,0,0,0,0,0)
+#changer <- c(0,1,0,0,0,0,0,0,0,0,0,0,0,0)
+#(calc_log_l_vec(abs(S%*%(c(solution + eps*changer))), B) - calc_log_l_vec(abs(S%*%(solution)), B) )/ eps
+
+#inv <- which.max(d_all$d2_vec)
+#prediction[inv]
+#B[inv]
+#plot(X_vals, Q_mat[2,])
+
 solveWLS<-function(S,B,initialSol, nUMI, bulk_mode = F, constrain = F){
   solution<-pmax(initialSol,0)
   prediction = abs(S%*%solution)

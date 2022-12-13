@@ -1,7 +1,7 @@
 Package: spacexr
 Type: Package
 Title: SpatialeXpressionR: Cell type identification and cell type-specific differential expression in spatial transcriptomics
-Version: 2.0.8
+Version: 2.1.0
 Author: Dylan Cable
 Maintainer: <dcable@mit.edu>
 Description: cell type identification and cell type-specific differential expression for spatial transcriptomics
@@ -26,5 +26,5 @@ Imports:
 	fields,
 	mgcv,
 	CompQuadForm
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2
 VignetteBuilder: knitr

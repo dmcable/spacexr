@@ -340,10 +340,14 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   if(test_error)
     return(myRCTD)
   barcodes <- res$barcodes; my_beta <- res$my_beta
-  set_likelihood_vars(myRCTD@internal_vars$Q_mat, myRCTD@internal_vars$X_vals)
-  if(sigma_gene)
-    set_global_Q_all()
   sigma_init <- as.character(100*myRCTD@internal_vars$sigma)
+  if(sigma_gene) {
+    set_global_Q_all()
+    sigma_set <- sigma_init
+    set_likelihood_vars(Q_mat_all[[sigma]], X_vals, sigma = sigma_set)
+  } else {
+    set_likelihood_vars_sigma(sigma_init)
+  }
   gene_fits <- get_de_gene_fits(X1[barcodes, , drop = FALSE],X2[barcodes, , drop = FALSE],my_beta, nUMI[barcodes], gene_list_tot,
                                 cell_types, restrict_puck(puck, barcodes), barcodes, sigma_init,
                                 test_mode, numCores = myRCTD@config$max_cores, sigma_gene = sigma_gene,
@@ -643,6 +647,7 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
     for(i in 1:length(gene_list)) {
       message(i)
       gene <- gene_list[i]
+      print(gene)
       Y <- puck@counts[gene, barcodes]
       results_list[[i]] <- estimate_gene_wrapper(Y,X1,X2,my_beta, nUMI, sigma_init, test_mode, verbose = F, n.iter = 200, MIN_CHANGE = 1e-3, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD)
     }

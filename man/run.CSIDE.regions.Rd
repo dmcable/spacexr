@@ -13,12 +13,12 @@ run.CSIDE.regions(
   doublet_mode = T,
   weight_threshold = NULL,
   sigma_gene = T,
-  PRECISION.THRESHOLD = 0.01,
+  PRECISION.THRESHOLD = 0.05,
   cell_types_present = NULL,
   fdr = 0.01,
   test_genes_sig = T,
   logs = F,
-  log_fc_thresh = log_fc_thresh,
+  log_fc_thresh = 0.4,
   test_error = F
 )
 }
@@ -42,7 +42,7 @@ in \code{cell_types} per pixel to be included in the model. Default 0.99 for dou
 
 \item{sigma_gene}{(default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.}
 
-\item{PRECISION.THRESHOLD}{(default 0.01) for checking for convergence, the maximum parameter change per algorithm step}
+\item{PRECISION.THRESHOLD}{(default 0.05) for checking for convergence, the maximum parameter change per algorithm step}
 
 \item{cell_types_present}{cell types (a superset of `cell_types`) to be considered as occuring often enough
 to consider for gene expression contamination during the step filtering out marker genes of other cell types.}

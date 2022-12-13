@@ -4,14 +4,17 @@
 \alias{set_likelihood_vars}
 \title{Sets Precomputed Probabiliites as Global Variable}
 \usage{
-set_likelihood_vars(Q_mat_loc, X_vals)
+set_likelihood_vars(Q_mat_loc, X_vals, sigma = NULL)
 }
 \arguments{
 \item{Q_mat_loc}{Matrix of precomputed probabiliites, as previously computed by \code{\link{get_Q_mat}}}
 
 \item{X_vals}{the x-values used for computing the likelihood functions.}
+
+\item{sigma}{(default NULL). If NULL, computes SQ_mat according to Q_mat_loc.
+Else, uses precomputed values of SQ_mat stored in SQ_mat_all with index sigma}
 }
 \description{
-Given a matrix, \code{Q_mat}, of P(y|x), under the Poisson-Lognormal model.
+Given a matrix, \code{Q_mat}, or log P(y|x), under the Poisson-Lognormal model.
 Sets this as a global variable for fast computations in the future.
 }
