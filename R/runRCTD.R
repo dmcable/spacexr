@@ -72,12 +72,12 @@ process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL
       numCores <- MAX_CORES
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="")
     doParallel::registerDoParallel(cl)
-    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val')
+    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'SQ_mat')
     results <- foreach::foreach(i = 1:(dim(beads)[1]), .export = environ) %dopar% { #.packages = c("quadprog"),
       #if(i %% 100 == 0)
       #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
       assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
-      assign("K_val",K_val, envir = globalenv());
+      assign("K_val",K_val, envir = globalenv()); assign("SQ_mat",Q_mat, envir = globalenv());
       result = process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
                                     class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
                                     CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
