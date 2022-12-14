@@ -23,9 +23,11 @@ cell type identities.}
 \item{nUMI}{Optional, a named (by cell barcode) list of total counts or UMI's appearing at each pixel. If not provided,
 nUMI will be assumed to be the total counts appearing on each pixel.}
 
-\item{min_UMI}{(default 100) minimum UMI count for cells to be included in the reference.
+\item{n_max_cells}{(default 10,000) the maximum number of cells per cell type. Will downsample if this number is exceeded.
 
 Counts should be untransformed count-level data}
+
+\item{min_UMI}{(default 100) minimum UMI count for cells to be included in the reference.}
 }
 \value{
 Returns a \code{\linkS4class{Reference}} object containing the counts matrix, cell type labels, and UMI vector

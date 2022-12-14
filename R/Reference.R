@@ -7,6 +7,7 @@
 #' @param nUMI Optional, a named (by cell barcode) list of total counts or UMI's appearing at each pixel. If not provided,
 #' nUMI will be assumed to be the total counts appearing on each pixel.
 #' @param min_UMI (default 100) minimum UMI count for cells to be included in the reference.
+#' @param n_max_cells (default 10,000) the maximum number of cells per cell type. Will downsample if this number is exceeded.
 #'
 #' Counts should be untransformed count-level data
 #'
