@@ -344,7 +344,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   if(sigma_gene) {
     set_global_Q_all()
     sigma_set <- sigma_init
-    set_likelihood_vars(Q_mat_all[[sigma]], X_vals, sigma = sigma_set)
+    set_likelihood_vars(Q_mat_all[[sigma_init]], X_vals, sigma = sigma_set)
   } else {
     set_likelihood_vars_sigma(sigma_init)
   }
