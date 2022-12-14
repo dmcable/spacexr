@@ -55,6 +55,12 @@ Our C-SIDE paper is available in *Nature Methods*
 
 ## News and Updates
 
+December 13th, 2022: Version 2.1.0 released. This is a substantial
+update to the behind-the-scenes implementation. Linear interpolation for
+the log-likelihood has been replaced with cubic spline interpolation.
+The result is increased numerical stability, convergence, and speed,
+especially for C-SIDE.
+
 September 1st, 2022: Our C-SIDE paper has been published in *Nature
 Methods* [here](https://www.nature.com/articles/s41592-022-01575-3). We
 have also written a research briefing about this article in *Nature

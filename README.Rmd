@@ -45,6 +45,8 @@ Code for generating the figures of our C-SIDE paper, Cell type-specific differen
 
 ## News and Updates
 
+December 13th, 2022: Version 2.1.0 released. This is a substantial update to the behind-the-scenes implementation. Linear interpolation for the log-likelihood has been replaced with cubic spline interpolation. The result is increased numerical stability, convergence, and speed, especially for C-SIDE.
+
 September 1st, 2022: Our C-SIDE paper has been published in *Nature Methods* [here](https://www.nature.com/articles/s41592-022-01575-3). We have also written a research briefing about this article in *Nature Methods* [here](https://www.nature.com/articles/s41592-022-01576-2).
 
 December 22nd, 2021: We are renaming this package (formerly RCTD) as *spacexr* (Spatial eXpression R package). We are also releasing *spacexr* 2.0, now featuring cell type-specific differential expression. The new algorithm, called C-SIDE, is introduced in our new paper which will be available soon. <!--[here](BIORXIV LINK). --> We are also introducing a feature where RCTD and C-SIDE can be run in batch across multiple experimental replicates.
