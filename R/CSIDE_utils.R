@@ -69,8 +69,8 @@ set_cell_types_assigned <- function(myRCTD) {
 }
 
 filter_barcodes_cell_types <- function(barcodes, cell_types, my_beta, thresh = 0.9999) {
-  barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types]) >= thresh)]
-  my_beta <- my_beta[barcodes,cell_types]
+  barcodes <- barcodes[(rowSums(my_beta[barcodes, cell_types, drop = FALSE]) >= thresh)]
+  my_beta <- my_beta[barcodes,cell_types, drop = FALSE]
   return (list(barcodes = barcodes, my_beta = my_beta))
 }
 
@@ -98,20 +98,22 @@ get_l_chi <- function(x2, d, S_inv, points_list, delta = 0 ) {
 get_gene_list_type <- function(my_beta, barcodes, cell_type, nUMI, gene_list_type, cti_renorm,
                                cell_types_present, gene_fits, test_mode = 'individual') {
   C = 15
-  N_cells <- colSums(my_beta[barcodes,])[cell_type]
-  UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .99))]
+  N_cells <- colSums(my_beta[barcodes,, drop = FALSE])[cell_type]
+  UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .99))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .80))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .80))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .5))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .5))]
   if(length(UMI_list) < 10)
-    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type] >= .01))]
+    UMI_list <- nUMI[names(which(my_beta[barcodes,cell_type, drop=FALSE] >= .01))]
   UMI_m <- median(UMI_list)
   expr_thresh <-  C / (N_cells * UMI_m)
   gene_list_type <- setdiff(gene_list_type,gene_list_type[which(cti_renorm[gene_list_type,cell_type] < expr_thresh)])
   cell_type_means <- cti_renorm[gene_list_type,cell_types_present]
-  cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
-  gene_list_type <- gene_list_type[which(cell_prop[gene_list_type,cell_type] > 0.5)]
+  if(dim(my_beta)[2] > 1) {
+    cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
+    gene_list_type <- gene_list_type[which(cell_prop[gene_list_type,cell_type] > 0.5)]
+  }
   if(test_mode == 'categorical') {
     n_cell_types <- dim(my_beta)[2]
     n_regions <- dim(gene_fits$con_all)[2] / n_cell_types
@@ -236,9 +238,6 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
     else
       stop(paste0('choose_cell_types: length(cell_types) is 0. According to the aggregate_cell_types fn, no cell types occured greater than cell_type_threshold of ',
                   cell_type_threshold, '. Please check that all data is present and consider reducing cell_type_threshold.'))
-  }
-  if(length(cell_types) == 1) {
-    stop('choose_cell_types: length(cell_types) is 1. This is currently not supported. Please consider adding another cell type or contact the developers to have us add in this capability.')
   }
   return(cell_types)
 }
