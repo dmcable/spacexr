@@ -239,7 +239,8 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
                                        q_thresh = 0.01, log_fc_thresh = 0.4,
                                        normalize_expr = F) {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
-  if(length(RCTD.replicates@RCTD.reps) < 3)
+  MIN.REPS <- 3
+  if(length(RCTD.replicates@RCTD.reps) < MIN.REPS)
     stop('CSIDE.population.inference: minimum of three replicates required for population mode.')
   RCTDde_list <- RCTD.replicates@RCTD.reps
   myRCTD <- RCTDde_list[[1]]
@@ -255,14 +256,20 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
   }
   de_results_list <- lapply(RCTDde_list, function(x) x@de_results)
   for(cell_type in cell_types) {
-    res <- one_ct_genes(cell_type, RCTDde_list, de_results_list, NULL, cell_types_present, params_to_test,
-                        plot_results = F, use.groups = use.groups,
-                        group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
-                        MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
-                        q_thresh = q_thresh, log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
-    de_pop_all[[cell_type]] <- res$de_pop
-    gene_final_all[[cell_type]] <- res$gene_final
-    final_df[[cell_type]] <- res$final_df
+    ct_pres <- sapply(RCTDde_list, function(x) cell_type %in% x@internal_vars_de$cell_types)
+    if(sum(ct_pres) >= MIN.REPS) {
+      res <- one_ct_genes(cell_type, RCTDde_list[ct_pres], de_results_list[ct_pres], NULL, cell_types_present, params_to_test,
+                          plot_results = F, use.groups = use.groups,
+                          group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
+                          MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
+                          q_thresh = q_thresh, log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
+      de_pop_all[[cell_type]] <- res$de_pop
+      gene_final_all[[cell_type]] <- res$gene_final
+      final_df[[cell_type]] <- res$final_df
+    } else {
+      warning(paste('CSIDE.population.inference: cell type', cell_type,
+                     'was removed from population-level analysis because it was run on fewer than the minimum required three replicates.'))
+    }
   }
   RCTD.replicates@population_de_results <- de_pop_all
   RCTD.replicates@population_sig_gene_list <- gene_final_all
