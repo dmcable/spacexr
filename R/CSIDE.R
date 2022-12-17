@@ -651,11 +651,13 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
   } else {
     cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="") #makeForkCluster
     doParallel::registerDoParallel(cl)
-    environ = c('estimate_effects_trust', 'solveIRWLS.effects_trust', 'Q_mat', 'K_val','X_vals',
+    environ = c('estimate_effects_trust', 'solveIRWLS.effects_trust', 'K_val','X_vals',
                 'calc_log_l_vec', 'get_d1_d2', 'calc_Q_all','psd','construct_hess_fast',
                 'choose_sigma_gene', 'estimate_gene_wrapper', 'check_converged_vec', 'calc_log_l_vec_fast')
     if(sigma_gene)
       environ <- c(environ, 'Q_mat_all', 'SQ_mat_all')
+    else
+      environ <- c(environ, 'Q_mat', 'SQ_mat')
     if (logs) {
       out_file = "logs/de_log.txt"
       if(!dir.exists('logs'))
@@ -669,11 +671,12 @@ fit_de_genes <- function(X1,X2,my_beta, nUMI, gene_list, puck, barcodes, sigma_i
           cat(paste0("Testing sample: ",i," gene ", gene_list[i],"\n"), file=out_file, append=TRUE)
         }
       }
-      assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
-      assign("K_val",K_val, envir = globalenv()); assign("SQ_mat",SQ_mat, envir = globalenv());
+      assign("X_vals",X_vals, envir = globalenv()); assign("K_val",K_val, envir = globalenv());
       if(sigma_gene) {
         assign("Q_mat_all",Q_mat_all, envir = globalenv());
         assign("SQ_mat_all",SQ_mat_all, envir = globalenv());
+      } else {
+        assign("Q_mat",Q_mat, envir = globalenv()); assign("SQ_mat",SQ_mat, envir = globalenv())
       }
       gene <- gene_list[i]
       Y <- puck@counts[gene, barcodes]

@@ -37,8 +37,6 @@ solve_sq <- function(Q_mat, X_vals) {
 
 set_global_Q_all <- function() {
   message('set_global_Q_all: begin')
-  message('fdgdfkgjdfgjlkdfvdfklv')
-  return(0)
   Q_mat_all <<- get_Q_all()
   X_vals <<- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexr"))
   SQ_mat_all <<- lapply(Q_mat_all, function(x) solve_sq(x, X_vals))
