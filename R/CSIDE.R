@@ -291,7 +291,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
                      paste(paste0(ct_remove, ', ', collapse = ""))))
     cell_types <- intersect(cell_types, names(which(cell_type_filter)))
   }
-  if(length(cell_types < 1))
+  if(length(cell_types) < 1)
     stop('run.CSIDE.general: zero cell types remain. Cannot run CSIDE with zero cell types.')
   message(paste0("run.CSIDE.general: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
   X1 <- check_designmatrix(X1, 'run.CSIDE.general')
