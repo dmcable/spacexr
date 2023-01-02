@@ -213,7 +213,8 @@ get_cell_type_ind <- function(X1,X2, n_cell_types) {
   return(cnames)
 }
 
-choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types) {
+choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshold, cell_types,
+                              my_beta, thresh, cell_type_filter) {
   cell_type_count <- aggregate_cell_types(myRCTD, barcodes, doublet_mode = doublet_mode)
   cell_types_default <- names(which(cell_type_count >= cell_type_threshold))
   passed_cell_types = !is.null(cell_types)
@@ -232,6 +233,13 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
   } else {
     cell_types <- cell_types_default
   }
+  if(!is.null(cell_type_filter)) {
+    ct_remove <- setdiff(cell_types, names(which(cell_type_filter)))
+    if(length(ct_remove) > 0)
+      message(paste0('Warning: run.CSIDE.general: removing the following cell types due to insufficient counts per region. Consider lowering cell_type_threshold or proceeding with removed cell types. Cell types: ',
+                     paste(paste0(ct_remove, ', ', collapse = ""))))
+    cell_types <- intersect(cell_types, names(which(cell_type_filter)))
+  }
   if(length(cell_types) == 0) {
     if(passed_cell_types)
       stop('choose_cell_types: length(cell_types) is 0. Please pass in at least one cell type in the list cell_types')
@@ -239,17 +247,46 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
       stop(paste0('choose_cell_types: length(cell_types) is 0. According to the aggregate_cell_types fn, no cell types occured greater than cell_type_threshold of ',
                   cell_type_threshold, '. Please check that all data is present and consider reducing cell_type_threshold.'))
   }
+  while(TRUE) {
+    if(length(cell_types) == 0) {
+      if(passed_cell_types)
+        stop('choose_cell_types: length(cell_types) is 0. Please pass in at least one cell type in the list cell_types')
+      else
+        stop(paste0('choose_cell_types: length(cell_types) is 0. According to the aggregate_cell_types fn, no cell types occured greater than cell_type_threshold of ',
+                    cell_type_threshold, '. Please check that all data is present and consider reducing cell_type_threshold.'))
+    }
+    res <- filter_barcodes_cell_types(barcodes, cell_types, my_beta[barcodes,], thresh = thresh)
+    cell_types_remain <- names(which(colSums(res$my_beta) >= cell_type_threshold))
+    diff_types <- setdiff(cell_types, cell_types_remain)
+    if(length(diff_types) == 0)
+      break
+    if(passed_cell_types)
+      stop(paste0('choose_cell_types: cannot include cell types: ', diff_types,
+                     ' because these cell types did not contain sufficient pixels passing total cell type weight of weight_threshold = ', thresh,
+                     '. Consider removing this cell type or lowering weight_threshold'))
+    else
+      warning(paste0('choose_cell_types: removing cell types: ', diff_types,
+                     ' because these cell types did not contain sufficient pixels passing total cell type weight of weight_threshold = ', thresh,
+                     '. Consider removing this cell type or lowering weight_threshold'))
+    cell_types <- cell_types_remain
+  }
   return(cell_types)
 }
 
-fdr_sig_genes <- function(gene_list_type, p_val, fdr) {
-  N_genes_type <- length(gene_list_type)
-  thresh <- (1:N_genes_type)/N_genes_type * fdr
-  if(any(p_val[order(p_val)] < thresh)) {
-    N_sig <- max(which(p_val[order(p_val)] < thresh))
-    gene_list_sig <- gene_list_type[order(p_val)[1:N_sig]]
+# method = 'BH' or 'locfdr'
+fdr_sig_genes <- function(gene_list_type, p_val, fdr, Z = NULL, method = 'BH') {
+  if(method == 'BH') {
+    N_genes_type <- length(gene_list_type)
+    thresh <- (1:N_genes_type)/N_genes_type * fdr
+    if(any(p_val[order(p_val)] < thresh)) {
+      N_sig <- max(which(p_val[order(p_val)] < thresh))
+      gene_list_sig <- gene_list_type[order(p_val)[1:N_sig]]
+    } else {
+      gene_list_sig <- c()
+    }
   } else {
-    gene_list_sig <- c()
+    lfdr <- locfdr(Z, nulltype = 1)
+    gene_list_sig <- (gene_list_type[lfdr$fdr < fdr])
   }
   return(gene_list_sig)
 }
