@@ -286,6 +286,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
     warning('run.CSIDE.general: some elements of barcodes do not appear in myRCTD object (myRCTD@results$weights), but they are required to be a subset. Downsampling barcodes to the intersection of the two sets.')
     barcodes <- intersect(barcodes,rownames(myRCTD@results$weights))
   }
+  cell_type_info <- myRCTD@cell_type_info$info
   if(doublet_mode) {
     my_beta <- get_beta_doublet(barcodes, cell_type_info[[2]], myRCTD@results$results_df, myRCTD@results$weights_doublet)
     thresh <- 0.999
@@ -329,10 +330,9 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   gene_list_tot <- filter_genes(puck, threshold = gene_threshold)
   if(length(gene_list_tot) == 0)
     stop('run.CSIDE.general: no genes past threshold. Please consider lowering gene_threshold.')
-  if(length(intersect(gene_list_tot,rownames(myRCTD@cell_type_info$info[[1]]))) == 0)
+  if(length(intersect(gene_list_tot,rownames(cell_type_info[[1]]))) == 0)
     stop('run.CSIDE.general: no genes that past threshold were contained in the single cell reference. Please lower gene threshold or ensure that there is agreement between the single cell reference genes and the SpatialRNA genes.')
   nUMI <- puck@nUMI[barcodes]
-  cell_type_info <- myRCTD@cell_type_info$info
   res <- filter_barcodes_cell_types(barcodes, cell_types, my_beta, thresh = thresh)
   if(test_error)
     return(myRCTD)
