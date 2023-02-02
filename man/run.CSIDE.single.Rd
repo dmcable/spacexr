@@ -20,7 +20,8 @@ run.CSIDE.single(
   normalize_expr = F,
   logs = F,
   log_fc_thresh = 0.4,
-  test_error = F
+  test_error = F,
+  fdr_method = "BH"
 )
 }
 \arguments{
@@ -60,6 +61,8 @@ to consider for gene expression contamination during the step filtering out mark
 
 \item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},

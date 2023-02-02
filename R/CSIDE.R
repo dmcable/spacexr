@@ -275,7 +275,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
                           sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
                           logs=F, cell_type_filter = NULL, log_fc_thresh = 0.4, test_error = FALSE, fdr_method = 'BH') {
-  if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold == 10 ||
+  if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold <= 10 ||
      (!is.null(weight_threshold) && weight_threshold == 0.1))
     warning('run.CSIDE.general: some parameters are set to the CSIDE vignette values, which are intended for testing but not proper execution. For more accurate results, consider using the default parameters to this function.')
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')

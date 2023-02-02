@@ -24,13 +24,15 @@
 #' @param MAX_MULTI_TYPES (multi-mode only) Default 4, max number of cell types per pixel
 #' @param cell_type_info Default NULL, option to pass in \code{cell_type_info} directly
 #' @param keep_reference (Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object
+#' @param CONFIDENCE_THRESHOLD (Default 5) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence
+#' @param DOUBLET_THRESHOLD (Default 20) the penalty weight of predicting a doublet instead of a singlet for a pixel
 #' @return an \code{\linkS4class{RCTD.replicates}} object, which is ready to run the \code{\link{run.RCTD.replicates}} function
 #' @export
 create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_names, group_ids = NULL, max_cores = 4, test_mode = FALSE,
                                    gene_cutoff = 0.000125, fc_cutoff = 0.5, gene_cutoff_reg = 0.0002,
                                    fc_cutoff_reg = 0.75, UMI_min = 100, UMI_max = 20000000, UMI_min_sigma = 300,
                         class_df = NULL, CELL_MIN_INSTANCE = 25, cell_type_names = NULL, MAX_MULTI_TYPES = 4,
-                        keep_reference = F) {
+                        keep_reference = F, CONFIDENCE_THRESHOLD = 5, DOUBLET_THRESHOLD = 20) {
   if(is.null(cell_type_names))
     cell_type_names <- levels(reference@cell_types)
   cell_type_info <- process_cell_type_info(reference, cell_type_names = cell_type_names,
@@ -57,7 +59,8 @@ create.RCTD.replicates <- function(spatialRNA.replicates, reference, replicate_n
                                         gene_cutoff = gene_cutoff, fc_cutoff = fc_cutoff, gene_cutoff_reg = gene_cutoff_reg,
                                         fc_cutoff_reg = fc_cutoff_reg, UMI_min = UMI_min, UMI_max = UMI_max, UMI_min_sigma = UMI_min_sigma,
                                         class_df = class_df, CELL_MIN_INSTANCE = CELL_MIN_INSTANCE, cell_type_names = cell_type_names, MAX_MULTI_TYPES = MAX_MULTI_TYPES,
-                                        cell_type_profiles = cell_type_info[[1]], keep_reference = F)
+                                        cell_type_profiles = cell_type_info[[1]], keep_reference = F,
+                                  CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
   }
   new("RCTD.replicates", RCTD.reps = RCTD.reps, group_ids = group_ids)
 }
@@ -112,7 +115,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
 #' @param fdr (default 0.01) false discovery rate for hypothesis testing
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
-#' @param population_de whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)
+#' @param population_de (default FALSE) whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)
 #' @param replicate_index (default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE
 #' @param de_mode (default 'single', otherwise 'nonparam' or 'general') if 'single', calls \code{\link{run.CSIDE.single}}.
 #' If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code{\link{run.CSIDE}}.
@@ -130,7 +133,7 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variable.replicates = NULL, X.replicates = NULL, cell_type_threshold = 125,
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
-                                 fdr = .01, population_de = T, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
+                                 fdr = .01, population_de = F, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
                                  de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F,
                                  params_to_test = NULL, test_mode = 'individual') {
   if(!(de_mode %in% c('single','nonparam', 'general')))
@@ -185,7 +188,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
     }
   }
   if(population_de)
-    RCTD.replicates <- CSIDE.population.inference(RCTD.replicates, log_fc_thresh = log_fc_thresh)
+    RCTD.replicates <- CSIDE.population.inference(RCTD.replicates, log_fc_thresh = log_fc_thresh, fdr = fdr)
   return(RCTD.replicates)
 }
 
@@ -226,19 +229,23 @@ merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param MIN.CONV.REPLICATES (default 2) the minimum number of replicates (if not use.groups) for which a gene must converge
 #' @param MIN.CONV.GROUPS (default 2) the minimum number of groups (if use.groups) for which a gene must converge
 #' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
-#' @param q_thresh (default 0.01) false discovery rate
+#' @param fdr (default 0.01) false discovery rate
 #' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. Note, for population mode, only the first parameter is tested.
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition
+#' @param meta (default FALSE) if TRUE, conducts population inference using general meta regression
+#' @param meta.design.matrix (default NULL) if meta == TRUE, then this is the design matrix for meta regression. Rows are samples and named columns are covariates.
+#' @param meta.test_var (default 'intrcpt') if meta == TRUE, this indicates which variable is tested in the meta regression.
+#' By default the intercept is tested, but one can also test for fixed effects of other covariates.
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE population-level algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
 CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
                                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5,
-                                       q_thresh = 0.01, log_fc_thresh = 0.4,
-                                       normalize_expr = F) {
-  message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups))
+                                       fdr = 0.01, log_fc_thresh = 0.4,
+                                       normalize_expr = F, meta = FALSE, meta.design.matrix = NULL, meta.test_var = 'intrcpt') {
+  message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups, ', and meta = ', meta))
   MIN.REPS <- 3
   if(length(RCTD.replicates@RCTD.reps) < MIN.REPS)
     stop('CSIDE.population.inference: minimum of three replicates required for population mode.')
@@ -262,7 +269,8 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
                           plot_results = F, use.groups = use.groups,
                           group_ids = RCTD.replicates@group_ids, MIN.CONV.REPLICATES = MIN.CONV.REPLICATES,
                           MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
-                          q_thresh = q_thresh, log_fc_thresh = log_fc_thresh, normalize_expr = normalize_expr)
+                          q_thresh = fdr, log_fc_thresh = log_fc_thresh,
+                          normalize_expr = normalize_expr, meta = meta, meta.design.matrix = meta.design.matrix, meta.test_var = meta.test_var)
       de_pop_all[[cell_type]] <- res$de_pop
       gene_final_all[[cell_type]] <- res$gene_final
       final_df[[cell_type]] <- res$final_df

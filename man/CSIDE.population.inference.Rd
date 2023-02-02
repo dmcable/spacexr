@@ -11,9 +11,12 @@ CSIDE.population.inference(
   MIN.CONV.REPLICATES = 2,
   MIN.CONV.GROUPS = 2,
   CT.PROP = 0.5,
-  q_thresh = 0.01,
+  fdr = 0.01,
   log_fc_thresh = 0.4,
-  normalize_expr = F
+  normalize_expr = F,
+  meta = FALSE,
+  meta.design.matrix = NULL,
+  meta.test_var = "intrcpt"
 )
 }
 \arguments{
@@ -28,11 +31,18 @@ replicates must be provided.}
 
 \item{CT.PROP}{(default 0.5) minimum ratio of gene expression within cell type compared to other cell types}
 
-\item{q_thresh}{(default 0.01) false discovery rate}
+\item{fdr}{(default 0.01) false discovery rate}
 
 \item{log_fc_thresh}{(default 0.4) minimum natural log estimated DE threshold}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition}
+
+\item{meta}{(default FALSE) if TRUE, conducts population inference using general meta regression}
+
+\item{meta.design.matrix}{(default NULL) if meta == TRUE, then this is the design matrix for meta regression. Rows are samples and named columns are covariates.}
+
+\item{meta.test_var}{(default 'intrcpt') if meta == TRUE, this indicates which variable is tested in the meta regression.
+By default the intercept is tested, but one can also test for fixed effects of other covariates.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. Note, for population mode, only the first parameter is tested.}

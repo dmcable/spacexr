@@ -25,7 +25,8 @@ run.CSIDE(
   logs = F,
   log_fc_thresh = 0.4,
   cell_type_filter = NULL,
-  test_error = F
+  test_error = F,
+  fdr_method = "BH"
 )
 }
 \arguments{
@@ -72,6 +73,8 @@ Setting normalize_expr = TRUE is only valid for testing single parameters with t
 
 \item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

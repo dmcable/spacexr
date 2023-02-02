@@ -55,6 +55,19 @@ Our C-SIDE paper is available in *Nature Methods*
 
 ## News and Updates
 
+February 1st, 2023: Version 2.2.0 released. This is a significant
+expansion of the functionality of C-SIDE. For multi-sample analysis,
+using meta-regression, we have added the ability to add in covariates,
+such as time, age, case vs. control, etc, and to test along these
+covariates. An example can be found in [Population-level RCTD and
+C-SIDE](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html)
+Vignette under the “Population inference: meta regression” subheader.
+
+substantial update to the behind-the-scenes implementation. Linear
+interpolation for the log-likelihood has been replaced with cubic spline
+interpolation. The result is increased numerical stability, convergence,
+and speed, especially for C-SIDE.
+
 December 13th, 2022: Version 2.1.0 released. This is a substantial
 update to the behind-the-scenes implementation. Linear interpolation for
 the log-likelihood has been replaced with cubic spline interpolation.

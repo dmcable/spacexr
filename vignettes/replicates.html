@@ -299,8 +299,8 @@ pre code {
   border-radius: 4px;
 }
 
-.tabset-dropdown > .nav-tabs > li.active:before {
-  content: "";
+.tabset-dropdown > .nav-tabs > li.active:before, .tabset-dropdown > .nav-tabs.nav-tabs-open:before {
+  content: "\e259";
   font-family: 'Glyphicons Halflings';
   display: inline-block;
   padding: 10px;
@@ -308,16 +308,9 @@ pre code {
 }
 
 .tabset-dropdown > .nav-tabs.nav-tabs-open > li.active:before {
-  content: "";
-  border: none;
-}
-
-.tabset-dropdown > .nav-tabs.nav-tabs-open:before {
-  content: "";
+  content: "\e258";
   font-family: 'Glyphicons Halflings';
-  display: inline-block;
-  padding: 10px;
-  border-right: 1px solid #ddd;
+  border: none;
 }
 
 .tabset-dropdown > .nav-tabs > li.active {
@@ -371,18 +364,13 @@ Data: Differential Expression with Multiple Experimental Replicates</h1>
 
 
 <pre class="r"><code>library(spacexr)
-library(Matrix)</code></pre>
-<pre><code>## Warning: package &#39;Matrix&#39; was built under R version 4.1.2</code></pre>
-<pre class="r"><code>library(doParallel)</code></pre>
-<pre><code>## Warning: package &#39;doParallel&#39; was built under R version 4.1.2</code></pre>
+library(Matrix)
+library(doParallel)</code></pre>
 <pre><code>## Loading required package: foreach</code></pre>
-<pre><code>## Warning: package &#39;foreach&#39; was built under R version 4.1.2</code></pre>
 <pre><code>## Loading required package: iterators</code></pre>
-<pre><code>## Warning: package &#39;iterators&#39; was built under R version 4.1.2</code></pre>
 <pre><code>## Loading required package: parallel</code></pre>
-<pre class="r"><code>library(ggplot2)</code></pre>
-<pre><code>## Warning: package &#39;ggplot2&#39; was built under R version 4.1.2</code></pre>
-<pre class="r"><code>datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;spacexr&#39;)# directory for sample Slide-seq dataset
+<pre class="r"><code>library(ggplot2)
+datadir &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette&#39;,package = &#39;spacexr&#39;)# directory for sample Slide-seq dataset
 datadir2 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep2&#39;,package = &#39;spacexr&#39;)
 datadir3 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep3&#39;,package = &#39;spacexr&#39;)
 datadir4 &lt;- system.file(&quot;extdata&quot;,&#39;SpatialRNA/Vignette_rep4&#39;,package = &#39;spacexr&#39;)
@@ -496,30 +484,30 @@ replicates. This function runs RCTD on each replicate in the
 #&gt; run.RCTD.replicates: running RCTD for replicate 1
 #&gt; fitBulk: decomposing bulk
 #&gt; chooseSigma: using initial Q_mat with sigma =  1
-#&gt; Likelihood value: 1972.07535729081
+#&gt; Likelihood value: 1972.07376580346
 #&gt; Sigma value:  0.84
-#&gt; Likelihood value: 1966.20146658676
+#&gt; Likelihood value: 1966.20345908295
 #&gt; Sigma value:  0.84
 #&gt; run.RCTD.replicates: running RCTD for replicate 2
 #&gt; fitBulk: decomposing bulk
 #&gt; chooseSigma: using initial Q_mat with sigma =  1
-#&gt; Likelihood value: 1974.47864909909
+#&gt; Likelihood value: 1974.77542702319
 #&gt; Sigma value:  0.84
-#&gt; Likelihood value: 1968.93719541325
+#&gt; Likelihood value: 1969.28192633095
 #&gt; Sigma value:  0.84
 #&gt; run.RCTD.replicates: running RCTD for replicate 3
 #&gt; fitBulk: decomposing bulk
 #&gt; chooseSigma: using initial Q_mat with sigma =  1
-#&gt; Likelihood value: 1973.43101266563
+#&gt; Likelihood value: 1973.42952348242
 #&gt; Sigma value:  0.84
-#&gt; Likelihood value: 1967.72883590137
+#&gt; Likelihood value: 1967.73067452082
 #&gt; Sigma value:  0.84
 #&gt; run.RCTD.replicates: running RCTD for replicate 4
 #&gt; fitBulk: decomposing bulk
 #&gt; chooseSigma: using initial Q_mat with sigma =  1
-#&gt; Likelihood value: 1972.59183321592
+#&gt; Likelihood value: 1972.59047252235
 #&gt; Sigma value:  0.84
-#&gt; Likelihood value: 1966.71485575673
+#&gt; Likelihood value: 1966.71685085192
 #&gt; Sigma value:  0.84</code></pre>
 </div>
 <div id="running-cside" class="section level2">
@@ -530,7 +518,7 @@ Here, we pass in <code>exvar_list</code>, the list of explanatory
 variables for each replicate. We will use cell types 10 and 18 and a
 false discovery rate of 0.25. Next, we will set a gene threshold
 (i.e. minimum gene expression) of 0.01, and we will set a
-cell_type_threshold (minimum instances per cell type) of 5.</p>
+cell_type_threshold (minimum instances per cell type) of 3.</p>
 <p><strong>Warning</strong>: On this toy dataset, we have made several
 choices of parameters that are not recommended for regular use. On real
 datasets, we recommend first consulting the CSIDE default parameters.
@@ -539,61 +527,80 @@ This includes <code>gene_threshold</code> (default 5e-5),
 (default 0.01). Please see <code>?run.CSIDE.replicates</code> for more
 information on these parameters.</p>
 <pre class="r"><code>#de
-cell_types &lt;- c(&#39;10&#39;,&#39;18&#39;)
-myRCTD.reps &lt;- run.CSIDE.replicates(myRCTD.reps, cell_types, exvar_list, gene_threshold = .01, 
-                         cell_type_threshold = 5, fdr = 0.25) 
+cell_types &lt;- c(&#39;10&#39;,&#39;18&#39;, &#39;6&#39;)
+myRCTD.reps &lt;- run.CSIDE.replicates(myRCTD.reps, cell_types, exvar_list, gene_threshold = .01, cell_type_threshold = 3, fdr = 0.25, weight_threshold = 0.8) 
 #&gt; run.CSIDE.replicates: running CSIDE for replicate 1
 #&gt; Warning in run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types,
 #&gt; cell_type_threshold = cell_type_threshold, : run.CSIDE.general: some parameters
 #&gt; are set to the CSIDE vignette values, which are intended for testing but
 #&gt; not proper execution. For more accurate results, consider using the default
 #&gt; parameters to this function.
-#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18
+#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18, 6
 #&gt; run.CSIDE.general: configure params_to_test = 2,
 #&gt; filter_genes: filtering genes based on threshold = 0.01
+#&gt; set_global_Q_all: begin
+#&gt; set_global_Q_all: finished
 #&gt; run.CSIDE.replicates: running CSIDE for replicate 2
 #&gt; Warning in run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types,
 #&gt; cell_type_threshold = cell_type_threshold, : run.CSIDE.general: some parameters
 #&gt; are set to the CSIDE vignette values, which are intended for testing but
 #&gt; not proper execution. For more accurate results, consider using the default
 #&gt; parameters to this function.
-#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18
+#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18, 6
 #&gt; run.CSIDE.general: configure params_to_test = 2,
 #&gt; filter_genes: filtering genes based on threshold = 0.01
+#&gt; set_global_Q_all: begin
+#&gt; set_global_Q_all: finished
 #&gt; run.CSIDE.replicates: running CSIDE for replicate 3
 #&gt; Warning in run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types,
 #&gt; cell_type_threshold = cell_type_threshold, : run.CSIDE.general: some parameters
 #&gt; are set to the CSIDE vignette values, which are intended for testing but
 #&gt; not proper execution. For more accurate results, consider using the default
 #&gt; parameters to this function.
-#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18
+#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18, 6
 #&gt; run.CSIDE.general: configure params_to_test = 2,
 #&gt; filter_genes: filtering genes based on threshold = 0.01
+#&gt; set_global_Q_all: begin
+#&gt; set_global_Q_all: finished
 #&gt; run.CSIDE.replicates: running CSIDE for replicate 4
 #&gt; Warning in run.CSIDE.general(myRCTD, X1, X2, barcodes, cell_types,
 #&gt; cell_type_threshold = cell_type_threshold, : run.CSIDE.general: some parameters
 #&gt; are set to the CSIDE vignette values, which are intended for testing but
 #&gt; not proper execution. For more accurate results, consider using the default
 #&gt; parameters to this function.
-#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18
+#&gt; run.CSIDE.general: running CSIDE with cell types 10, 18, 6
 #&gt; run.CSIDE.general: configure params_to_test = 2,
 #&gt; filter_genes: filtering genes based on threshold = 0.01
-#&gt; CSIDE.population.inference: running population DE inference with use.groups=FALSE
+#&gt; set_global_Q_all: begin
+#&gt; set_global_Q_all: finished
+
+saveRDS(myRCTD.reps,file.path(savedir,&#39;myRCTDde_reps.rds&#39;))</code></pre>
+<p>Note that the RCTD and CSIDE results on individual replicates are
+stored in <code>myRCTD.reps@RCTD.reps</code>, which is a list of
+<code>RCTD</code> objects containing individual CSIDE results as
+discussed in other vignettes.</p>
+</div>
+<div id="cside-population-inference" class="section level1">
+<h1>CSIDE population inference</h1>
+<p>After running CSIDE on each replicate, the next step is to compute
+population-level differential expression across all samples using
+<code>CSIDE.population.inference</code>. There are two ways to run this
+function, and we will explore both.</p>
+<div id="population-inference-default" class="section level2">
+<h2>Population inference: default</h2>
+<p>The default mode for <code>CSIDE.population.inference</code> is to
+aggregate differential expression estimates across samples to form a
+population “average” of differential expression:</p>
+<pre class="r"><code>myRCTD.reps &lt;- CSIDE.population.inference(myRCTD.reps, fdr = 0.25)
+#&gt; CSIDE.population.inference: running population DE inference with use.groups=FALSE, and meta = FALSE
 #&gt; [1] &quot;one_ct_genes: population inference on cell type, 10&quot;
 #&gt; [1] &quot;done&quot;
 #&gt; [1] &quot;one_ct_genes: population inference on cell type, 18&quot;
 #&gt; [1] &quot;done&quot;
-
-saveRDS(myRCTD.reps,file.path(savedir,&#39;myRCTDde_reps.rds&#39;))</code></pre>
-</div>
-<div id="cside-results" class="section level2">
-<h2>CSIDE results</h2>
-<p>After running CSIDE, it is time to examine CSIDE results. Note that
-the RCTD and CSIDE results on individual replicates are stored in
-<code>myRCTD.reps@RCTD.reps</code>, which is a list of <code>RCTD</code>
-objects containing individual CSIDE results as discussed in other
-vignettes. For this reason, we now focus on population-level CSIDE
-results across the four replicates.</p>
+#&gt; [1] &quot;one_ct_genes: population inference on cell type, 6&quot;
+#&gt; [1] &quot;done&quot;</code></pre>
+<div id="cside-population-results" class="section level3">
+<h3>CSIDE population results</h3>
 <p>We will focus on cell type 10. Furthermore, we will examine the
 original Kcnip4 gene, which was detected to be significantly
 differentially expressed in cell type 10. Other genes, including
@@ -614,15 +621,83 @@ sig_gene &lt;- change_gene
 print(paste(&quot;following results hold for&quot;, sig_gene))
 #&gt; [1] &quot;following results hold for Kcnip4&quot;
 print(myRCTD.reps@population_sig_gene_df[[cell_type]]) 
-#&gt;        tau log_fc_est    sd_est    Z_est   p_cross ct_prop       expr
-#&gt; Kcnip4   0   1.076265 0.2893537 3.719548 0.8655419       1 0.01977088
-#&gt;              q_val            p    mean 1   mean 2   mean 3    mean 4      sd 1
-#&gt; Kcnip4 0.001995798 0.0001995798 0.7338686 1.237309 1.374599 0.9459153 0.5654198
-#&gt;             sd 2     sd 3      sd 4
-#&gt; Kcnip4 0.6492149 0.529537 0.5895584</code></pre>
+#&gt;               tau log_fc_est    sd_est     Z_est   p_cross ct_prop        expr
+#&gt; Kcnip4 0.00000000  1.0554374 0.2758673  3.825888 0.7345539       1 0.019770883
+#&gt; Rora   0.42836080  0.6876000 0.3963400  1.734874 0.1014808       1 0.002325036
+#&gt; Kcnd2  0.09014169 -0.4050107 0.1781208 -2.273799 0.3290451       1 0.014091530
+#&gt;              q_val            p     mean 1     mean 2     mean 3     mean 4
+#&gt; Kcnip4 0.000912112 0.0001303017  0.8401400  1.5089602 1.25066697  0.7088606
+#&gt; Rora   0.144835438 0.0827631075  1.0187850  2.4330355 0.54854271 -0.1151301
+#&gt; Kcnd2  0.080423340 0.0229780973 -0.2303601 -0.8156025 0.03587612 -0.5407490
+#&gt;             sd 1      sd 2      sd 3      sd 4
+#&gt; Kcnip4 0.5837606 0.6737911 0.4744952 0.5298941
+#&gt; Rora   0.6652035 1.0544742 0.5611421 0.5648168
+#&gt; Kcnd2  0.3620835 0.3392899 0.3558457 0.3247958</code></pre>
 <p>Finally, we will save population CSIDE results in the
 <code>savedir</code> directory:</p>
-<pre class="r"><code>save.CSIDE.replicates(myRCTD.reps, file.path(savedir,&#39;population&#39;))</code></pre>
+<pre class="r"><code>if(!dir.exists(file.path(savedir,&#39;population&#39;)))
+  dir.create(file.path(savedir,&#39;population&#39;))
+save.CSIDE.replicates(myRCTD.reps, file.path(savedir,&#39;population&#39;))</code></pre>
+</div>
+</div>
+<div id="population-inference-meta-regression" class="section level2">
+<h2>Population inference: meta regression</h2>
+<p>The second way to run CSIDE population inference is meta regression,
+which is more flexible than aggregating across samples. For example, one
+may control for covariates such as age and gender, as well as test
+across covariates such as timepoints or case vs. control. In this
+example, we will assume that the four samples came from two cases and
+two controls. Meta regression works by including a design matrix,
+<code>meta.design.matrix</code>, of named covariates across samples. In
+<code>CSIDE.population.inference</code>, we set the option
+<code>meta = TRUE</code>, and <code>meta.test_var = &#39;treat&#39;</code>, the
+variable we would like to test.</p>
+<pre class="r"><code>meta.design.matrix &lt;- data.frame(&#39;treat&#39; = c(0,1,0,1))
+print(meta.design.matrix)
+#&gt;   treat
+#&gt; 1     0
+#&gt; 2     1
+#&gt; 3     0
+#&gt; 4     1
+myRCTD.reps_meta &lt;- CSIDE.population.inference(myRCTD.reps, fdr = 0.25,
+                                          meta = TRUE,
+                                       meta.design.matrix = meta.design.matrix,
+                                       meta.test_var = &#39;treat&#39;)
+#&gt; CSIDE.population.inference: running population DE inference with use.groups=FALSE, and meta = TRUE
+#&gt; [1] &quot;one_ct_genes: population inference on cell type, 10&quot;
+#&gt; [1] &quot;done&quot;
+#&gt; [1] &quot;one_ct_genes: population inference on cell type, 18&quot;
+#&gt; [1] &quot;done&quot;
+#&gt; [1] &quot;one_ct_genes: population inference on cell type, 6&quot;
+#&gt; [1] &quot;done&quot;
+head(myRCTD.reps_meta@population_de_results$`10`)
+#&gt;             tau  log_fc_est    sd_est       Z_est    p_cross  ct_prop
+#&gt; Snap25 0.000000  0.51359922 0.3103883  1.65469895 0.82539758 1.000000
+#&gt; Kcnip4 0.000000 -0.07273497 0.5559337 -0.13083389 0.55737760 1.000000
+#&gt; Kcnd2  0.000000 -0.57725078 0.3456309 -1.67013660 0.73438010 1.000000
+#&gt; Rora   0.884643  0.05103254 1.1293624  0.04518704 0.08938231 1.000000
+#&gt; Lsamp  0.000000  0.50366348 0.4924901  1.02268751 0.97895051 1.000000
+#&gt; Calm2  1.199270 -1.09960186 1.3023646 -0.84431184 0.00118826 0.859978
+#&gt;                expr     q_val          p
+#&gt; Snap25 0.0016977534 0.3429495 0.09798558
+#&gt; Kcnip4 0.0197708833 0.9639582 0.89590671
+#&gt; Kcnd2  0.0140915301 0.3429495 0.09489234
+#&gt; Rora   0.0023250360 0.9639582 0.96395822
+#&gt; Lsamp  0.0065846141 0.6973665 0.30645562
+#&gt; Calm2  0.0005844512 0.6973665 0.39849517</code></pre>
+<p>Compared to the default analysis, this population-level analysis is
+measuring something different, the effect of treatment on differential
+expression. For example, the lowest p-value gene (yet not &lt; 0.05),
+Snap25, has an estimated effect of treatment of 0.56. Notice that Kcnip4
+is no longer estimated to have a large effect, because the question of
+difference between cases and controls is fundamentally different from
+estimating the average across samples.</p>
+<p>Finally, we will save population CSIDE results in the
+<code>savedir</code> directory:</p>
+<pre class="r"><code>if(!dir.exists(file.path(savedir,&#39;population_meta&#39;)))
+  dir.create(file.path(savedir,&#39;population_meta&#39;))
+save.CSIDE.replicates(myRCTD.reps_meta, file.path(savedir,&#39;population_meta&#39;))</code></pre>
+</div>
 </div>
 
 

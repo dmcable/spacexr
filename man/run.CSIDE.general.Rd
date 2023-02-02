@@ -25,7 +25,8 @@ run.CSIDE.general(
   logs = F,
   cell_type_filter = NULL,
   log_fc_thresh = 0.4,
-  test_error = FALSE
+  test_error = FALSE,
+  fdr_method = "BH"
 )
 }
 \arguments{
@@ -76,6 +77,8 @@ Setting normalize_expr = TRUE is only valid for testing single parameters with t
 
 \item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix X2.}

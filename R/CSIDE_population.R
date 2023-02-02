@@ -14,9 +14,12 @@ get_means_sds <- function(cell_type, gene, de_results_list, params_to_test) {
 }
 
 get_de_pop <- function(cell_type, de_results_list, cell_prop, params_to_test, use.groups = F, group_ids = NULL,
-                       MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5, S.MAX = 4) {
+                       MIN.CONV.REPLICATES = 2, MIN.CONV.GROUPS = 2, CT.PROP = 0.5, S.MAX = 4, meta = FALSE,
+                       meta.design.matrix = NULL, meta.test_var = 'intrcpt') {
   if(!use.groups)
     group_ids <- NULL
+  if(meta & use.groups)
+    stop('get_de_pop: invalid setting: if meta == TRUE, then cannot have use.groups == TRUE.')
   de_results <- de_results_list[[1]]
   ct_ind <- which(colnames(de_results$gene_fits$mean_val) == cell_type)
   L <- dim(de_results$gene_fits$s_mat)[2] / dim(de_results$gene_fits$mean_val)[2]
@@ -49,7 +52,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, params_to_test, us
     }
     con <- unlist(lapply(de_results_list, check_con))
     if(use.groups)
-      con <- unname(con & table(group_ids[con])[as.character(group_ids)] >= 2)
+      con <- unname(con & table(group_ids[con])[as.character(group_ids)] >= MIN.CONV.REPLICATES)
     used_groups <- names(table(group_ids[con]))
     if(sum(con) < MIN.CONV.REPLICATES || (use.groups && length(used_groups) < MIN.CONV.GROUPS)) {
       if(use.groups)
@@ -64,26 +67,48 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, params_to_test, us
         gid <- NULL
       else
         gid <- group_ids[con]
-      sig_p <- estimate_tau_group(means, sds, group_ids = gid)
-      var_t <- sds^2 + sig_p^2
-      if(!use.groups) {
-        var_est <- 1/sum(1 / var_t)
-        mean_est <- sum(means / var_t)*var_est
-        p_cross <- get_p_qf(means, sds)
+      if(!meta) {
+        sig_p <- estimate_tau_group(means, sds, group_ids = gid)
+        var_t <- sds^2 + sig_p^2
+        if(!use.groups) {
+          var_est <- 1/sum(1 / var_t)
+          mean_est <- sum(means / var_t)*var_est
+          p_cross <- get_p_qf(means, sds)
+        } else {
+          S2 <- 1/(aggregate(1/var_t,list(group_ids[con]),sum)$x)
+          E <- (aggregate(means/var_t,list(group_ids[con]),sum)$x)*S2
+          Delta <- estimate_tau_group(E, sqrt(S2))
+          var_T <- (Delta^2 + S2)
+          var_est <- 1/sum(1/var_T) # A_var
+          mean_est <- sum(E / var_T) * var_est # A_est
+          p_cross <- get_p_qf(E, sqrt(S2))
+          E_all <- rep(0, n_groups); s_all <- rep(-1, n_groups)
+          names(E_all) <- group_names; names(s_all) <- group_names
+          E_all[used_groups] <- E; s_all[used_groups] <- sqrt(S2)
+        }
+        sd_est <- sqrt(var_est)
+        Z_est <- mean_est / sd_est
       } else {
-        S2 <- 1/(aggregate(1/var_t,list(group_ids[con]),sum)$x)
-        E <- (aggregate(means/var_t,list(group_ids[con]),sum)$x)*S2
-        Delta <- estimate_tau_group(E, sqrt(S2))
-        var_T <- (Delta^2 + S2)
-        var_est <- 1/sum(1/var_T) # A_var
-        mean_est <- sum(E / var_T) * var_est # A_est
-        p_cross <- get_p_qf(E, sqrt(S2))
-        E_all <- rep(0, n_groups); s_all <- rep(-1, n_groups)
-        names(E_all) <- group_names; names(s_all) <- group_names
-        E_all[used_groups] <- E; s_all[used_groups] <- sqrt(S2)
+        metareg_data <- data.frame(cbind(meta.design.matrix[con, ,drop = F], 'mean' = means, 'sd' = sds))
+        m.qual <- tryCatch(metafor::rma(yi = mean,
+                                        sei = sd,
+                                        data = metareg_data,
+                                        method = "REML",
+                                        mods = formula(paste0('~',colnames(meta.design.matrix))), # colnames(design.matrix)
+                                        test = "z"), warning=function(w) 'warning',
+                           error = function(w) 'warning')
+        #sig_p, mean_est, sd_est, Z_est, p_cross
+        if(as.character(m.qual[1]) == 'warning') {
+          sig_p <- -1; mean_est <- 0; sd_est <- 0; Z_est <- 0; p_cross <- 0
+        } else {
+          test_var_ind <- which(rownames(m.qual$beta) == meta.test_var)
+          mean_est <- m.qual$beta[meta.test_var,]
+          sd_est <- m.qual$se[test_var_ind]
+          Z_est <- m.qual$zval[test_var_ind]
+          sig_p <- sqrt(m.qual$tau2)
+          p_cross <- m.qual$QEp
+        }
       }
-      sd_est <- sqrt(var_est)
-      Z_est <- mean_est / sd_est
       if(use.groups)
         de_pop[gene, ] <- c(sig_p, mean_est, sd_est, Z_est, p_cross, Delta, E_all, s_all)
       else
@@ -97,13 +122,15 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, params_to_test, us
 one_ct_genes <- function(cell_type, myRCTD_list, de_results_list, resultsdir, cell_types_present, params_to_test,
                          q_thresh = .01, p_thresh = 1, filter = T, order_gene = F, plot_results = T,
                          use.groups = F, group_ids = NULL, MIN.CONV.REPLICATES = 2,
-                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4, normalize_expr = F) {
+                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5, log_fc_thresh = 0.4, normalize_expr = F,
+                         meta = FALSE, meta.design.matrix = NULL, meta.test_var = 'intrcpt') {
   print(paste0('one_ct_genes: population inference on cell type, ', cell_type))
   myRCTD <- myRCTD_list[[1]]
   cell_type_means <- myRCTD@cell_type_info$info[[1]][,cell_types_present]
   cell_prop <- sweep(cell_type_means,1,apply(cell_type_means,1,max),'/')
   de_pop <- get_de_pop(cell_type, de_results_list, cell_prop, params_to_test, use.groups = use.groups, group_ids = group_ids,
-                       MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP)
+                       MIN.CONV.REPLICATES = MIN.CONV.REPLICATES, MIN.CONV.GROUPS = MIN.CONV.GROUPS, CT.PROP = CT.PROP,
+                       meta = meta, meta.design.matrix = meta.design.matrix, meta.test_var = meta.test_var)
   gene_big <- rownames(de_pop)[which(de_pop$tau >= 0)]
   p_vals <- 2*(pnorm(-abs(de_pop[gene_big,'Z_est'])))
   names(p_vals) <- gene_big
@@ -146,7 +173,6 @@ get_p_qf <- function(x, se, delta = 0) {
   n <- length(x)
   A <- matrix(-1/(n*(n-1)), nrow = n, ncol =n)
   diag(A) <- 1/n
-  A
   AS <- A %*% S
   lambda <- eigen(AS)$values
   max(CompQuadForm::imhof(var(x), pmax(lambda, 10^(-8)), epsabs = 10^(-8), epsrel = 10^(-8))$Qq, 0)

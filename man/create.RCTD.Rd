@@ -23,8 +23,8 @@ create.RCTD(
   MAX_MULTI_TYPES = 4,
   keep_reference = F,
   cell_type_profiles = NULL,
-  CONFIDENCE_THRESHOLD = 10,
-  DOUBLET_THRESHOLD = 25
+  CONFIDENCE_THRESHOLD = 5,
+  DOUBLET_THRESHOLD = 20
 )
 }
 \arguments{
@@ -64,9 +64,9 @@ number of available cores.}
 \item{cell_type_profiles}{Default NULL, option to pass in cell type profiles in directly as a genes by cell type matrix, including gene names and cell type names.
 If this option is used, reference will be ignored.}
 
-\item{CONFIDENCE_THRESHOLD}{(Default 10) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
+\item{CONFIDENCE_THRESHOLD}{(Default 5) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
 
-\item{DOUBLET_THRESHOLD}{(Default 25) the penalty weight of predicting a doublet instead of a singlet for a pixel}
+\item{DOUBLET_THRESHOLD}{(Default 20) the penalty weight of predicting a doublet instead of a singlet for a pixel}
 }
 \value{
 an \code{\linkS4class{RCTD}} object, which is ready to run the \code{\link{run.RCTD}} function

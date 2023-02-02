@@ -17,7 +17,7 @@ run.CSIDE.replicates(
   PRECISION.THRESHOLD = 0.05,
   cell_types_present = NULL,
   fdr = 0.01,
-  population_de = T,
+  population_de = F,
   replicate_index = NULL,
   normalize_expr = F,
   test_genes_sig_individual = F,
@@ -61,7 +61,7 @@ to consider for gene expression contamination during the step filtering out mark
 
 \item{fdr}{(default 0.01) false discovery rate for hypothesis testing}
 
-\item{population_de}{whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)}
+\item{population_de}{(default FALSE) whether population-level DE should be run (can also be run later using the \code{\link{CSIDE.population.inference}} function.)}
 
 \item{replicate_index}{(default all replicates) integer list of replicate indices (subset of 1:N_replicates) to be run for CSIDE}
 

@@ -116,22 +116,33 @@ myRCTD.reps <- run.RCTD.replicates(myRCTD.reps)
 ```
 ## Running CSIDE
 
-After creating the explanatory variables and running RCTD, we are now ready to run CSIDE using the `run.CSIDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 5.
+After creating the explanatory variables and running RCTD, we are now ready to run CSIDE using the `run.CSIDE.replicates` function. Here, we pass in `exvar_list`, the list of explanatory variables for each replicate. We will use cell types 10 and 18 and a false discovery rate of 0.25. Next, we will set a gene threshold (i.e. minimum gene expression) of 0.01, and we will set a cell_type_threshold (minimum instances per cell type) of 3.
 
 **Warning**: On this toy dataset, we have made several choices of parameters that are not recommended for regular use. On real datasets, we recommend first consulting the CSIDE default parameters. This includes `gene_threshold` (default 5e-5), `cell_type_threshold` (default 125), and `fdr` (default 0.01). Please see `?run.CSIDE.replicates` for more information on these parameters. 
 
 ```{r DEgenes}
 #de
-cell_types <- c('10','18')
-myRCTD.reps <- run.CSIDE.replicates(myRCTD.reps, cell_types, exvar_list, gene_threshold = .01, 
-                         cell_type_threshold = 5, fdr = 0.25) 
+cell_types <- c('10','18', '6')
+myRCTD.reps <- run.CSIDE.replicates(myRCTD.reps, cell_types, exvar_list, gene_threshold = .01, cell_type_threshold = 3, fdr = 0.25, weight_threshold = 0.8) 
 
 saveRDS(myRCTD.reps,file.path(savedir,'myRCTDde_reps.rds'))
 ```
 
-## CSIDE results
+Note that the RCTD and CSIDE results on individual replicates are stored in `myRCTD.reps@RCTD.reps`, which is a list of `RCTD` objects containing individual CSIDE results as discussed in other vignettes. 
 
-After running CSIDE, it is time to examine CSIDE results. Note that the RCTD and CSIDE results on individual replicates are stored in `myRCTD.reps@RCTD.reps`, which is a list of `RCTD` objects containing individual CSIDE results as discussed in other vignettes. For this reason, we now focus on population-level CSIDE results across the four replicates.
+# CSIDE population inference
+
+After running CSIDE on each replicate, the next step is to compute population-level differential expression across all samples using `CSIDE.population.inference`. There are two ways to run this function, and we will explore both. 
+
+## Population inference: default
+
+The default mode for `CSIDE.population.inference` is to aggregate differential expression estimates across samples to form a population "average" of differential expression:
+
+```{r CSIDE_population_default}
+myRCTD.reps <- CSIDE.population.inference(myRCTD.reps, fdr = 0.25)
+```
+
+### CSIDE population results
 
 We will focus on cell type 10. Furthermore, we will examine the original Kcnip4 gene, which was detected to be significantly differentially expressed in cell type 10. Other genes, including nonsignificant genes, can be observed in `myRCTD.reps@population_de_results`. As shown below, DE results on significant genes are stored in `population_sig_gene_df`. In particular, notice the columns `Z_est` (Z-score), `log_fc_est` (estimated DE coefficient), `sd_est` (standard error of DE coefficient), `p` (p-value), and `q_val` (q-value). Other columns of interest include `tau`, the estimated variance across samples, and `mean i` and `sd i`, which represent the DE point estimate and standard error on each of the four replicates.
 
@@ -146,6 +157,32 @@ print(myRCTD.reps@population_sig_gene_df[[cell_type]])
 Finally, we will save population CSIDE results in the `savedir` directory:
 
 ```{r results_save}
+if(!dir.exists(file.path(savedir,'population')))
+  dir.create(file.path(savedir,'population'))
 save.CSIDE.replicates(myRCTD.reps, file.path(savedir,'population'))
+```
+
+## Population inference: meta regression
+
+The second way to run CSIDE population inference is meta regression, which is more flexible than aggregating across samples. For example, one may control for covariates such as age and gender, as well as test across covariates such as timepoints or case vs. control. In this example, we will assume that the four samples came from two cases and two controls. Meta regression works by including a design matrix, `meta.design.matrix`, of named covariates across samples. In `CSIDE.population.inference`, we set the option `meta = TRUE`, and `meta.test_var = 'treat'`, the variable we would like to test.
+
+```{r CSIDE_population_meta}
+meta.design.matrix <- data.frame('treat' = c(0,1,0,1))
+print(meta.design.matrix)
+myRCTD.reps_meta <- CSIDE.population.inference(myRCTD.reps, fdr = 0.25,
+                                          meta = TRUE,
+                                       meta.design.matrix = meta.design.matrix,
+                                       meta.test_var = 'treat')
+head(myRCTD.reps_meta@population_de_results$`10`)
+```
+
+Compared to the default analysis, this population-level analysis is measuring something different, the effect of treatment on differential expression. For example, the lowest p-value gene (yet not < 0.05), Snap25, has an estimated effect of treatment of 0.56. Notice that Kcnip4 is no longer estimated to have a large effect, because the question of difference between cases and controls is fundamentally different from estimating the average across samples.
+
+Finally, we will save population CSIDE results in the `savedir` directory:
+
+```{r results_save_meta}
+if(!dir.exists(file.path(savedir,'population_meta')))
+  dir.create(file.path(savedir,'population_meta'))
+save.CSIDE.replicates(myRCTD.reps_meta, file.path(savedir,'population_meta'))
 ```
 

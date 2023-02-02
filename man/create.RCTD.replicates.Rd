@@ -22,7 +22,9 @@ create.RCTD.replicates(
   CELL_MIN_INSTANCE = 25,
   cell_type_names = NULL,
   MAX_MULTI_TYPES = 4,
-  keep_reference = F
+  keep_reference = F,
+  CONFIDENCE_THRESHOLD = 5,
+  DOUBLET_THRESHOLD = 20
 )
 }
 \arguments{
@@ -62,6 +64,10 @@ number of available cores.}
 \item{MAX_MULTI_TYPES}{(multi-mode only) Default 4, max number of cell types per pixel}
 
 \item{keep_reference}{(Default FALSE) if true, keeps the \code{reference} object stored within the \code{\linkS4class{RCTD}} object}
+
+\item{CONFIDENCE_THRESHOLD}{(Default 5) the minimum change in likelihood (compared to other cell types) necessary to determine a cell type identity with confidence}
+
+\item{DOUBLET_THRESHOLD}{(Default 20) the penalty weight of predicting a doublet instead of a singlet for a pixel}
 
 \item{cell_type_info}{Default NULL, option to pass in \code{cell_type_info} directly}
 }
