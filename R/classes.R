@@ -134,7 +134,7 @@ setClass("RCTD",
 #' to run RCTD and CSIDE across all replicates. Finally, multiple replicates can be combined with population-level
 #' differential expression inference using the \code{\link{CSIDE.population.inference}} function
 #'
-#' Created using the \code{\link{create.RCTD.replicates}} or \code{\link{merge.RCTD.objects}} functions.
+#' Created using the \code{\link{create.RCTD.replicates}} or \code{\link{merge_RCTD_objects}} functions.
 #' One can run RCTD using the \code{\link{run.RCTD.replicates}} function, and one can run CSIDE using the
 #' \code{\link{run.CSIDE.replicates}} function.
 #'

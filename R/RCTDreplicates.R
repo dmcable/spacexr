@@ -198,20 +198,20 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
 #' @param replicate_names a \code{character} vector of names for each replicate provided in \code{RCTD.reps}
 #' @param group_ids (default constant across replicates) a named integer vector (length number of replicates) containing the group id for each replicate.
 #' Names represent the replicate names, and replicates of the same group will be expected to be more similar than
-#' replicates across groups
+#' replicates across groups.
 #' @return an \code{\linkS4class{RCTD.replicates}} object, containing each \code{\linkS4class{RCTD}} object in \code{RCTD.reps}
 #' @export
-merge.RCTD.objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
+merge_RCTD_objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
   if(class(RCTD.reps) != 'list' || any(!unlist(lapply(RCTD.reps, function(x) class(x) == 'RCTD'))))
-    stop('merge.RCTD.objects: RCTD.reps must be a list of RCTD objects.')
+    stop('merge_RCTD_objects: RCTD.reps must be a list of RCTD objects.')
   if(length(RCTD.reps) <= 1)
-    stop('merge.RCTD.objects: length(RCTD.replicates) <= 1. This object must be a list of at least two RCTD objects.')
+    stop('merge_RCTD_objects: length(RCTD.replicates) <= 1. This object must be a list of at least two RCTD objects.')
   if(is.null(group_ids))
     group_ids <- rep(1, length(RCTD.reps))
   if(length(group_ids) != length(replicate_names))
-    stop('merge.RCTD.objects: group_ids and replicate_names must both be the same length as the total number of replicates.')
+    stop('merge_RCTD_objects: group_ids and replicate_names must both be the same length as the total number of replicates.')
   if(length(group_ids) != length(RCTD.reps))
-    stop('merge.RCTD.objects: group_ids must be the same length as the total number of replicates.')
+    stop('merge_RCTD_objects: group_ids must be the same length as the total number of replicates.')
   names(group_ids) <- replicate_names
   check_vector(group_ids, 'group_ids','create.RCTD.replicates', require_int = T)
   if(min(table(group_ids)) < 2)
