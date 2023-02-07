@@ -142,7 +142,7 @@ process_beads_multi <- function(cell_type_info, gene_list, puck, class_df = NULL
 #' @export
 fitPixels <- function(RCTD, doublet_mode = "doublet") {
   RCTD@internal_vars$cell_types_assigned <- TRUE
-  RCTD@config$doublet_mode <- doublet_mode
+  RCTD@config$RCTDmode <- doublet_mode
   set_likelihood_vars(RCTD@internal_vars$Q_mat, RCTD@internal_vars$X_vals)
   cell_type_info <- RCTD@cell_type_info$renorm
   if(doublet_mode == "doublet") {
