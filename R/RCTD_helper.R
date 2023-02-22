@@ -29,9 +29,9 @@ decompose_full <- function(cell_type_profiles, nUMI, bead, constrain = TRUE, OLS
   return(results)
 }
 
-check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_score, my_type, class_df, QL_score_cutoff, constrain, MIN.CHANGE = 0.001) {
+check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_score, my_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = 0.001) {
   candidates = rownames(score_mat)
-  singlet_score = get_singlet_score(cell_type_profiles, bead, UMI_tot, my_type, constrain, MIN.CHANGE = MIN.CHANGE)
+  singlet_score = singlet_scores[my_type]
   all_pairs = T; all_pairs_class = !is.null(class_df)
   other_class = my_type #other types present from this class
   for(i in 1:(length(candidates)-1)) {
@@ -58,7 +58,7 @@ check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_s
     all_pairs_class = all_class
   if(all_pairs_class && !all_pairs && length(other_class) > 1) {
     for (type in other_class[2:length(other_class)])
-      singlet_score = min(singlet_score, get_singlet_score(cell_type_profiles, bead, UMI_tot, type, constrain, MIN.CHANGE = MIN.CHANGE))
+      singlet_score = min(singlet_score, singlet_scores[type])
   }
   return(list(all_pairs = all_pairs, all_pairs_class = all_pairs_class, singlet_score = singlet_score))
 }
@@ -84,6 +84,12 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
       candidates = c(candidates, cell_type_info[[2]][1])
   score_mat = Matrix(0, nrow = length(candidates), ncol = length(candidates))
   rownames(score_mat) = candidates; colnames(score_mat) = candidates
+  singlet_scores <- numeric(length(candidates))
+  names(singlet_scores) <- candidates
+  for(type in candidates) {
+    singlet_scores[type] <- get_singlet_score(cell_type_profiles, bead, UMI_tot,
+                                              type, constrain, MIN.CHANGE = MIN.CHANGE)
+  }
   min_score = 0
   first_type = NULL; second_type = NULL
   first_class = F; second_class = F #indicates whether the first (resp second) refers to a class rather than a type
@@ -99,8 +105,8 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
       }
     }
   }
-  type1_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain, MIN.CHANGE = MIN.CHANGE)
-  type2_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain, MIN.CHANGE = MIN.CHANGE)
+  type1_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
+  type2_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
   if(!type1_pres$all_pairs_class && !type2_pres$all_pairs_class) {
     spot_class <- "reject"
     singlet_score = min_score + 2 * doublet_like_cutoff #arbitrary
@@ -130,7 +136,7 @@ process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class
   spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
   return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
               doublet_weights = doublet_weights, min_score = min_score, singlet_score = singlet_score,
-              conv_all = conv_all, conv_doublet = conv_doublet, score_mat = score_mat,
+              conv_all = conv_all, conv_doublet = conv_doublet, score_mat = score_mat, singlet_scores = singlet_scores,
               first_class = first_class, second_class = second_class))
 }
 

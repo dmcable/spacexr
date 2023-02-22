@@ -63,10 +63,9 @@ covariates. An example can be found in [Population-level RCTD and
 C-SIDE](https://raw.githack.com/dmcable/spacexr/master/vignettes/replicates.html)
 Vignette under the “Population inference: meta regression” subheader.
 
-substantial update to the behind-the-scenes implementation. Linear
-interpolation for the log-likelihood has been replaced with cubic spline
-interpolation. The result is increased numerical stability, convergence,
-and speed, especially for C-SIDE.
+Additionally, linear interpolation for the log-likelihood has been
+replaced with cubic spline interpolation. The result is increased
+numerical stability, convergence, and speed, especially for C-SIDE.
 
 December 13th, 2022: Version 2.1.0 released. This is a substantial
 update to the behind-the-scenes implementation. Linear interpolation for
@@ -102,6 +101,7 @@ You can install the current version of *spacexr* from
 
 ``` r
 # install.packages("devtools")
+options(timeout = 600000000) ### set this to avoid timeout error
 devtools::install_github("dmcable/spacexr", build_vignettes = FALSE)
 ```
 

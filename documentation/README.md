@@ -413,3 +413,44 @@ abnormal parameter choices such as `cell_type_threshold` in order to run
 properly. These parameter values will not lead to good results on real
 data. The default C-SIDE parameter values would be a much better choice.
 This warning is to make users aware of this discrepancy.
+
+-   Subtypes with RCTD: how do I create cell type assignments with RCTD
+    for precise subtypes?
+
+In general, RCTD in default mode is sufficient for discovering main cell
+types (e.g. T cell vs B cell vs Macrophage, etc). For cellular subtypes
+(e.g. CD4 TH1 cell vs CD4 TH2 cell), the main challenge is that having
+multiple similar cell types could prevent RCTD from confidently
+selecting a single subtype. Our recommended solution is to use the
+`class_df` option in RCTD (passed in as an option through the
+`create.RCTD` function). `class_df` is an optional `data.frame` that
+maps subtypes to higher-level cell types. When provided with `class_df`,
+the behavior of RCTD is to first attempt to confidently assign a
+subtype. If not possible, it will fall back on reporting the
+higher-level cell type, but also reports the top performing subtype if
+desired. Note that this discussion pertains to doublet mode of RCTD. The
+variable `class_df` can be created as follows:
+
+``` r
+subtypes <- c('CD4_TH1', 'CD4_TH2', 'CD8_Exhausted', 'CD8_Memory', 'Macrophage_Resident','Macrophage_Monocyte_Derived')
+cell_types <- c('CD4T', 'CD4T', 'CD8T', 'CD8T', 'Macrophage','Macrophage')
+class_df = data.frame(cell_types, row.names = subtypes)
+colnames(class_df)[1] = "class"
+print(class_df)
+```
+
+Next, `class_df`, can be passed into `create.RCTD` as follows:
+
+``` r
+myRCTD <- create.RCTD(spatialRNA, reference, class_df = class_df)
+```
+
+For interpreting the results of RCTD with `class_df` in doublet mode, in
+the `results_df` table, the boolean variables `first_class` and
+`second_class` represent, for the first and second cell type,
+respectively, whether an assignment was made on the class level
+(e.g. `first_class = TRUE`) vs. the subtype level
+(e.g. `first_class = FALSE`). In either case, the subtype assigned can
+be recovered through the usual `first_type` and `second_type` variables.
+If it is desired to obtain the cell class, then one should map the
+subtypes to cell type classes using the `class_df` data.frame.
