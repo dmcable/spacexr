@@ -82,3 +82,50 @@ get_class_df <- function(cell_type_names, use_classes = F) {
   }
   return(class_df)
 }
+
+
+#' Subset spatial object to selected barcodes
+#'
+#' Subsets an rctd object based on the input spatial barcode. 
+#' The function subset_rctd subsets the @spatialRNA, @originalSpatialRNA, and @results$weights slots of an RCTD/spacexr object.
+#'
+#' @param rctd_obj An RCTD/spacexr object
+#' @param st_spot_id A vector of scalar character strings that are spatial barcode to keep after subsetting. 
+#' These barcodes should match the spot names in the original spatial object slot of the RCTD/spacexr object used to generate the rctd_obj.
+#'
+#' @return An updated rctd object with rows corresponding only to the barcodes in st_spot_id
+#'
+#' @export
+subset_rctd = function(rctd_obj, st_spot_id){
+    # 1. Report current number of spots.
+    spot_ids_rctd = rownames(rctd_obj@results$weights)
+    message(paste0('Current spatial spot count before subset: ', length(spot_ids_rctd)))
+    
+    # 2. Subset input st_spot_id to only those that are in rctd_obj
+    st_spot_id = intersect(st_spot_id, spot_ids_rctd)
+    
+    # Throw an error if the subset of spot ids is empty.
+    if(length(st_spot_id) == 0){
+        stop('No spot to keep. Please check input st_spot_id. This should be same as the spot barcodes in spatial object used to generate the RCTD/spacexr object.')
+    }
+
+    # A. subset @spatialRNA slot
+    rctd_obj@spatialRNA@coords = rctd_obj@spatialRNA@coords[st_spot_id, ]
+    rctd_obj@spatialRNA@counts = rctd_obj@spatialRNA@counts[, st_spot_id]
+    rctd_obj@spatialRNA@nUMI   = rctd_obj@spatialRNA@nUMI[st_spot_id]
+
+    # B. subset @originalSpatial slot
+    rctd_obj@originalSpatialRNA@coords = rctd_obj@originalSpatialRNA@coords[st_spot_id, ]
+    rctd_obj@originalSpatialRNA@counts = rctd_obj@originalSpatialRNA@counts[, st_spot_id]
+    rctd_obj@originalSpatialRNA@nUMI   = rctd_obj@originalSpatialRNA@nUMI[st_spot_id]
+
+    # C. Subset @results$weights
+    rctd_obj@results$weights = rctd_obj@results$weights[st_spot_id, ]
+    
+    # 3. Report new number of spots after the subset has been done.
+    spot_ids_rctd_new = rownames(rctd_obj@results$weights)
+    message(paste0('New spatial spot count size after subset: ', length(spot_ids_rctd_new)))
+
+    # Return the resulting subset of the object.
+    return(rctd_obj)
+}
