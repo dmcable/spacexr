@@ -27,6 +27,7 @@ Imports:
 	mgcv,
 	CompQuadForm,
 	Rfast,
-	locfdr
+	locfdr,
+	metafor
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr
