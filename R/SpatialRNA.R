@@ -20,14 +20,14 @@ read.VisiumSpatialRNA <- function (datadir)
   coords.path <- Sys.glob(paths = file.path(datadir, 'spatial/tissue_positions*'))
   coords <- readr::read_csv(file = coords.path,
                             col_names =  ifelse(
-                                           test = basename(coords.path) == "tissue_positions.csv",
+                                           test = basename(coords.path) == "tissue_positions_list.csv",
                                            yes = TRUE,
                                            no = FALSE)
                             )
-  colnames(coords) <- c("barcodes", "in_tissue", "x", "y", "pxl_col_in_fullres", "pxl_row_in_fullres")
+  colnames(coords) <- c("barcodes", "in_tissue", "array_row", "array_col", "pxl_col_in_fullres", "pxl_row_in_fullres")
   coords <- tibble::column_to_rownames(coords, var = "barcodes")
   counts <- Seurat::Read10X_h5(paste0(datadir, "/filtered_feature_bc_matrix.h5"))
-  puck <- SpatialRNA(coords[,c('x','y')], counts)
+  puck <- SpatialRNA(coords[,c('array_row','array_col')], counts)
   restrict_puck(puck, colnames(puck@counts))
 }
 
