@@ -20,7 +20,10 @@ The data generated and/or used in this study may be accessed at the
 [Broad Institute’s Single Cell
 Portal](https://singlecell.broadinstitute.org/single_cell/study/SCP1663).
 This repository contains both the Slide-seq datasets used in this study,
-and the single-cell RNA-sequencing references.
+and the single-cell RNA-sequencing references. Additional files
+necessary to run the following R-markdown scripts are located at the
+following [Dropbox
+Repository](https://www.dropbox.com/sh/one199micojkdrz/AAAhHFD-lu5IIIV3Y76tl9KYa?dl=0).
 
 ### DE Simulation
 
