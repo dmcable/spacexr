@@ -30,6 +30,7 @@ datadir <- '../../../spacexr/data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))
 ### END PRELUDE
 myRCTD <- readRDS(file.path(datadir,'myRCTD_testes.rds'))
+myRCTD@config$doublet_mode <- 'full'
 myRCTD@originalSpatialRNA <- puck
 ```
 

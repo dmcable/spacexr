@@ -53,6 +53,49 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
                    logs=logs, cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error, fdr_method = fdr_method))
 }
 
+#' Runs CSIDE on a \code{\linkS4class{RCTD}} object with only an intercept term
+#'
+#' Identifies cell type specific gene expression for each cell type.
+#'
+#' The design matrix contains an intercept column only. Uses maximum
+#' likelihood estimation to estimate gene expression and standard errors for each gene and each cell type.
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param barcodes (default NULL) the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the design matrix.
+#' @param cell_types the cell types used for CSIDE. If null, cell types will be chosen with aggregate occurrences of
+#' at least `cell_type_threshold`, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param cell_type_threshold (default 125) min occurrence of number of cells for each cell type to be used, as aggregated by \code{\link{aggregate_cell_types}}
+#' @param gene_threshold (default 5e-5) minimum average normalized expression required for selecting genes
+#' @param doublet_mode (default TRUE) if TRUE, uses RCTD doublet mode weights. Otherwise, uses RCTD full mode weights
+#' @param sigma_gene (default TRUE) if TRUE, fits gene specific overdispersion parameter. If FALSE, overdispersion parameter is same across all genes.
+#' @param weight_threshold (default NULL) the threshold of total normalized weights across all cell types
+#' in \code{cell_types} per pixel to be included in the model. Default 0.99 for doublet_mode or 0.8 for full_mode.
+#' @param PRECISION.THRESHOLD (default 0.05) for checking for convergence, the maximum parameter change per algorithm step
+#' @param cell_types_present cell types (a superset of `cell_types`) to be considered as occurring often enough
+#' to consider for gene expression contamination during the step filtering out marker genes of other cell types.
+#' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
+#' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
+#' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
+#' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
+#' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
+#' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
+#' Additionally, the object contains `internal_vars_de` a list of variables that are used internally by CSIDE
+#' @export
+run.CSIDE.intercept <- function(myRCTD, barcodes = NULL, cell_types = NULL, cell_type_threshold = 125,
+                             gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
+                             sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
+                             normalize_expr = F, logs=F, test_error = F) {
+  X2 <- build.designmatrix.intercept(myRCTD, barcodes = barcodes)
+  barcodes <- rownames(X2)
+  return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
+                   doublet_mode = doublet_mode, test_mode = 'individual', params_to_test = 1,
+                   weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = FALSE,
+                   PRECISION.THRESHOLD = PRECISION.THRESHOLD,
+                   cell_types_present = cell_types_present, normalize_expr = normalize_expr,
+                   logs=logs, test_error = test_error))
+}
+
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object to detect nonparametric smooth gene expression patterns
 #'
 #' Identifies cell type specific smooth gene expression patterns. The design matrix contains thin plate spline

@@ -71,6 +71,27 @@ build.designmatrix.single <- function(myRCTD, explanatory.variable) {
   return(X)
 }
 
+#' Constructs a design matrix for running CSIDE with only an intercept term
+#'
+#' @param myRCTD an \code{\linkS4class{RCTD}} object with annotated cell types e.g. from the \code{\link{run.RCTD}} function.
+#' @param barcodes (default NULL) the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when creating the design matrix.
+#' @return A design matrix containing the covariates for running CSIDE. The rownames represent pixel names and
+#' are a subset of the pixels in the \code{\linkS4class{SpatialRNA}} object. The column represents the intercept
+#' @export
+build.designmatrix.intercept <- function(myRCTD, barcodes = NULL) {
+  if(is.null(barcodes))
+    barcodes <- colnames(myRCTD@spatialRNA@counts)
+  else
+    barcodes = intersect(barcodes, colnames(myRCTD@spatialRNA@counts))
+  if(length(barcodes) <= 1)
+    stop(paste0('build.designmatrix.nonparam: ', length(barcodes),
+                ' common barcode names found between barcodes and myRCTD@spatialRNA. Please ensure that more common barcodes are found'))
+
+  X <- as.matrix(rep(1, length(barcodes)))
+  rownames(X) <- barcodes
+  return(X)
+}
+
 #' Constructs a design matrix for running CSIDE nonparametrically
 #'
 #' The design matrix contains thin plate spline basis functions spanning the space of smooth functions.
