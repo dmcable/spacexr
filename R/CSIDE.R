@@ -282,7 +282,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
     stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!any("cell_types_assigned" %in% names(myRCTD@internal_vars)) || !myRCTD@internal_vars$cell_types_assigned)
     stop('run.CSIDE.general: cannot run CSIDE unless cell types have been assigned. If cell types have been assigned, you may run "myRCTD <- set_cell_types_assigned(myRCTD)".')
-  if((myRCTD@config$doublet_mode != 'multi') && (length(setdiff(barcodes,rownames(myRCTD@results$weights))) > 0)) {
+  if((myRCTD@config$RCTDmode != 'multi') && (length(setdiff(barcodes,rownames(myRCTD@results$weights))) > 0)) {
     warning('run.CSIDE.general: some elements of barcodes do not appear in myRCTD object (myRCTD@results$weights), but they are required to be a subset. Downsampling barcodes to the intersection of the two sets.')
     barcodes <- intersect(barcodes,rownames(myRCTD@results$weights))
   }
@@ -290,7 +290,7 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   if(doublet_mode) {
     my_beta <- get_beta_doublet(barcodes, cell_type_info[[2]], myRCTD@results$results_df, myRCTD@results$weights_doublet)
     thresh <- 0.999
-  } else if(myRCTD@config$doublet_mode == "multi") {
+  } else if(myRCTD@config$RCTDmode == "multi") {
     my_beta <- get_beta_multi(barcodes, cell_type_info[[2]], myRCTD@results, myRCTD@spatialRNA@coords)
     thresh <- 0.999
   } else {
