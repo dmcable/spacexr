@@ -107,13 +107,13 @@ run.RCTD <- function(RCTD, doublet_mode = "doublet") {
 
 #exports RCTD results as csv files
 export.RCTD <- function(RCTD, datadir) {
-   doublet_mode <- myRCTD@config$doublet_mode
+   doublet_mode <- myRCTD@config$RCTDmode
    if(is.null(doublet_mode))
-      stop("RCTD@config$doublet_mode is NULL. Please set to one of 'doublet', 'multi', 'full'.")
+      stop("RCTD@config$RCTDmode is NULL. Please set to one of 'doublet', 'multi', 'full'.")
    if(!(doublet_mode %in% c('doublet','multi','full')))
-      stop(paste0("export.RCTD: RCTD@config$doublet_mode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
+      stop(paste0("export.RCTD: RCTD@config$RCTDmode=",doublet_mode, " is not a valid choice. Please set doublet_mode=doublet, multi, or full."))
    if(doublet_mode == 'multi')
-      stop("export.RCTD not implemented for RCTD@config$doublet_mode = 'multi'. Please contact the developers for assistance.")
+      stop("export.RCTD not implemented for RCTD@config$RCTDmode = 'multi'. Please contact the developers for assistance.")
    write.csv(RCTD@results$weights, file.path(datadir, 'weights.csv'))
    if(doublet_mode == 'doublet') {
       write.csv(RCTD@results$weights_doublet, file.path(datadir, 'weights_doublet.csv'))
