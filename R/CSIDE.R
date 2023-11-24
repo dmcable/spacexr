@@ -321,6 +321,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold <= 10 ||
      (!is.null(weight_threshold) && weight_threshold == 0.1))
     warning('run.CSIDE.general: some parameters are set to the CSIDE vignette values, which are intended for testing but not proper execution. For more accurate results, consider using the default parameters to this function.')
+  else if(weight_threshold < 0.75)
+    warning('run.CSIDE.general: we recommend setting weight_threshold to at least 0.75 since otherwise cell types not included in the model will have large proportions.')
   if(doublet_mode && myRCTD@config$RCTDmode != 'doublet')
     stop('run.CSIDE.general: attempted to run CSIDE in doublet mode, but RCTD was not run in doublet mode. Please run CSIDE in full mode (doublet_mode = F) or run RCTD in doublet mode.')
   if(!any("cell_types_assigned" %in% names(myRCTD@internal_vars)) || !myRCTD@internal_vars$cell_types_assigned)

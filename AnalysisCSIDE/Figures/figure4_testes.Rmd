@@ -25,6 +25,7 @@ library(dplyr)
 library(ggrepel)
 source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/testes_helper.R')
 source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/AnalysisCSIDE/helper_functions/merge_de_helper.R')
+source('~/Documents/MIT/Research/Rafalab/Projects/spacexr/R/CSIDE_plots.R')
 load_all()
 datadir <- '../../../spacexr/data/SpatialRNA/Testes'
 puck <- readRDS(file.path(datadir,'puck.rds'))
