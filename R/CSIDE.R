@@ -27,6 +27,8 @@
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @param fdr_method (default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.
+#' @param medv (default 0.5) the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
+#' have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -35,16 +37,27 @@
 run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = .01,
-                          test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = 0.4, test_error = F, fdr_method = 'BH') {
+                          test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = 0.4, test_error = F, fdr_method = 'BH', medv = 0.5) {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
   explanatory.variable <- explanatory.variable[barcodes]
-  medv <- 0.5
   region_thresh <- cell_type_threshold / 2
-  r1 <- barcodes[explanatory.variable < medv]
+  r1 <- barcodes[X2[,2] < medv]
+  if(length(r1) < region_thresh)
+    stop(paste0('run.CSIDE.single: number of pixels with explanatory.variable at least medv = ',medv,
+                " is less than (one half of cell_type_threshold) = ", region_thresh,
+                ". Please make sure that explanatory.variable attains a large value sufficiently often."))
   cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
-  r2 <- barcodes[explanatory.variable > medv]
+  r2 <- barcodes[X2[,2] > medv]
+  if(length(r2) < region_thresh)
+    stop(paste0('run.CSIDE.single: number of pixels with explanatory.variable below medv = ',medv,
+                " is less than (one half of cell_type_threshold) = ", region_thresh,
+                ". Please make sure that explanatory.variable attains a small value sufficiently often."))
   cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r2, doublet_mode = doublet_mode) >= region_thresh)
+  message(paste0('run.CSIDE.single: filtered out cell types: ', list(which(!cell_type_filter)),
+                 ' due to not having sufficiently many pixels with explanatory.value on either side of medv = ',medv,
+                 '. Please note that it is required to have on either side of medv at least (one half of cell_type_threshold) = ',
+                 region_thresh, ' pixels.'))
   return(run.CSIDE(myRCTD, X2, barcodes, cell_types, gene_threshold = gene_threshold, cell_type_threshold = cell_type_threshold,
                        doublet_mode = doublet_mode, test_mode = 'individual', params_to_test = 2,
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = test_genes_sig,

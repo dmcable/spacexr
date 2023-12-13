@@ -26,6 +26,7 @@ run.CSIDE.replicates(
   barcodes = NULL,
   log_fc_thresh = 0.4,
   test_error = F,
+  medv = 0.5,
   params_to_test = NULL,
   test_mode = "individual"
 )
@@ -80,6 +81,9 @@ If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code
 
 \item{test_error}{(default FALSE) if TRUE, first tests for error messages before running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{medv}{(default 0.5) for single model, the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
+have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.}

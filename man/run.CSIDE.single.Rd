@@ -21,7 +21,8 @@ run.CSIDE.single(
   logs = F,
   log_fc_thresh = 0.4,
   test_error = F,
-  fdr_method = "BH"
+  fdr_method = "BH",
+  medv = 0.5
 )
 }
 \arguments{
@@ -63,6 +64,9 @@ to consider for gene expression contamination during the step filtering out mark
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
+
+\item{medv}{(default 0.5) the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
+have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},

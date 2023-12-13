@@ -233,6 +233,8 @@ choose_cell_types <- function(myRCTD, barcodes, doublet_mode, cell_type_threshol
                   ' are not valid cell types in this RCTD object (myRCTD@cell_type_info$info[[2]]). Please check that cell_types only has valid cell types.'))
 
   } else {
+    message(paste0("choose_cell_types: detected the following cell types occuring at least cell_type_threshold times: ",
+                   list(cell_types_default),"\n"))
     cell_types <- cell_types_default
   }
   if(!is.null(cell_type_filter)) {

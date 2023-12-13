@@ -123,6 +123,8 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
 #' @param test_error (default FALSE) if TRUE, first tests for error messages before running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
+#' @param medv (default 0.5) for single model, the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
+#' have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).
 #' @param test_genes_sig_individual (default FALSE) logical controlling whether on individual samples genes will be tested for significance.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
@@ -134,7 +136,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                                  fdr = .01, population_de = F, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
-                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F,
+                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F, medv = 0.5,
                                  params_to_test = NULL, test_mode = 'individual') {
   if(!(de_mode %in% c('single','nonparam', 'general')))
     stop('run.CISDE.replicates: de_mode must be set to "single", "general", or "nonparam".')
@@ -163,7 +165,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
         sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, test_genes_sig = test_genes_sig_individual,
-        cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error)
+        cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error, medv = medv)
     } else if(de_mode == 'nonparam') {
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.nonparam(
         RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
