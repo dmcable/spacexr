@@ -119,7 +119,7 @@ position, cell-to-cell interactions, and joint analysis of multiple
 experimental samples/replicates.
 
 The *spacexr* manual can be found
-[here](https://github.com/dmcable/spacexr/tree/master/spacexr_manual_2.0.0.pdf).
+[here](https://github.com/dmcable/spacexr/blob/master/spacexr_manual_2.2.1.pdf).
 
 Additional detailed recommended reading (documentation, tutorials, and
 tips) can be found
