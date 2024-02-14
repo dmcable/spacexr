@@ -28,6 +28,7 @@ Imports:
 	CompQuadForm,
 	Rfast,
 	locfdr,
-	metafor
+	metafor,
+	data.table
 RoxygenNote: 7.2.3
 VignetteBuilder: knitr

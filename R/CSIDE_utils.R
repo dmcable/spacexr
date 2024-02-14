@@ -155,7 +155,7 @@ aggregate_cell_types <- function(myRCTD, barcodes, doublet_mode = T) {
       stop('aggregate_cell_types: attempted to run in doublet mode, but RCTD was not run in doublet mode. Please run in full mode (doublet_mode = F) or first run RCTD in doublet mode.')
     return(table(myRCTD@results$results_df[barcodes,]$first_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('singlet','doublet_certain')]) +
              +     table(myRCTD@results$results_df[barcodes,]$second_type[myRCTD@results$results_df[barcodes,]$spot_class %in% c('doublet_certain')]))
-  } else if(myRCTD@config$doublet_mode == 'multi') {
+  } else if(myRCTD@config$RCTDmode == 'multi') {
     weights <- get_beta_multi(barcodes, myRCTD@cell_type_info$info[[2]], myRCTD@results, myRCTD@spatialRNA@coords)
     return(colSums(weights))
   } else {

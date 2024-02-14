@@ -19,9 +19,9 @@ plot_weights_doublet(
 
 \item{resultsdir}{output directory}
 
-\item{weights_doublet}{a dataframe of RCTD output weights for doublets (see \code{\link{gather_results}})}
+\item{weights_doublet}{a dataframe of RCTD output weights for doublets (stored in the RCTD object)}
 
-\item{results_df}{dataframe of RCTD results (see \code{\link{gather_results}})}
+\item{results_df}{dataframe of RCTD results (stored in the RCTD object)}
 }
 \description{
 Plots the weights for each cell type as in doublet_mode. Saves as 'cell_type_weights_doublet.pdf'

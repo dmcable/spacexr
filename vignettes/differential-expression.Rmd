@@ -126,7 +126,7 @@ print(myRCTD@de_results$gene_fits$con_mat[sig_gene, ])
 print('estimated DE')
 print(myRCTD@de_results$gene_fits$mean_val[sig_gene, ]) 
 print('standard errors for non-intercept terms')
-print(myRCTD@de_results$gene_fits$s_mat[sig_gene, c(2,4)]) 
+print(myRCTD@de_results$gene_fits$s_mat[sig_gene, ]) 
 ```
 
 Finally, we will plot CSIDE results in the `savedir` directory!

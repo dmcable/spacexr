@@ -11,7 +11,7 @@ plot_occur_unthreshold(cell_type_info, resultsdir, weights)
 
 \item{resultsdir}{output directory}
 
-\item{weights}{a dataframe of RCTD output weights (see \code{\link{gather_results}})}
+\item{weights}{a dataframe of RCTD output weights (stored in the RCTD object)}
 }
 \description{
 Plots the number of (including unconfident) labels in 'full_mode'. Saves as 'cell_type_occur_unthreshold.pdf'

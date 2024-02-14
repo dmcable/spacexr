@@ -1,9 +1,18 @@
 ---
-title: Vignettes
-author: Dylan Cable
+title: "Vignettes"
+author: "Dylan Cable"
 data: December 22, 2021
 #output: github_document
-output: md_document
+output:
+  html_document:
+    keep_md: yes
+  pdf_document: default
+  rmarkdown::html_vignette:
+    keep_md: yes
+vignette: |
+  %\VignetteIndexEntry{vignette-readme} 
+  %\VignetteEncoding{UTF-8} 
+  %\VignetteEngine{knitr::rmarkdown}
 ---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->

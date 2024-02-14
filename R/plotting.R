@@ -39,7 +39,7 @@ plot_doublets <- function(puck, doublets, resultsdir, cell_type_names) {
 #' Plots the first cell type in doublet mode. Saves as 'all_cell_types.pdf'
 #'
 #' @param coords a dataframe of coordinates of each pixel
-#' @param results_df a dataframe of RCTD results (see \code{\link{gather_results}})
+#' @param results_df a dataframe of RCTD results (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param cell_type_names list of cell type names
 #' @return returns \code{\link{ggplot2}} object
@@ -194,7 +194,7 @@ plot_puck_wrapper <- function(puck, plot_val, cell_type = NULL, minUMI = 0, maxU
 #' Plots the confident weights for each cell type as in full_mode. Saves as 'cell_type_weights.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
+#' @param weights a dataframe of RCTD output weights (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param cell_type_names list of cell type names
 #' @export
@@ -217,7 +217,7 @@ plot_weights <- function(cell_type_names, puck, resultsdir, weights) {
 #' Plots all weights for each cell type as in full_mode. Saves as 'cell_type_weights_unthreshold.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
+#' @param weights a dataframe of RCTD output weights (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param cell_type_names list of cell type names
 #' @export
@@ -239,7 +239,7 @@ plot_weights_unthreshold <- function(cell_type_names, puck, resultsdir, weights)
 #'
 #' Plots the number of confident labels in 'full_mode'. Saves as 'cell_type_occur.pdf'
 #'
-#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
+#' @param weights a dataframe of RCTD output weights (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param puck an object of type \linkS4class{SpatialRNA}
 #' @param cell_type_names list of cell type names
@@ -266,7 +266,7 @@ plot_cond_occur <- function(cell_type_names, resultsdir, weights, puck) {
 #'
 #' Plots the number of (including unconfident) labels in 'full_mode'. Saves as 'cell_type_occur_unthreshold.pdf'
 #'
-#' @param weights a dataframe of RCTD output weights (see \code{\link{gather_results}})
+#' @param weights a dataframe of RCTD output weights (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param cell_type_info cell type information and profiles (see \code{\link{get_cell_type_info}})
 #' @export
@@ -286,10 +286,10 @@ plot_occur_unthreshold <- function(cell_type_info, resultsdir, weights) {
 #' Plots the weights for each cell type as in doublet_mode. Saves as 'cell_type_weights_doublet.pdf'
 #'
 #' @param puck an object of type \linkS4class{SpatialRNA}
-#' @param weights_doublet a dataframe of RCTD output weights for doublets (see \code{\link{gather_results}})
+#' @param weights_doublet a dataframe of RCTD output weights for doublets (stored in the RCTD object)
 #' @param resultsdir output directory
 #' @param cell_type_names list of cell type names
-#' @param results_df dataframe of RCTD results (see \code{\link{gather_results}})
+#' @param results_df dataframe of RCTD results (stored in the RCTD object)
 #' @export
 plot_weights_doublet <- function(cell_type_names, puck, resultsdir, weights_doublet, results_df) {
   plots <- vector(mode = "list", length = length(cell_type_names))

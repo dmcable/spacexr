@@ -13,7 +13,7 @@ plot_weights(cell_type_names, puck, resultsdir, weights)
 
 \item{resultsdir}{output directory}
 
-\item{weights}{a dataframe of RCTD output weights (see \code{\link{gather_results}})}
+\item{weights}{a dataframe of RCTD output weights (stored in the RCTD object)}
 }
 \description{
 Plots the confident weights for each cell type as in full_mode. Saves as 'cell_type_weights.pdf'

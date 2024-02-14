@@ -118,7 +118,7 @@ Here, we discuss how to run C-SIDE on your data and detect cell type-specific di
 ### Dependencies
 
 * R version >= 3.5.0.
-* R packages: readr, pals, ggplot2, Matrix, parallel, doParallel, foreach, quadprog, tibble, dplyr, reshape2, knitr, rmarkdown, fields, and mgcv.
+* R packages: readr, pals, ggplot2, Matrix, parallel, doParallel, foreach, quadprog, tibble, dplyr, reshape2, knitr, rmarkdown, fields, data.table, and mgcv.
 
 For optimal performance, we recommend at least 4 GB of RAM, and multiple cores may be used for RCTD and C-SIDE to speed up runtime. 
 

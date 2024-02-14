@@ -11,7 +11,7 @@ plot_cond_occur(cell_type_names, resultsdir, weights, puck)
 
 \item{resultsdir}{output directory}
 
-\item{weights}{a dataframe of RCTD output weights (see \code{\link{gather_results}})}
+\item{weights}{a dataframe of RCTD output weights (stored in the RCTD object)}
 
 \item{puck}{an object of type \linkS4class{SpatialRNA}}
 }

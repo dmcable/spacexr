@@ -7,7 +7,7 @@
 plot_all_cell_types(results_df, coords, cell_type_names, resultsdir)
 }
 \arguments{
-\item{results_df}{a dataframe of RCTD results (see \code{\link{gather_results}})}
+\item{results_df}{a dataframe of RCTD results (stored in the RCTD object)}
 
 \item{coords}{a dataframe of coordinates of each pixel}
 
