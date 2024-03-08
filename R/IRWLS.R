@@ -34,13 +34,11 @@ solveIRWLS.weights <-function(S,B,nUMI, OLS=FALSE, constrain = TRUE, verbose = F
   #solution <- runif(length(solution))*2 / length(solution) # random initialization
   names(solution) <- colnames(S)
 
-  S_mat <<- matrix(0,nrow = dim(S)[1],ncol = dim(S)[2]*(dim(S)[2] + 1)/2)
-  counter = 1
-  for(i in 1:dim(S)[2])
-    for(j in i:dim(S)[2]) {
-      S_mat[,counter] <<- S[,i] * S[,j] # depends on n^2
-      counter <- counter + 1
-    }
+  numCols <- ncol(S)
+  Index <- which(upper.tri(matrix(0, ncol = numCols, nrow = numCols), diag = TRUE), arr.ind = TRUE)
+  Index <- Index[order(Index[, 1], Index[, 2]), ,drop=F]
+  S_mat <<- S[, Index[, 1]] * S[, Index[, 2]]
+
 
   iterations<-0 #now use dampened WLS, iterate weights until convergence
   changes<-c()
@@ -83,7 +81,7 @@ solveWLS<-function(S,B,initialSol, nUMI, bulk_mode = F, constrain = F){
   threshold = max(1e-4, nUMI * 1e-7)
   prediction[prediction < threshold] <- threshold
   gene_list = rownames(S)
-  derivatives <- get_der_fast(S, B, gene_list, prediction, bulk_mode = bulk_mode)
+  derivatives <- get_der_fast(S, B, gene_list, prediction[,1], bulk_mode = bulk_mode)
   d_vec <- -derivatives$grad
   D_mat <- psd(derivatives$hess)
   norm_factor <- norm(D_mat,"2")
