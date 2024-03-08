@@ -127,21 +127,37 @@ calc_Q_all <- function(Y, lambda) {
   epsilon <- 1e-4; X_max <- max(X_vals); delta <- 1e-6
   lambda <- pmin(pmax(epsilon, lambda),X_max - epsilon)
 
-  l <- floor((lambda/delta)^(1/2))
-  m <- pmin(l - 9,40) + pmax(ceiling(sqrt(pmax(l-48.7499,0)*4))-2,0)
-  ti1 <- X_vals[m]; ti <- X_vals[m+1]; hi <- ti - ti1
-  #Q0 <- cbind(Y+1, m); Q1 <- cbind(Y+1, m+1)
-  Q0 <- cbind(Y+1, m); Q1 <- Q0; Q1[,2] <- Q1[,2] + 1
-  fti1 <- Q_mat[Q0]; fti <- Q_mat[Q1]
-  zi1 <- SQ_mat[Q0]; zi <- SQ_mat[Q1]
-  diff1 <- lambda - ti1; diff2 <- ti - lambda
-  diff3 <- fti/hi-zi*hi/6; diff4 <- fti1/hi-zi1*hi/6
-  zdi <- zi / hi; zdi1 <- zi1 / hi
+  l <- floor(sqrt(lambda / delta))
+  V1 <- pmin(40, l - 9)
+  V2 <- pmax(0, ceiling(sqrt(pmax(0, l - 48.7499) * 4)) - 2)
+  m <- V1 + V2
+
+  ti1 <- X_vals[m]
+  ti <- X_vals[m + 1]
+  hi <- ti - ti1
+
+  Q0 <- cbind(Y+1, m)
+  Q1 <- Q0
+  Q1[,2] <- Q1[,2] + 1
+  fti1 <- Q_mat[Q0]
+  fti <- Q_mat[Q1]
+  zi1 <- SQ_mat[Q0]
+  zi <- SQ_mat[Q1]
+
+  diff1 <- lambda - ti1
+  diff2 <- ti - lambda
+  diff3 <- fti / hi - zi * hi / 6
+  diff4 <- fti1 / hi - zi1 * hi / 6
+  zdi <- zi / hi
+  zdi1 <- zi1 / hi
+
   # cubic spline interpolation
   d0_vec <- zdi*(diff1)^3/6 + zdi1*(diff2)^3/6 + diff3*diff1 + diff4*diff2
   d1_vec <- zdi*(diff1)^2/2 - zdi1*(diff2)^2/2 + diff3 - diff4
   d2_vec <- zdi*(diff1) + zdi1*(diff2)
+
   return(list(d0_vec = d0_vec, d1_vec = d1_vec, d2_vec = d2_vec))
+
 }
 
 #negative log likelihood
