@@ -82,7 +82,7 @@ choose_sigma_c <- function(RCTD) {
   Q_mat_all <- c(Q1, Q2, Q3, Q4, Q5)
   sigma_vals <- names(Q_mat_all)
 
-  X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexrHD"))
+  X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexr"))
 
   #get initial classification
   N_fit = min(RCTD@config$N_fit,sum(puck@nUMI > MIN_UMI))
