@@ -73,11 +73,11 @@ choose_sigma_c <- function(RCTD) {
   MIN_UMI <- RCTD@config$UMI_min_sigma
   sigma <- 100
 
-  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "spacexrHD"))
-  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "spacexrHD"))
-  Q3 <- readRDS(system.file("extdata", "Qmat/Q_mat_3.rds", package = "spacexrHD"))
-  Q4 <- readRDS(system.file("extdata", "Qmat/Q_mat_4.rds", package = "spacexrHD"))
-  Q5 <- readRDS(system.file("extdata", "Qmat/Q_mat_5.rds", package = "spacexrHD"))
+  Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "spacexr"))
+  Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "spacexr"))
+  Q3 <- readRDS(system.file("extdata", "Qmat/Q_mat_3.rds", package = "spacexr"))
+  Q4 <- readRDS(system.file("extdata", "Qmat/Q_mat_4.rds", package = "spacexr"))
+  Q5 <- readRDS(system.file("extdata", "Qmat/Q_mat_5.rds", package = "spacexr"))
 
   Q_mat_all <- c(Q1, Q2, Q3, Q4, Q5)
   sigma_vals <- names(Q_mat_all)
