@@ -67,43 +67,121 @@ chooseSigma <- function(prediction, counts, Q_mat_all, X_vals, sigma) {
 #' @return Returns an \code{\linkS4class{RCTD}} with the estimated \code{sigma_c}.
 #' @export
 choose_sigma_c <- function(RCTD) {
-  puck = RCTD@spatialRNA; MIN_UMI = RCTD@config$UMI_min_sigma; sigma = 100
-  #Q_mat_all <- readRDS('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/Qmat/Q_mat_c.rds')
+  
+  message('Step 2/4: Choose Sigma')
+  puck <- RCTD@spatialRNA
+  MIN_UMI <- RCTD@config$UMI_min_sigma
+  sigma <- 100
+
   Q1 <- readRDS(system.file("extdata", "Qmat/Q_mat_1.rds", package = "spacexr"))
   Q2 <- readRDS(system.file("extdata", "Qmat/Q_mat_2.rds", package = "spacexr"))
   Q3 <- readRDS(system.file("extdata", "Qmat/Q_mat_3.rds", package = "spacexr"))
   Q4 <- readRDS(system.file("extdata", "Qmat/Q_mat_4.rds", package = "spacexr"))
   Q5 <- readRDS(system.file("extdata", "Qmat/Q_mat_5.rds", package = "spacexr"))
+
   Q_mat_all <- c(Q1, Q2, Q3, Q4, Q5)
   sigma_vals <- names(Q_mat_all)
-  #X_vals <- readRDS('/Users/dcable/Documents/MIT/Research/Rafalab/Projects/slideseq/Cell Demixing/ContentStructure/RCTD/Qmat/X_vals.rds')
+
   X_vals <- readRDS(system.file("extdata", "Qmat/X_vals.rds", package = "spacexr"))
+
   #get initial classification
   N_fit = min(RCTD@config$N_fit,sum(puck@nUMI > MIN_UMI))
   if(N_fit == 0) {
-      stop(paste('choose_sigma_c determined a N_fit of 0! This is probably due to unusually low UMI counts per bead in your dataset. Try decreasing the parameter UMI_min_sigma. It currently is',MIN_UMI,'but none of the beads had counts larger than that.'))
+    stop(paste('choose_sigma_c determined a N_fit of 0! This is probably due to unusually low UMI counts per bead in your dataset. Try decreasing the parameter UMI_min_sigma. It currently is',MIN_UMI,'but none of the beads had counts larger than that.'))
   }
+
   fit_ind = sample(names(puck@nUMI[puck@nUMI > MIN_UMI]), N_fit)
-  beads = t(as.matrix(puck@counts[RCTD@internal_vars$gene_list_reg,fit_ind]))
-  message(paste('chooseSigma: using initial Q_mat with sigma = ',sigma/100))
-  for(iter in 1:RCTD@config$N_epoch) {
+  beads = t(puck@counts[RCTD@internal_vars$gene_list_reg,fit_ind])
+
+  #message(paste('chooseSigma: using initial Q_mat with sigma = ',sigma/100))
+  #print(paste0("N_epoch: ",RCTD@config$N_epoch))
+
+  nUMI <- puck@nUMI[fit_ind]
+  cell_type_means <- RCTD@cell_type_info$renorm[[1]]
+  gene_list <- RCTD@internal_vars$gene_list_reg
+  constrain <- FALSE
+  max_cores <- RCTD@config$max_cores
+
+  if(max_cores > 1)
+  {
+    message(paste0("Multicore enabled using ", max_cores," cores"))
+    registerDoParallel(cores=max_cores)
+  }
+
+  NN<-nrow(beads)
+  pb <- txtProgressBar(min = 0, max = RCTD@config$N_epoch, style = 3)
+
+  for(iter in 1:RCTD@config$N_epoch)
+  {
     set_likelihood_vars(Q_mat_all[[as.character(sigma)]], X_vals)
-    #message(paste('chooseSigma: getting initial weights for #samples: ',N_fit))
-    results = decompose_batch(puck@nUMI[fit_ind], RCTD@cell_type_info$renorm[[1]], beads, RCTD@internal_vars$gene_list_reg, constrain = F, max_cores = RCTD@config$max_cores)
-    weights = Matrix(0, nrow = N_fit, ncol = RCTD@cell_type_info$renorm[[3]])
-    rownames(weights) = fit_ind; colnames(weights) = RCTD@cell_type_info$renorm[[2]];
-    for(i in 1:N_fit)
-      weights[i,] = results[[i]]$weights
+
+    if(max_cores>1)
+    {
+
+      results<- foreach(i = 1:NN) %dopar% {
+
+        #set_likelihood_vars(Q_mat_all[[as.character(sigma)]], X_vals)
+        weights <- solveIRWLS.weights(data.matrix(RCTD@cell_type_info$renorm[[1]][RCTD@internal_vars$gene_list_reg,]*nUMI[i]),
+                                      beads[i,],
+                                      nUMI[i],
+                                      OLS = FALSE,
+                                      constrain = FALSE,
+                                      verbose = FALSE,
+                                      n.iter = 50,
+                                      MIN_CHANGE = 0.001,
+                                      bulk_mode = FALSE)
+
+        return(weights)
+      }
+
+
+    }else{
+
+      results<-vector("list",length=nrow(beads))
+
+      for(i in 1:nrow(beads))
+      {
+        set_likelihood_vars(Q_mat_all[[as.character(sigma)]], X_vals)
+        weights <- solveIRWLS.weights(data.matrix(RCTD@cell_type_info$renorm[[1]][RCTD@internal_vars$gene_list_reg,]*nUMI[i]),
+                                      beads[i,],
+                                      nUMI[i],
+                                      OLS = FALSE,
+                                      constrain = FALSE,
+                                      verbose = FALSE,
+                                      n.iter = 50,
+                                      MIN_CHANGE = 0.001,
+                                      bulk_mode = FALSE)
+        results[[i]]<-weights
+
+      }
+
+
+    }
+
+    weights<- do.call(rbind,lapply(results,function(X){return(X$weights)}))
+    weights<-as(weights,"dgCMatrix")
+    rownames(weights) <- fit_ind
+    colnames(weights) <- RCTD@cell_type_info$renorm[[2]]
     prediction <- sweep(as.matrix(RCTD@cell_type_info$renorm[[1]][RCTD@internal_vars$gene_list_reg,]) %*% t(as.matrix(weights)), 2, puck@nUMI[fit_ind], '*')
-    message(paste('Likelihood value:',calc_log_l_vec(as.vector(prediction), as.vector(t(beads)))))
+    #message(paste('Likelihood value:',calc_log_l_vec(as.vector(prediction), as.vector(t(beads)))))
     sigma_prev <- sigma
     sigma <- chooseSigma(prediction, t(beads), Q_mat_all, X_vals, sigma)
-    message(paste('Sigma value: ', sigma/100))
+
     if(sigma == sigma_prev)
+    {
+      message(paste0(RCTD@config$N_epoch,"/",RCTD@config$N_epoch))
       break
+    }
+
+    setTxtProgressBar(pb, iter)
   }
+
+  setTxtProgressBar(pb, iter)
+
+  close(pb)
   RCTD@internal_vars$sigma <- sigma/100
   RCTD@internal_vars$Q_mat <- Q_mat_all[[as.character(sigma)]]
   RCTD@internal_vars$X_vals <- X_vals
+
   return(RCTD)
 }
