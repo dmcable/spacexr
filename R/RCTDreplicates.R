@@ -179,7 +179,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
       if(length(RCTD.replicates@RCTD.reps) != length(X.replicates))
         stop('run.CSIDE.replicates: length(X.replicates) is not equal to the number of RCTD replicates, as required.')
       X <- X.replicates[[i]]
-      if(length(setdiff(rownames(X),rownames(RCTD_controls@RCTD.reps[[i]]@results$weights))) > 0)
+      if(length(setdiff(rownames(X),rownames(RCTD.replicates@RCTD.reps[[i]]@results$weights))) > 0)
         warning('run.CSIDE.replicates: some elements of rownames(X.replicates) do not appear in myRCTD object (myRCTD@results$weights) for this replicate, but they are required to be a subset.')
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE(
         RCTD.replicates@RCTD.reps[[i]], X, rownames(X), cell_types = cell_types,
