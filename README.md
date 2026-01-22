@@ -4,7 +4,16 @@
 # spacexr (Spatial-eXpression-R): Robust Cell Type Decomposition (RCTD) and Cell type-Specific Inference of Differential Expression (C-SIDE)
 
 <!-- badges: start -->
+
 <!-- badges: end -->
+
+**Note**: The *spacexr* package is now available on
+[Bioconductor](https://www.bioconductor.org/packages/release/bioc/html/spacexr.html).
+Instructions for using the Bioconductor package can be found
+[here](https://github.com/ggrajeda/spacexr). At the time of writing, the
+Bioconductor version only implements RCTD, so CSIDE users should
+continue to use this GitHub repo and follow the installation
+instructions below.
 
 Welcome to *spacexr*, an R package for learning cell types and cell
 type-specific differential expression in spatial transcriptomics data.
