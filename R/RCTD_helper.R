@@ -64,80 +64,133 @@ check_pairs_type <- function(cell_type_profiles, bead, UMI_tot, score_mat, min_s
 }
 
 #Decomposing a single bead via doublet search
-process_bead_doublet <- function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F,
-                                 MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
+process_bead_doublet <-function(cell_type_info, gene_list, UMI_tot, bead, class_df = NULL, constrain = T, verbose = F,
+                                MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25, OLS = FALSE,
+                                n.iter = 50, bulk_mode = FALSE)
+{
+  
   cell_type_profiles <- cell_type_info[[1]][gene_list,]
   cell_type_profiles = cell_type_profiles * UMI_tot
   cell_type_profiles = data.matrix(cell_type_profiles)
-  QL_score_cutoff = CONFIDENCE_THRESHOLD; doublet_like_cutoff = DOUBLET_THRESHOLD
-  results_all = decompose_full(cell_type_profiles, UMI_tot, bead, constrain = constrain, verbose = verbose, MIN_CHANGE = MIN.CHANGE)
+  QL_score_cutoff = CONFIDENCE_THRESHOLD
+  doublet_like_cutoff = DOUBLET_THRESHOLD
+  
+  results_all <- solveIRWLS.weights(cell_type_profiles,bead,UMI_tot,OLS = OLS, constrain = constrain,
+                                    verbose = verbose, n.iter = n.iter, MIN_CHANGE = MIN.CHANGE, bulk_mode = bulk_mode)
+
   all_weights <- results_all$weights
   conv_all <- results_all$converged
-  initial_weight_thresh = 0.01; cell_type_names = cell_type_info[[2]]
+  initial_weight_thresh = 0.01
+  cell_type_names = cell_type_info[[2]]
   candidates <- names(which(all_weights > initial_weight_thresh))
+  
   if(length(candidates) == 0)
+  {
     candidates = cell_type_info[[2]][1:min(3,cell_type_info[[3]])]
-  if(length(candidates) == 1)
+    
+  }else if(length(candidates) == 1)
+  {
     if(candidates[1] == cell_type_info[[2]][1])
+    {
       candidates = c(candidates, cell_type_info[[2]][2])
-    else
+      
+    }else{
+      
       candidates = c(candidates, cell_type_info[[2]][1])
+    }
+    
+  }
+  
   score_mat = Matrix(0, nrow = length(candidates), ncol = length(candidates))
-  rownames(score_mat) = candidates; colnames(score_mat) = candidates
+  rownames(score_mat) = candidates
+  colnames(score_mat) = candidates
   singlet_scores <- numeric(length(candidates))
   names(singlet_scores) <- candidates
-  for(type in candidates) {
+  
+  for(type in candidates)
+  {
+    
     singlet_scores[type] <- get_singlet_score(cell_type_profiles, bead, UMI_tot,
                                               type, constrain, MIN.CHANGE = MIN.CHANGE)
   }
+  
+  
   min_score = 0
   first_type = NULL; second_type = NULL
-  first_class = F; second_class = F #indicates whether the first (resp second) refers to a class rather than a type
-  for(i in 1:(length(candidates)-1)) {
-    type1 = candidates[i]
-    for(j in (i+1):length(candidates)) {
-      type2 = candidates[j]
-      score = decompose_sparse(cell_type_profiles, UMI_tot, bead, type1, type2, score_mode = T, constrain = constrain, verbose = verbose, MIN.CHANGE = MIN.CHANGE)
-      score_mat[i,j] = score; score_mat[j,i] = score
-      if(is.null(second_type) || score < min_score) {
-        first_type <- type1; second_type <- type2
-        min_score = score
+  first_class = F
+  second_class = F #indicates whether the first (resp second) refers to a class rather than a type
+  
+  for(i in 1:(length(candidates)-1))
+  {
+    type1 <- candidates[i]
+    
+    for(j in (i+1):length(candidates))
+    {
+      type2 <- candidates[j]
+      score <- decompose_sparse(cell_type_profiles, UMI_tot, bead, type1, type2, score_mode = T, constrain = constrain, verbose = verbose, MIN.CHANGE = MIN.CHANGE)
+      score_mat[i,j] <- score
+      score_mat[j,i]<- score
+      
+      if(is.null(second_type) || score < min_score)
+      {
+        first_type <- type1
+        second_type <- type2
+        min_score <- score
       }
     }
+    
   }
-  type1_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
-  type2_pres = check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
-  if(!type1_pres$all_pairs_class && !type2_pres$all_pairs_class) {
+  
+  type1_pres <- check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, first_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
+  type2_pres <- check_pairs_type(cell_type_profiles, bead, UMI_tot, score_mat, min_score, second_type, class_df, QL_score_cutoff, constrain, singlet_scores, MIN.CHANGE = MIN.CHANGE)
+  if(!type1_pres$all_pairs_class && !type2_pres$all_pairs_class)
+  {
     spot_class <- "reject"
     singlet_score = min_score + 2 * doublet_like_cutoff #arbitrary
-  }
-  else if(type1_pres$all_pairs_class && !type2_pres$all_pairs_class) {
+    
+  }else if(type1_pres$all_pairs_class && !type2_pres$all_pairs_class)
+  {
     first_class <- !type1_pres$all_pairs
     singlet_score = type1_pres$singlet_score
     spot_class = "doublet_uncertain"
-  } else if(!type1_pres$all_pairs_class && type2_pres$all_pairs_class) {
+    
+  }else if(!type1_pres$all_pairs_class && type2_pres$all_pairs_class)
+  {
     first_class <- !type2_pres$all_pairs
     singlet_score = type2_pres$singlet_score
     temp = first_type; first_type = second_type; second_type = temp
     spot_class = "doublet_uncertain"
-  } else {
+  }else{
     spot_class = "doublet_certain"
     singlet_score = min(type1_pres$singlet_score, type2_pres$singlet_score)
     first_class <- !type1_pres$all_pairs; second_class <- !type2_pres$all_pairs
-    if(type2_pres$singlet_score < type1_pres$singlet_score) {
-      temp = first_type; first_type = second_type; second_type = temp
-      first_class <- !type2_pres$all_pairs; second_class <- !type1_pres$all_pairs
+    
+    if(type2_pres$singlet_score < type1_pres$singlet_score)
+    {
+      temp = first_type; first_type = second_type
+      second_type = temp
+      first_class <- !type2_pres$all_pairs
+      second_class <- !type1_pres$all_pairs
     }
+    
   }
+  
   if(singlet_score - min_score < doublet_like_cutoff)
-    spot_class = "singlet"
+  {
+    spot_class <- "singlet"
+  }
+  
   doublet_results = decompose_sparse(cell_type_profiles, UMI_tot, bead, first_type, second_type, constrain = constrain, MIN.CHANGE = MIN.CHANGE)
   doublet_weights = doublet_results$weights; conv_doublet = doublet_results$converged
   spot_class <- factor(spot_class, c("reject", "singlet", "doublet_certain", "doublet_uncertain"))
-  return(list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
-              doublet_weights = doublet_weights, min_score = min_score, singlet_score = singlet_score,
-              conv_all = conv_all, conv_doublet = conv_doublet, score_mat = score_mat, singlet_scores = singlet_scores,
-              first_class = first_class, second_class = second_class))
+  
+  Rx<-list(all_weights = all_weights, spot_class = spot_class, first_type = first_type, second_type = second_type,
+           doublet_weights = doublet_weights, min_score = min_score, singlet_score = singlet_score,
+           conv_all = conv_all, conv_doublet = conv_doublet, score_mat = score_mat, singlet_scores = singlet_scores,
+           first_class = first_class, second_class = second_class)
+  
+  return(Rx)
+  
 }
 
 #Decomposing a single bead via doublet search
