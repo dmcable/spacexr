@@ -94,7 +94,7 @@ get_de_pop <- function(cell_type, de_results_list, cell_prop, params_to_test, us
                                         sei = sd,
                                         data = metareg_data,
                                         method = "REML",
-                                        mods = formula(paste0('~',colnames(meta.design.matrix))), # colnames(design.matrix)
+                                        mods = paste0('~', paste0(colnames(meta.design.matrix), collapse = '+')),
                                         test = "z"), warning=function(w) 'warning',
                            error = function(w) 'warning')
         #sig_p, mean_est, sd_est, Z_est, p_cross
