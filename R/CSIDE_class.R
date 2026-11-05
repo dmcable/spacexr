@@ -22,7 +22,7 @@ check_designmatrix <- function(X, f_name, require_2d = FALSE) {
       start_ind <- 2
     else
       start_ind <- 1
-    if(dim(X)[2] > start_ind) {
+    if(dim(X)[2] >= start_ind) {
       for(i in start_ind:dim(X)[2]) {
         if(max(X[,i]) - min(X[,i]) < 1e-9)
           stop(paste0(f_name,': column, ',i, ' of X is a constant. Please ensure that contant term (the intercept) appears',
