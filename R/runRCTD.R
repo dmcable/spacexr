@@ -60,39 +60,47 @@ process_data <- function(puck, gene_list, cell_type_info, proportions = NULL, tr
 #' @return Returns \code{results}, a list of RCTD results for each pixel, which can be organized by
 #' feeding into \code{\link{gather_results}}
 #' @export
-process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T,
-                                MAX_CORES = 8, MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25) {
-  beads = t(as.matrix(puck@counts[gene_list,]))
-  #out_file = "logs/process_beads_log.txt"
-  #if (file.exists(out_file))
-  #  file.remove(out_file)
-  if(MAX_CORES > 1) {
-    numCores = parallel::detectCores();
-    if(parallel::detectCores() > MAX_CORES)
-      numCores <- MAX_CORES
-    cl <- parallel::makeCluster(numCores,setup_strategy = "sequential",outfile="")
-    doParallel::registerDoParallel(cl)
-    environ = c('decompose_full','decompose_sparse','solveIRWLS.weights','solveOLS','solveWLS','Q_mat','X_vals','K_val', 'SQ_mat')
-    results <- foreach::foreach(i = 1:(dim(beads)[1]), .export = environ) %dopar% { #.packages = c("quadprog"),
-      #if(i %% 100 == 0)
-      #  cat(paste0("Finished sample: ",i,"\n"), file=out_file, append=TRUE)
-      assign("Q_mat",Q_mat, envir = globalenv()); assign("X_vals",X_vals, envir = globalenv())
-      assign("K_val",K_val, envir = globalenv()); assign("SQ_mat",SQ_mat, envir = globalenv());
-      result = process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
-                                    class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
-                                    CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
-      result
+process_beads_batch <- function(cell_type_info, gene_list, puck, class_df = NULL, constrain = T,MAX_CORES = 8, MIN.CHANGE = 0.001, CONFIDENCE_THRESHOLD = 10, DOUBLET_THRESHOLD = 25)
+{
+  
+  beads <- t(puck@counts[gene_list,])
+  if(MAX_CORES > 1)
+  {
+    message('Step 3/4: fitPixels (No progress bar)')
+    message(paste0("Multicore enabled using ", MAX_CORES," cores"))
+    #registerDoMC(MAX_CORES)
+    registerDoParallel(cores=MAX_CORES)
+    NN<-nrow(beads)
+    
+    results <- foreach(i = 1:NN) %dopar% {
+      
+      assign("Q_mat",Q_mat, envir = globalenv())
+      assign("X_vals",X_vals, envir = globalenv())
+      assign("K_val",K_val, envir = globalenv())
+      assign("SQ_mat",SQ_mat, envir = globalenv())
+      
+      result <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
+                                      class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
+                                      CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
+      
+      return(result)
+      
+      
     }
-    parallel::stopCluster(cl)
-  } else {
-    #not parallel
+  }else{
+    
     results <- list()
-    for(i in 1:(dim(beads)[1])) {
+    
+    for(i in 1:(dim(beads)[1]))
+    {
       results[[i]] <- process_bead_doublet(cell_type_info, gene_list, puck@nUMI[i], beads[i,],
-                                           class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
-                                           CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
+                                            class_df = class_df, constrain = constrain, MIN.CHANGE = MIN.CHANGE,
+                                            CONFIDENCE_THRESHOLD = CONFIDENCE_THRESHOLD, DOUBLET_THRESHOLD = DOUBLET_THRESHOLD)
+      
     }
+    
   }
+  
   return(results)
 }
 
