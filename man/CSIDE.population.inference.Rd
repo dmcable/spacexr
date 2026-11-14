@@ -12,7 +12,7 @@ CSIDE.population.inference(
   MIN.CONV.GROUPS = 2,
   CT.PROP = 0.5,
   fdr = 0.01,
-  log_fc_thresh = 0.4,
+  log_fc_thresh = NULL,
   normalize_expr = F,
   meta = FALSE,
   meta.design.matrix = NULL,
@@ -33,7 +33,9 @@ replicates must be provided.}
 
 \item{fdr}{(default 0.01) false discovery rate}
 
-\item{log_fc_thresh}{(default 0.4) minimum natural log estimated DE threshold}
+\item{log_fc_thresh}{(default NULL) minimum natural log estimated DE threshold. NULL uses the value from fitting the
+first replicate (0.1 per standard deviation for a z-scored covariate, 0.4 across the covariate's range under 'minmax' or
+for a 0/1 covariate), or 0.4 for fits made before the covariate_scaling option.}
 
 \item{normalize_expr}{(default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition}
 

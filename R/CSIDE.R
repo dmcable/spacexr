@@ -25,10 +25,15 @@
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
 #' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
-#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param log_fc_thresh (default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+#' standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.
 #' @param fdr_method (default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.
 #' @param medv (default 0.5) the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
 #' have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).
+#' @param covariate_scaling (default 'zscore') how each non-intercept column of the design matrix is scaled before
+#' fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+#' coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+#' coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -37,7 +42,8 @@
 run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, cell_type_threshold = 125,
                           gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = .01,
-                          test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = 0.4, test_error = F, fdr_method = 'BH', medv = 0.5) {
+                          test_genes_sig = T, normalize_expr = F, logs=F, log_fc_thresh = NULL, test_error = F, fdr_method = 'BH', medv = 0.5,
+                          covariate_scaling = 'zscore') {
   X2 <- build.designmatrix.single(myRCTD, explanatory.variable)
   barcodes <- rownames(X2)
   explanatory.variable <- explanatory.variable[barcodes]
@@ -63,7 +69,8 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene, test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD,
                        cell_types_present = cell_types_present, fdr = fdr, normalize_expr = normalize_expr,
-                   logs=logs, cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error, fdr_method = fdr_method))
+                   logs=logs, cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error, fdr_method = fdr_method,
+                   covariate_scaling = covariate_scaling))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object with only an intercept term
@@ -133,6 +140,10 @@ run.CSIDE.intercept <- function(myRCTD, barcodes = NULL, cell_types = NULL, cell
 #' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param test_genes_sig (default TRUE) logical controlling whether genes will be tested for significance
+#' @param covariate_scaling (default 'zscore') how each non-intercept column of the design matrix is scaled before
+#' fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+#' coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+#' coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -143,7 +154,7 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
                             cell_type_threshold = 125, gene_threshold = 5e-5, doublet_mode = T,
                             weight_threshold = NULL, sigma_gene = T,
                             PRECISION.THRESHOLD = 0.05, cell_types_present = NULL, fdr = .01, test_genes_sig = T,
-                            logs=F, test_error = F) {
+                            logs=F, test_error = F, covariate_scaling = 'zscore') {
   X2 <- build.designmatrix.nonparam(myRCTD, barcodes = barcodes, df = df)
   region_thresh <- cell_type_threshold / 4
   barcodes <- rownames(X2)
@@ -163,7 +174,7 @@ run.CSIDE.nonparam <- function(myRCTD, df = 15, barcodes = NULL, cell_types = NU
                        weight_threshold = weight_threshold, sigma_gene = sigma_gene,test_genes_sig = test_genes_sig,
                        PRECISION.THRESHOLD = PRECISION.THRESHOLD, test_error = test_error,
                        cell_types_present = cell_types_present, params_to_test = 2:df, fdr = fdr, normalize_expr = F,
-                   logs=logs, cell_type_filter = cell_type_filter))
+                   logs=logs, cell_type_filter = cell_type_filter, covariate_scaling = covariate_scaling))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object for DE across multiple discrete regions
@@ -249,8 +260,13 @@ run.CSIDE.regions <- function(myRCTD, region_list, cell_types = NULL,
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
 #' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
-#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param log_fc_thresh (default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+#' standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.
 #' @param fdr_method (default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.
+#' @param covariate_scaling (default 'zscore') how each non-intercept column of the design matrix is scaled before
+#' fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+#' coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+#' coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE.
@@ -260,9 +276,9 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, cell_type_specific = NULL,
-                      params_to_test = NULL, normalize_expr = F, logs=F, log_fc_thresh = 0.4,
-                      cell_type_filter = NULL, test_error = F, fdr_method = 'BH') {
-  X <- check_designmatrix(X, 'run.CSIDE', require_2d = TRUE)
+                      params_to_test = NULL, normalize_expr = F, logs=F, log_fc_thresh = NULL,
+                      cell_type_filter = NULL, test_error = F, fdr_method = 'BH', covariate_scaling = 'zscore') {
+  X <- check_designmatrix(X, 'run.CSIDE', require_2d = TRUE, covariate_scaling = covariate_scaling)
   if(is.null(cell_type_specific))
     cell_type_specific <- !logical(dim(X)[2])
   check_cell_type_specific(cell_type_specific, dim(X)[2])
@@ -277,7 +293,8 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5
                        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, params_to_test = params_to_test,
                        cell_types_present = cell_types_present, test_genes_sig = test_genes_sig,
                        fdr = fdr, normalize_expr = normalize_expr, logs=logs,
-                       cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error, fdr_method = fdr_method))
+                       cell_type_filter = cell_type_filter, log_fc_thresh = log_fc_thresh, test_error = test_error, fdr_method = fdr_method,
+                       covariate_scaling = covariate_scaling))
 }
 
 #' Runs CSIDE on a \code{\linkS4class{RCTD}} object with a general design matrix
@@ -316,10 +333,15 @@ run.CSIDE <- function(myRCTD, X, barcodes, cell_types = NULL, gene_threshold = 5
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition.
 #' Setting normalize_expr = TRUE is only valid for testing single parameters with test_mode = 'individual'.
 #' @param logs (default FALSE) if TRUE, writes progress to logs/de_logs.txt
-#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param log_fc_thresh (default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+#' standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.
 #' @param test_error (default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param fdr_method (default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.
+#' @param covariate_scaling (default 'zscore') how each non-intercept column of the design matrix is scaled before
+#' fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+#' coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+#' coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.
 #' @return an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
 #' which contain the results of the CSIDE algorithm including `gene_fits`, which contains the results of fits on individual genes,
 #' in addition `sig_gene_list`, a list, for each cell type, of significant genes detected by CSIDE, whereas
@@ -330,7 +352,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
                           doublet_mode = T, test_mode = 'individual', weight_threshold = NULL,
                           sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                           test_genes_sig = T, fdr = .01, params_to_test = NULL, normalize_expr = F,
-                          logs=F, cell_type_filter = NULL, log_fc_thresh = 0.4, test_error = FALSE, fdr_method = 'BH') {
+                          logs=F, cell_type_filter = NULL, log_fc_thresh = NULL, test_error = FALSE, fdr_method = 'BH',
+                          covariate_scaling = 'zscore') {
   if(gene_threshold == .01 || fdr == 0.25 || cell_type_threshold <= 10 ||
      (!is.null(weight_threshold) && weight_threshold == 0.1))
     warning('run.CSIDE.general: some parameters are set to the CSIDE vignette values, which are intended for testing but not proper execution. For more accurate results, consider using the default parameters to this function.')
@@ -362,8 +385,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   if(length(cell_types) < 1)
     stop('run.CSIDE.general: zero cell types remain. Cannot run CSIDE with zero cell types.')
   message(paste0("run.CSIDE.general: running CSIDE with cell types ",paste(cell_types, collapse = ', ')))
-  X1 <- check_designmatrix(X1, 'run.CSIDE.general')
-  X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE)
+  X1 <- check_designmatrix(X1, 'run.CSIDE.general', covariate_scaling = covariate_scaling)
+  X2 <- check_designmatrix(X2, 'run.CSIDE.general', require_2d = TRUE, covariate_scaling = covariate_scaling)
   if(!(test_mode %in% c('individual', 'categorical')))
     stop(c('run.CSIDE.general: not valid test_mode = ',test_mode,'. Please set test_mode = "categorical" or "individual".'))
   if(is.null(params_to_test))
@@ -380,6 +403,8 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
            'please make sure that tested parameters are in the required range.'))
   if(test_mode == 'categorical' && any(!(X2[,params_to_test] %in% c(0,1))))
     stop(c('run.CSIDE.general: for test_mode = categorical, colums params_to_test, ',params_to_test,', must have values 0 or 1.'))
+  if(is.null(log_fc_thresh))
+    log_fc_thresh <- default_log_fc_thresh(covariate_scaling, X2, params_to_test)
   if(is.null(cell_types_present))
     cell_types_present <- cell_types
   if(any(!(barcodes %in% rownames(X1))) || any(!(barcodes %in% rownames(X2))))
@@ -424,9 +449,15 @@ run.CSIDE.general <- function(myRCTD, X1, X2, barcodes, cell_types = NULL, gene_
   myRCTD@internal_vars_de <- list(barcodes = barcodes, cell_types = cell_types, doublet_mode = doublet_mode,
                                   cell_types_present = cell_types_present,
                                   my_beta = my_beta, X1 = X1, X2 = X2,
-                                  test_mode = test_mode, params_to_test = params_to_test)
+                                  test_mode = test_mode, params_to_test = params_to_test,
+                                  covariate_scaling = covariate_scaling, log_fc_thresh = log_fc_thresh)
   myRCTD@de_results <- list(gene_fits = gene_fits, sig_gene_list = sig_gene_list, all_gene_list = all_gene_list)
   return(myRCTD)
+}
+
+# 0.1 per SD for a z-scored tested column; 0.4 otherwise (per range under min-max, or a 0/1 difference)
+default_log_fc_thresh <- function(covariate_scaling, X2, params_to_test) {
+  if(identical(covariate_scaling, 'zscore') && !all(X2[, params_to_test] %in% c(0, 1))) 0.1 else 0.4
 }
 
 get_sig_genes <- function(puck, myRCTD, gene_list_tot, cell_types, my_beta, barcodes, nUMI,
@@ -455,7 +486,7 @@ get_sig_genes <- function(puck, myRCTD, gene_list_tot, cell_types, my_beta, barc
 }
 
 test_genes_sig_post <- function(myRCTD, params_to_test = NULL, fdr = .01, p_thresh = 1,
-                                log_fc_thresh = 0.4, normalize_expr = F, fdr_method = 'BH') {
+                                log_fc_thresh = NULL, normalize_expr = F, fdr_method = 'BH') {
   puck <- myRCTD@originalSpatialRNA
   gene_list_tot <- rownames(myRCTD@de_results$gene_fits$s_mat)
   cell_types <- myRCTD@internal_vars_de$cell_types
@@ -468,6 +499,9 @@ test_genes_sig_post <- function(myRCTD, params_to_test = NULL, fdr = .01, p_thre
   gene_fits <- myRCTD@de_results$gene_fits
   if(is.null(params_to_test))
     params_to_test <- myRCTD@internal_vars_de$params_to_test
+  if(is.null(log_fc_thresh)) # the value used at fitting; fits made before this option get 0.4
+    log_fc_thresh <- if(!is.null(myRCTD@internal_vars_de$log_fc_thresh)) myRCTD@internal_vars_de$log_fc_thresh else
+      default_log_fc_thresh(myRCTD@internal_vars_de$covariate_scaling, X2, params_to_test)
   both_gene_list <- get_sig_genes(puck, myRCTD, gene_list_tot, cell_types, my_beta, barcodes, nUMI,
                                   gene_fits, cell_types_present, X2, test_mode,
                                   params_to_test = params_to_test, fdr = fdr,

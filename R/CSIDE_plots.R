@@ -239,10 +239,11 @@ plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_g
           param_index <- sig_genes[gene,'paramindex_best']
         else
           param_index <- param_index_best
-        my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] == 0)] <- 1
-        my_class[(X2[barc_plot,param_index] <= 0.5) & (Y_plot[barc_plot] > 0)] <- 3
-        my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] == 0)] <- 2
-        my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] > 0)] <- 4
+        x_unit <- unit_range_column(X2, param_index)
+        my_class[(x_unit[barc_plot] <= 0.5) & (Y_plot[barc_plot] == 0)] <- 1
+        my_class[(x_unit[barc_plot] <= 0.5) & (Y_plot[barc_plot] > 0)] <- 3
+        my_class[(x_unit[barc_plot] > 0.5) & (Y_plot[barc_plot] == 0)] <- 2
+        my_class[(x_unit[barc_plot] > 0.5) & (Y_plot[barc_plot] > 0)] <- 4
         p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
         suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
         plots[[i]] <- p3
@@ -271,6 +272,7 @@ plot_gene_two_regions <- function(myRCTD, gene, cell_type, min_UMI = 200, expr.t
   barcodes <- myRCTD@internal_vars_de$barcodes
   my_beta <- myRCTD@internal_vars_de$my_beta
   X2 <- myRCTD@internal_vars_de$X2
+  x_unit <- unit_range_column(X2, 2)
   sig_gene_df <- myRCTD@de_results$sig_gene_list[[cell_type]]
   barcodes_sing <- names(which(my_beta[barcodes,cell_type] > 0.999))
   MULT = 500
@@ -278,10 +280,10 @@ plot_gene_two_regions <- function(myRCTD, gene, cell_type, min_UMI = 200, expr.t
   Y_plot <- MULT*puck@counts[gene,]/puck@nUMI
   my_title = paste(gene,": log_fc=",round(myRCTD@de_results$gene_fits$mean_val[gene,cell_type],2))
   my_class <- rep(0,length(barc_plot)); names(my_class) <- barc_plot
-  my_class[(X2[barc_plot,2] <= exvar_thresh) & (Y_plot[barc_plot] == expr.thresh)] <- 1
-  my_class[(X2[barc_plot,2] <= exvar_thresh) & (Y_plot[barc_plot] > expr.thresh)] <- 3
-  my_class[(X2[barc_plot,2] > exvar_thresh) & (Y_plot[barc_plot] == expr.thresh)] <- 2
-  my_class[(X2[barc_plot,2] > exvar_thresh) & (Y_plot[barc_plot] > expr.thresh)] <- 4
+  my_class[(x_unit[barc_plot] <= exvar_thresh) & (Y_plot[barc_plot] == expr.thresh)] <- 1
+  my_class[(x_unit[barc_plot] <= exvar_thresh) & (Y_plot[barc_plot] > expr.thresh)] <- 3
+  my_class[(x_unit[barc_plot] > exvar_thresh) & (Y_plot[barc_plot] == expr.thresh)] <- 2
+  my_class[(x_unit[barc_plot] > exvar_thresh) & (Y_plot[barc_plot] > expr.thresh)] <- 4
   p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
   suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
   return(p3)
@@ -402,9 +404,15 @@ predict_CSIDE_all <- function(RCTDde, gene) {
   return(pred_tot)
 }
 
+# min max of z score is min max of original
+unit_range_column <- function(X2, j) {
+  x <- X2[, j]
+  (x - min(x)) / (max(x) - min(x))
+}
+
 get_quant_df <- function(RCTDde, gene_fits, cell_types, cur_cell_types, gene, multi_region = F, prop_thresh = 0.999, param_position = 2) {
   my_beta <- RCTDde@internal_vars_de$my_beta
-  X2 <- RCTDde@internal_vars_de$X2[rownames(my_beta),param_position]
+  X2 <- unit_range_column(RCTDde@internal_vars_de$X2, param_position)[rownames(my_beta)]
   if(multi_region)
     X2 <- apply(RCTDde@internal_vars_de$X2,1,function(x) which(as.logical(x)))
   nUMI <- RCTDde@spatialRNA@nUMI[rownames(my_beta)]

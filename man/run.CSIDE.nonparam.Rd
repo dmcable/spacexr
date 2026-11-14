@@ -19,7 +19,8 @@ run.CSIDE.nonparam(
   fdr = 0.01,
   test_genes_sig = T,
   logs = F,
-  test_error = F
+  test_error = F,
+  covariate_scaling = "zscore"
 )
 }
 \arguments{
@@ -56,6 +57,11 @@ to consider for gene expression contamination during the step filtering out mark
 
 \item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
+
+\item{covariate_scaling}{(default 'zscore') how each non-intercept column of the design matrix is scaled before
+fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.}
 }
 \value{
 an \code{\linkS4class{RCTD}} object containing the results of the CSIDE algorithm. Contains objects \code{de_results},
