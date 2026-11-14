@@ -23,10 +23,11 @@ run.CSIDE(
   params_to_test = NULL,
   normalize_expr = F,
   logs = F,
-  log_fc_thresh = 0.4,
+  log_fc_thresh = NULL,
   cell_type_filter = NULL,
   test_error = F,
-  fdr_method = "BH"
+  fdr_method = "BH",
+  covariate_scaling = "zscore"
 )
 }
 \arguments{
@@ -69,12 +70,18 @@ Setting normalize_expr = TRUE is only valid for testing single parameters with t
 
 \item{logs}{(default FALSE) if TRUE, writes progress to logs/de_logs.txt}
 
-\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+\item{log_fc_thresh}{(default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.}
 
 \item{test_error}{(default FALSE) if TRUE, exits after testing for error messages without running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{fdr_method}{(default BH) if BH, uses the Benjamini-Hochberg method. Otherwise, uses local fdr with an empirical null.}
+
+\item{covariate_scaling}{(default 'zscore') how each non-intercept column of the design matrix is scaled before
+fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.}
 
 \item{cell_type_specific:}{(default TRUE for all covariates). A logical vector of length the number of covariates
 indicating whether each covariate's DE parameters should be cell type-specific or shared across all cell types.}

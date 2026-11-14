@@ -24,11 +24,12 @@ run.CSIDE.replicates(
   de_mode = "single",
   df = 15,
   barcodes = NULL,
-  log_fc_thresh = 0.4,
+  log_fc_thresh = NULL,
   test_error = F,
   medv = 0.5,
   params_to_test = NULL,
-  test_mode = "individual"
+  test_mode = "individual",
+  covariate_scaling = "zscore"
 )
 }
 \arguments{
@@ -77,13 +78,19 @@ If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code
 
 \item{barcodes}{for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.}
 
-\item{log_fc_thresh}{(default 0.4) the natural log fold change cutoff for differential expression}
+\item{log_fc_thresh}{(default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.}
 
 \item{test_error}{(default FALSE) if TRUE, first tests for error messages before running CSIDE.
 If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.}
 
 \item{medv}{(default 0.5) for single model, the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
 have explanatory-variable greater than or less than this value (minimum cell_type_threshold/2 required).}
+
+\item{covariate_scaling}{(default 'zscore') how each non-intercept column of the design matrix is scaled before
+fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.}
 
 \item{params_to_test:}{(default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.}

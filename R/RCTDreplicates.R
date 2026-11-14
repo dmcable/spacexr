@@ -120,7 +120,8 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param de_mode (default 'single', otherwise 'nonparam' or 'general') if 'single', calls \code{\link{run.CSIDE.single}}.
 #' If 'nonparam', calls \code{\link{run.CSIDE.nonparam}}. If 'general', calls \code{\link{run.CSIDE}}.
 #' @param df (default 15) for de_mode = nonparam, the degrees of freedom, or number of basis functions to be used in the model.
-#' @param log_fc_thresh (default 0.4) the natural log fold change cutoff for differential expression
+#' @param log_fc_thresh (default NULL) the natural log fold change cutoff for differential expression. NULL uses 0.1 per
+#' standard deviation for a z-scored covariate, and 0.4 across the covariate's range under 'minmax' or for a 0/1 covariate.
 #' @param test_error (default FALSE) if TRUE, first tests for error messages before running CSIDE.
 #' If set to TRUE, this can be used to quickly evaluate if CSIDE will run without error.
 #' @param medv (default 0.5) for single model, the cutoff value of explanatory.variable (after 0-1 normalization) for determining if enough pixels for each cell type
@@ -129,6 +130,10 @@ run.RCTD.replicates <- function(RCTD.replicates, doublet_mode = "doublet") {
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. For example c(1,4,5) would test only parameters corresponding to columns 1, 4, and 5 of the design matrix.
 #' @param barcodes for de_mode = nonparam, the barcodes, or pixel names, of the \code{\linkS4class{SpatialRNA}} object to be used when fitting the model.
+#' @param covariate_scaling (default 'zscore') how each non-intercept column of the design matrix is scaled before
+#' fitting. 'zscore' centres the column (when the design has an intercept) and divides it by its standard deviation, so
+#' coefficients are per standard deviation of the covariate; 'minmax' rescales it to 0-1 as in earlier versions, so
+#' coefficients are per range. Columns taking only the values 0 and 1 are left unchanged under both.
 #' @return an \code{\linkS4class{RCTD.replicates}} object containing the results of the CSIDE algorithm. See \code{\linkS4class{RCTD.replicates}}
 #' for documentation on the \code{population_de_results}, \code{population_sig_gene_list}, and \code{population_sig_gene_df} objects.
 #' @export
@@ -136,8 +141,8 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
                                  gene_threshold = 5e-5, doublet_mode = T, weight_threshold = NULL,
                                  sigma_gene = T, PRECISION.THRESHOLD = 0.05, cell_types_present = NULL,
                                  fdr = .01, population_de = F, replicate_index = NULL, normalize_expr = F, test_genes_sig_individual = F,
-                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = 0.4, test_error = F, medv = 0.5,
-                                 params_to_test = NULL, test_mode = 'individual') {
+                                 de_mode = 'single', df = 15, barcodes = NULL, log_fc_thresh = NULL, test_error = F, medv = 0.5,
+                                 params_to_test = NULL, test_mode = 'individual', covariate_scaling = 'zscore') {
   if(!(de_mode %in% c('single','nonparam', 'general')))
     stop('run.CISDE.replicates: de_mode must be set to "single", "general", or "nonparam".')
   if(is.null(cell_types))
@@ -165,12 +170,14 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
         RCTD.replicates@RCTD.reps[[i]], explanatory.variable.replicates[[i]], cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold,
         sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, test_genes_sig = test_genes_sig_individual,
-        cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error, medv = medv)
+        cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error, medv = medv,
+        covariate_scaling = covariate_scaling)
     } else if(de_mode == 'nonparam') {
       RCTD.replicates@RCTD.reps[[i]] <- run.CSIDE.nonparam(
         RCTD.replicates@RCTD.reps[[i]], df = df, barcodes = barcodes, cell_types = cell_types, cell_type_threshold = cell_type_threshold,
         gene_threshold = gene_threshold, doublet_mode = doublet_mode, weight_threshold = weight_threshold, test_genes_sig = test_genes_sig_individual,
-        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr, test_error = test_error)
+        sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD, cell_types_present = cell_types_present, fdr = fdr, test_error = test_error,
+        covariate_scaling = covariate_scaling)
     } else {
       if(is.null(X.replicates))
         stop('run.CSIDE.replicates: if de_mode = single, X.replicates cannot be null.')
@@ -186,7 +193,7 @@ run.CSIDE.replicates <- function(RCTD.replicates, cell_types, explanatory.variab
         cell_type_threshold = cell_type_threshold, gene_threshold = gene_threshold, doublet_mode = doublet_mode, test_genes_sig = test_genes_sig_individual,
         weight_threshold = weight_threshold, sigma_gene = sigma_gene, PRECISION.THRESHOLD = PRECISION.THRESHOLD,
         cell_types_present = cell_types_present, fdr = fdr, log_fc_thresh = log_fc_thresh, test_error = test_error,
-        params_to_test = params_to_test)
+        params_to_test = params_to_test, covariate_scaling = covariate_scaling)
     }
   }
   if(population_de)
@@ -232,7 +239,9 @@ merge_RCTD_objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @param MIN.CONV.GROUPS (default 2) the minimum number of groups (if use.groups) for which a gene must converge
 #' @param CT.PROP (default 0.5) minimum ratio of gene expression within cell type compared to other cell types
 #' @param fdr (default 0.01) false discovery rate
-#' @param log_fc_thresh (default 0.4) minimum natural log estimated DE threshold
+#' @param log_fc_thresh (default NULL) minimum natural log estimated DE threshold. NULL uses the value from fitting the
+#' first replicate (0.1 per standard deviation for a z-scored covariate, 0.4 across the covariate's range under 'minmax' or
+#' for a 0/1 covariate), or 0.4 for fits made before the covariate_scaling option.
 #' @param params_to_test: (default 2 for test_mode = 'individual', all parameters for test_mode = 'categorical'). An integer vector of parameter
 #' indices to test. Note, for population mode, only the first parameter is tested.
 #' @param normalize_expr (default FALSE) if TRUE, constrains total gene expression to sum to 1 in each condition
@@ -245,7 +254,7 @@ merge_RCTD_objects <- function(RCTD.reps, replicate_names, group_ids = NULL) {
 #' @export
 CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, use.groups = FALSE, MIN.CONV.REPLICATES = 2,
                                         MIN.CONV.GROUPS = 2, CT.PROP = 0.5,
-                                       fdr = 0.01, log_fc_thresh = 0.4,
+                                       fdr = 0.01, log_fc_thresh = NULL,
                                        normalize_expr = F, meta = FALSE, meta.design.matrix = NULL, meta.test_var = 'intrcpt') {
   message(paste0('CSIDE.population.inference: running population DE inference with use.groups=', use.groups, ', and meta = ', meta))
   MIN.REPS <- 3
@@ -255,6 +264,9 @@ CSIDE.population.inference <- function(RCTD.replicates, params_to_test = NULL, u
   myRCTD <- RCTDde_list[[1]]
   if(is.null(params_to_test))
     params_to_test <- myRCTD@internal_vars_de$params_to_test[1]
+  if(is.null(log_fc_thresh)) # the value used when fitting the first replicate; fits made before this option get 0.4
+    log_fc_thresh <- if(!is.null(myRCTD@internal_vars_de$log_fc_thresh)) myRCTD@internal_vars_de$log_fc_thresh else
+      default_log_fc_thresh(myRCTD@internal_vars_de$covariate_scaling, myRCTD@internal_vars_de$X2, params_to_test)
   cell_types <- myRCTD@internal_vars_de$cell_types
   cell_types_present <- myRCTD@internal_vars_de$cell_types_present
   de_pop_all <- list()

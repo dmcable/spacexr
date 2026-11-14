@@ -1,4 +1,6 @@
-check_designmatrix <- function(X, f_name, require_2d = FALSE) {
+check_designmatrix <- function(X, f_name, require_2d = FALSE, covariate_scaling = 'zscore') {
+  if(!(identical(covariate_scaling, 'zscore') || identical(covariate_scaling, 'minmax')))
+    stop(paste0(f_name, ': covariate_scaling must be "zscore" or "minmax".'))
   tryCatch({
     X <- as(X,'matrix')
   }, error = function(e) {
@@ -27,8 +29,15 @@ check_designmatrix <- function(X, f_name, require_2d = FALSE) {
         if(max(X[,i]) - min(X[,i]) < 1e-9)
           stop(paste0(f_name,': column, ',i, ' of X is a constant. Please ensure that contant term (the intercept) appears',
                       'as a vector of ones in the first column of X.'))
-        X[,i] <- X[,i] - min(X[,i])
-        X[,i] <- X[,i] / max(X[,i]) # standardize
+        if(covariate_scaling == 'minmax') {
+          X[,i] <- X[,i] - min(X[,i])
+          X[,i] <- X[,i] / max(X[,i]) # standardize
+        } else if(!all(X[,i] %in% c(0, 1))) { # skip categorical covariates
+          m <- if(intercept) mean(X[,i]) else 0
+          s <- stats::sd(X[,i])
+          if(abs(m) > 1e-10 || abs(s - 1) > 1e-10)
+            X[,i] <- (X[,i] - m) / s
+        }
       }
     }
   }
