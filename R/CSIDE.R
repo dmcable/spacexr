@@ -44,15 +44,15 @@ run.CSIDE.single <- function(myRCTD, explanatory.variable,  cell_types = NULL, c
   region_thresh <- cell_type_threshold / 2
   r1 <- barcodes[X2[,2] < medv]
   if(length(r1) < region_thresh)
-    stop(paste0('run.CSIDE.single: number of pixels with explanatory.variable at least medv = ',medv,
-                " is less than (one half of cell_type_threshold) = ", region_thresh,
-                ". Please make sure that explanatory.variable attains a large value sufficiently often."))
-  cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
-  r2 <- barcodes[X2[,2] > medv]
-  if(length(r2) < region_thresh)
     stop(paste0('run.CSIDE.single: number of pixels with explanatory.variable below medv = ',medv,
                 " is less than (one half of cell_type_threshold) = ", region_thresh,
                 ". Please make sure that explanatory.variable attains a small value sufficiently often."))
+  cell_type_filter <- aggregate_cell_types(myRCTD, r1, doublet_mode = doublet_mode) >= region_thresh
+  r2 <- barcodes[X2[,2] > medv]
+  if(length(r2) < region_thresh)
+    stop(paste0('run.CSIDE.single: number of pixels with explanatory.variable above medv = ',medv,
+                " is less than (one half of cell_type_threshold) = ", region_thresh,
+                ". Please make sure that explanatory.variable attains a large value sufficiently often."))
   cell_type_filter <- cell_type_filter & (aggregate_cell_types(myRCTD, r2, doublet_mode = doublet_mode) >= region_thresh)
   message(paste0('run.CSIDE.single: filtered out cell types: ', list(which(!cell_type_filter)),
                  ' due to not having sufficiently many pixels with explanatory.value on either side of medv = ',medv,

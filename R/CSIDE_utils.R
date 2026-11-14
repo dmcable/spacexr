@@ -426,15 +426,15 @@ exvar.celltocell.interactions <- function(myRCTD, barcodes, cell_type, radius = 
 #' @export
 exvar.point.density <- function(myRCTD, barcodes, points, radius = 50) {
   puck <- myRCTD@spatialRNA
-  explanatory.variable = c(rep(0,length(barcodes)))
-  names(explanatory.variable) = barcodes
+  target_coords <- puck@coords[barcodes, , drop = FALSE]
   # fields::rdist treats rows as coordinates and computes all distances between placing them in a distance matrix.
-  dist_matrix = fields::rdist(as.matrix(puck@coords), as.matrix(points))
-  rownames(dist_matrix) = rownames(puck@coords)
+  dist_matrix <- fields::rdist(as.matrix(target_coords), as.matrix(points))
+  rownames(dist_matrix) <- barcodes
   # Precompute the exponent component of the proximity score for all pairs of cells
-  exponent_mat = exp(-dist_matrix/radius)
+  exponent_mat <- exp(-dist_matrix/radius)
   explanatory.variable <- rowSums(exponent_mat)
-  explanatory.variable = normalize_ev(explanatory.variable)
+  explanatory.variable <- normalize_ev(explanatory.variable)
+  return(explanatory.variable)
 }
 
 # Normalize explanatory.variable so the values span from 0 to 1.
