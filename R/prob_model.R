@@ -27,12 +27,14 @@ solve_sq <- function(Q_mat, X_vals) {
   diag(M) <- 2*(del[1:(n-1)] + del[2:n])
   M[cbind(2:(n-1), 1:(n-2))] <- del[2:(n-1)]
   M[cbind(1:(n-2), 2:(n-1))] <- del[2:(n-1)]
+  M <- as(as(as(M, "dMatrix"), "generalMatrix"), "TsparseMatrix")
   MI <- solve(M)
   fB <- sweep(diff(t(Q_mat)),1,del,'/')
   fBD <- 6*diff(fB)
   SQ_mat <- t(MI %*% fBD)
   ### append the zeros
   SQ_mat <- cbind(0, SQ_mat, 0)
+  return(SQ_mat)
 }
 
 set_global_Q_all <- function() {
