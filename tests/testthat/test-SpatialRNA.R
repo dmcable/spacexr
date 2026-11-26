@@ -80,6 +80,21 @@ test_that("SpatialRNA validates count matrices", {
   expect_error(SpatialRNA(coords, na_genes), "rownames\\(counts\\) contain NA")
 })
 
+test_that("SpatialRNA supports a single pixel", {
+  expect_warning(puck <- SpatialRNA(small_coords(1), small_counts(n_cols = 1)), "only one cell/pixel present")
+  expect_s4_class(puck@counts, "dgCMatrix")
+  expect_equal(dim(puck@counts), c(4L, 1L))
+  expect_equal(rownames(puck@coords), "bc1")
+  expect_equal(puck@nUMI, c(bc1 = 10))
+})
+
+test_that("SpatialRNA accepts matrix coordinates", {
+  puck <- SpatialRNA(as.matrix(small_coords()), small_counts())
+  expect_s3_class(puck@coords, "data.frame")
+  expect_named(puck@coords, c("x", "y"))
+  expect_equal(puck@coords$y, c(2, 4, 6))
+})
+
 test_that("check_counts warns for a single pixel", {
   expect_warning(check_counts(small_counts(n_cols = 1), "SpatialRNA"), "only one cell/pixel present")
 })
@@ -131,6 +146,16 @@ test_that("restrict_counts filters genes and pixels by UMI thresholds", {
   expect_equal(colnames(res2@counts), c("bc1", "bc3"))
 })
 
+test_that("restrict_counts keeps matrix shape for one gene or one pixel", {
+  puck <- SpatialRNA(small_coords(), small_counts())
+  one_gene <- restrict_counts(puck, "g2")
+  expect_s4_class(one_gene@counts, "dgCMatrix")
+  expect_equal(dim(one_gene@counts), c(1L, 3L))
+  one_pixel <- restrict_counts(puck, c("g1", "g2"), UMI_max = 20)
+  expect_equal(dim(one_pixel@counts), c(2L, 1L))
+  expect_equal(colnames(one_pixel@counts), "bc1")
+})
+
 test_that("restrict_puck subsets all slots consistently and ignores unknown barcodes", {
   puck <- SpatialRNA(small_coords(), small_counts())
   res <- restrict_puck(puck, c("bc3", "bc1", "missing"))
@@ -138,6 +163,9 @@ test_that("restrict_puck subsets all slots consistently and ignores unknown barc
   expect_equal(names(res@nUMI), c("bc1", "bc3"))
   expect_equal(rownames(res@coords), c("bc1", "bc3"))
   expect_equal(res@nUMI, puck@nUMI[c("bc1", "bc3")])
+  one <- restrict_puck(puck, "bc2")
+  expect_equal(dim(one@counts), c(4L, 1L))
+  expect_equal(rownames(one@coords), "bc2")
 })
 
 test_that("coerce_old rebuilds a SpatialRNA with the same data", {

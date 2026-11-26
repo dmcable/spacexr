@@ -110,17 +110,17 @@ subset_rctd = function(rctd_obj, st_spot_id){
     }
 
     # A. subset @spatialRNA slot
-    rctd_obj@spatialRNA@coords = rctd_obj@spatialRNA@coords[st_spot_id, ]
-    rctd_obj@spatialRNA@counts = rctd_obj@spatialRNA@counts[, st_spot_id]
+    rctd_obj@spatialRNA@coords = rctd_obj@spatialRNA@coords[st_spot_id, , drop = FALSE]
+    rctd_obj@spatialRNA@counts = rctd_obj@spatialRNA@counts[, st_spot_id, drop = FALSE]
     rctd_obj@spatialRNA@nUMI   = rctd_obj@spatialRNA@nUMI[st_spot_id]
 
     # B. subset @originalSpatial slot
-    rctd_obj@originalSpatialRNA@coords = rctd_obj@originalSpatialRNA@coords[st_spot_id, ]
-    rctd_obj@originalSpatialRNA@counts = rctd_obj@originalSpatialRNA@counts[, st_spot_id]
+    rctd_obj@originalSpatialRNA@coords = rctd_obj@originalSpatialRNA@coords[st_spot_id, , drop = FALSE]
+    rctd_obj@originalSpatialRNA@counts = rctd_obj@originalSpatialRNA@counts[, st_spot_id, drop = FALSE]
     rctd_obj@originalSpatialRNA@nUMI   = rctd_obj@originalSpatialRNA@nUMI[st_spot_id]
 
     # C. Subset @results$weights
-    rctd_obj@results$weights = rctd_obj@results$weights[st_spot_id, ]
+    rctd_obj@results$weights = rctd_obj@results$weights[st_spot_id, , drop = FALSE]
     
     # 3. Report new number of spots after the subset has been done.
     spot_ids_rctd_new = rownames(rctd_obj@results$weights)

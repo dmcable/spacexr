@@ -302,7 +302,7 @@ fdr_sig_genes <- function(gene_list_type, p_val, fdr, Z = NULL, method = 'BH') {
       gene_list_sig <- c()
     }
   } else {
-    lfdr <- locfdr(Z, nulltype = 1)
+    lfdr <- locfdr::locfdr(Z, nulltype = 1)
     gene_list_sig <- (gene_list_type[lfdr$fdr < fdr])
   }
   return(gene_list_sig)

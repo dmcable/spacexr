@@ -110,8 +110,6 @@ test_that("fdr_sig_genes applies Benjamini-Hochberg", {
 
 test_that("fdr_sig_genes supports local fdr", {
   skip_if_not_installed("locfdr")
-  # locfdr is listed in Imports but not imported in NAMESPACE, so it must be attached.
-  withr::local_package("locfdr")
   withr::local_seed(11)
   genes <- paste0("g", 1:500)
   Z <- c(rnorm(480), rnorm(20, 6))

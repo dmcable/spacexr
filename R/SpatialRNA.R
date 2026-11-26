@@ -102,9 +102,9 @@ SpatialRNA <- function(coords, counts, nUMI = NULL, use_fake_coords = FALSE, req
     stop('SpatialRNA: coords, counts, and nUMI do not share any barcode names. Please ensure that rownames(coords) matches colnames(counts) and names(nUMI)')
   if(length(barcodes) < max(length(nUMI),dim(coords)[1],dim(counts)[2]))
     warning('SpatialRNA: some barcodes in nUMI, coords, or counts were not mutually shared. Such barcodes were removed.')
-  if(sum(nUMI[barcodes] != colSums(counts[,barcodes])) > 0)
+  if(sum(nUMI[barcodes] != colSums(counts[,barcodes, drop = FALSE])) > 0)
     warning('SpatialRNA: nUMI does not match colSums of counts. If this is unintended, please correct this discrepancy. If this is intended, there is no problem.')
-  new("SpatialRNA", coords = coords[barcodes,], counts = counts[,barcodes], nUMI = nUMI[barcodes])
+  new("SpatialRNA", coords = coords[barcodes,, drop = FALSE], counts = counts[,barcodes, drop = FALSE], nUMI = nUMI[barcodes])
 }
 
 check_UMI <- function(nUMI, f_name, require_2d = F, require_int = T, min_UMI = 0) {
@@ -174,9 +174,11 @@ check_counts <- function(counts, f_name, require_2d = F, require_int = T) {
 check_coords <- function(coords) {
   if(!is(coords, 'data.frame')) {
     tryCatch({
-      coords <- as(coords,'data.frame')
+      coords <- as.data.frame(coords)
+      if(!is.data.frame(coords))
+        stop()
     }, error = function(e) {
-      stop('SpatialRNA: could not convert coords to data.frame using as(coords,\'data.frame\'). Please check that coords is coercible to data.frame, such as a matrix or data.frame .')
+      stop('SpatialRNA: could not convert coords to data.frame using as.data.frame(coords). Please check that coords is coercible to data.frame, such as a matrix or data.frame .')
     })
   }
   if(dim(coords)[2] != 2) #check more than one gene
@@ -203,9 +205,9 @@ check_coords <- function(coords) {
 #' @return Returns a \code{\linkS4class{SpatialRNA}} with counts filtered based on UMI threshold and gene list
 #' @export
 restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000, counts_thresh = 1) {
-  counts_tot <- colSums(puck@counts[gene_list,])
+  counts_tot <- colSums(puck@counts[gene_list,, drop = FALSE])
   keep_loc = (puck@nUMI >= UMI_thresh) & (puck@nUMI <= UMI_max) & (counts_tot >= counts_thresh)
-  puck@counts = puck@counts[gene_list,keep_loc]
+  puck@counts = puck@counts[gene_list,keep_loc, drop = FALSE]
   puck@nUMI = puck@nUMI[keep_loc]
   return(puck)
 }
@@ -221,9 +223,9 @@ restrict_counts <- function(puck, gene_list, UMI_thresh = 1, UMI_max = 20000, co
 #' @export
 restrict_puck <- function(puck, barcodes) {
   barcodes = intersect(colnames(puck@counts), barcodes)
-  puck@counts = puck@counts[,barcodes]
+  puck@counts = puck@counts[,barcodes, drop = FALSE]
   puck@nUMI = puck@nUMI[barcodes]
-  puck@coords = puck@coords[barcodes,]
+  puck@coords = puck@coords[barcodes,, drop = FALSE]
   return(puck)
 }
 
