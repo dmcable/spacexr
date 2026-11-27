@@ -116,7 +116,7 @@ test_that("check_UMI validates nUMI vectors", {
   expect_error(check_UMI(c(a = 1.5, b = 2), "f"), "does not contain integers")
   expect_silent(check_UMI(c(a = 1.5, b = 2), "f", require_int = FALSE))
   expect_error(check_UMI(c(1, 2), "f"), "names\\(nUMI\\) is null")
-  expect_error(check_UMI(c(a = 1, a = 2), "f"), "duplicated elements")
+  expect_error(check_UMI(c(a = 1, a = 2), "f"), "duplicated elements") # nolint: duplicate_argument_linter.
   expect_warning(check_UMI(c(a = 1), "f"), "length of nUMI is 1")
   expect_error(check_UMI(c(a = 1), "f", require_2d = TRUE), "length of nUMI is 1")
   expect_error(check_UMI(c(a = 1, b = 2), "f", min_UMI = 10), "all less than min_UMI")

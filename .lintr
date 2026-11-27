@@ -1,2 +1,6 @@
-linters: linters_with_tags(tags = "correctness")
+linters: linters_with_tags(
+    tags = "correctness",
+    object_usage_linter = NULL,
+    namespace_linter = NULL
+  )
 exclusions: list("vignettes")
