@@ -244,7 +244,7 @@ plot_sig_genes_two_regions <- function(cell_type, barcodes, my_beta, puck, sig_g
         my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] == 0)] <- 2
         my_class[(X2[barc_plot,param_index] > 0.5) & (Y_plot[barc_plot] > 0)] <- 4
         p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
-        suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
+        suppressMessages(p3 <- p3 + ggplot2::scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
         plots[[i]] <- p3
       }
     }
@@ -283,7 +283,7 @@ plot_gene_two_regions <- function(myRCTD, gene, cell_type, min_UMI = 200, expr.t
   my_class[(X2[barc_plot,2] > exvar_thresh) & (Y_plot[barc_plot] == expr.thresh)] <- 2
   my_class[(X2[barc_plot,2] > exvar_thresh) & (Y_plot[barc_plot] > expr.thresh)] <- 4
   p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
-  suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
+  suppressMessages(p3 <- p3 + ggplot2::scale_color_manual(values=c("#CCE2EF","#F6DECC","#0072B2","#D55E00")))
   return(p3)
 }
 
@@ -310,7 +310,7 @@ plot_sig_genes_regions <- function(cell_type, barcodes, my_beta, puck, sig_genes
       my_title = paste(gene,": log_fc=",round(sig_genes[gene,'log_fc'],2),', p=',sig_genes[gene,'p_val'])
       my_class <- region_ids_plot
       p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
-      suppressMessages(p3 <- p3 + scale_color_manual(values=c("#CCE2EF","#F6DECC","#66FFD9","#FFDFFF",
+      suppressMessages(p3 <- p3 + ggplot2::scale_color_manual(values=c("#CCE2EF","#F6DECC","#66FFD9","#FFDFFF",
                                                               "#0072B2","#D55E00","#009E73","#CC79A7")))
       plots[[i]] <- p3
     }
@@ -380,7 +380,7 @@ plot_sig_genes_quant_regions <- function(cell_type, barcodes, my_beta, puck, sig
       obs_df$lb <- pmax(obs_df$pred - ci_width,0)
       obs_df$bin <- rownames(obs_df)
       p3 <- ggplot2::ggplot(obs_df,mapping = ggplot2::aes(bin,mean)) + ggplot2::geom_point() + ggplot2::theme_classic() +
-        ggplot2::geom_line(ggplot2::aes(bin,pred)) + ggplot2::ggtitle(my_title) + ggplot2::geom_errorbar(aes(ymin = lb, ymax = ub))
+        ggplot2::geom_line(ggplot2::aes(bin,pred)) + ggplot2::ggtitle(my_title) + ggplot2::geom_errorbar(ggplot2::aes(ymin = lb, ymax = ub))
       plots[[i]] <- p3
     }
     pdf(file.path(plotdir,paste0("de_plots_quant/de_genes_",stringr::str_replace(cell_type,'/','_'),".pdf")))
@@ -453,9 +453,9 @@ plot_quant_df <- function(myRCTD, gene_fits, cell_types, cell_type, gene, NR = 5
   final_df <- bin_quant_df(quant_df, NR = NR)
   final_df[,c('Y','se','pred')] <- final_df[,c('Y','se','pred')] * 500 #scale to counts per 500
   final_df$region <- (final_df$region - 1) / (NR - 1)
-  p <- ggplot(final_df, aes(x = region, y = pmax(Y, 10^(-8)))) + geom_point() + geom_line(aes(y = pred))+
-    geom_errorbar(aes(ymin = pmax(Y - 1.96*se,10^(-8)), ymax = (Y + 1.96*se)), width = 0.05) +
-    theme_classic() + ylab('Average expression') + xlab('Predictive variable') + scale_x_continuous(breaks = c(0,0.5,1), labels = c(0,0.5,1), limits = c(-0.05,1.05))
+  p <- ggplot2::ggplot(final_df, ggplot2::aes(x = region, y = pmax(Y, 10^(-8)))) + ggplot2::geom_point() + ggplot2::geom_line(ggplot2::aes(y = pred))+
+    ggplot2::geom_errorbar(ggplot2::aes(ymin = pmax(Y - 1.96*se,10^(-8)), ymax = (Y + 1.96*se)), width = 0.05) +
+    ggplot2::theme_classic() + ggplot2::ylab('Average expression') + ggplot2::xlab('Predictive variable') + ggplot2::scale_x_continuous(breaks = c(0,0.5,1), labels = c(0,0.5,1), limits = c(-0.05,1.05))
   return(p)
 }
 
@@ -499,7 +499,7 @@ plot_gene_regions <- function(myRCTD, cell_type, gene, pixel_weight_thresh = 0.8
   my_class <- region_ids_plot
   p3 <- plot_class(puck, barc_plot[order(my_class[barc_plot])], factor(my_class), title = my_title)
   color_list <- color_list[c(1:NR, (1:NR) + length(color_list)/2)]
-  suppressMessages(p3 <- p3 + scale_color_manual(values=color_list))
+  suppressMessages(p3 <- p3 + ggplot2::scale_color_manual(values=color_list))
   return(p3)
 }
 

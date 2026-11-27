@@ -107,7 +107,7 @@ run.RCTD <- function(RCTD, doublet_mode = "doublet") {
 
 #exports RCTD results as csv files
 export.RCTD <- function(RCTD, datadir) {
-   doublet_mode <- myRCTD@config$RCTDmode
+   doublet_mode <- RCTD@config$RCTDmode
    if(is.null(doublet_mode))
       stop("RCTD@config$RCTDmode is NULL. Please set to one of 'doublet', 'multi', 'full'.")
    if(!(doublet_mode %in% c('doublet','multi','full')))

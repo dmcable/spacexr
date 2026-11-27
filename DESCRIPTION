@@ -31,4 +31,8 @@ Imports:
 	metafor,
 	data.table
 RoxygenNote: 7.3.2
+Suggests:
+	testthat (>= 3.0.0),
+	withr
+Config/testthat/edition: 3
 VignetteBuilder: knitr
